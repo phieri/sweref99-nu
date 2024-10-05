@@ -29,6 +29,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: OSGeo/PROJ
+          ref: v5.9.0
+          sparse-checkout: src/
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: src/sr9.c
       - uses: actions/download-artifact@v4
         with:
           name: wasm
