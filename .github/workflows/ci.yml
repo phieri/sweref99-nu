@@ -3,12 +3,12 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - '**.md'
   pull_request:
     branches:
-      - master
+      - main
     paths-ignore:
       - '**.md'
 
@@ -25,4 +25,4 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v3
