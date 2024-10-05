@@ -1,4 +1,4 @@
-name: CI
+name: Build all
 
 on:
   push:
@@ -19,12 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/upload-artifact@v4
-        path: sr9.wasm
+        with:
+          name: wasm
+          path: sr9.wasm
   build:
     name: Build
     needs: build-wasm
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: wasm
       - uses: actions/upload-pages-artifact@v3
-        path: src/
+        with:
+          path: src/
