@@ -14,11 +14,12 @@ on:
 
 jobs:
   build-wasm:
-    name: Build WASM
+    name: Build Wasm
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/upload-artifact@v4
+        path: sr9.wasm
   build:
     name: Build
     needs: build-wasm
@@ -26,3 +27,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/upload-pages-artifact@v3
+        path: src/
