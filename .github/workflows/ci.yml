@@ -14,14 +14,15 @@ on:
 
 jobs:
   build-wasm:
-    name: 'Build WASM'
+    name: Build WASM
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/upload-artifact
+      - uses: actions/upload-artifact@v4
   build:
-    name: 'Build'
+    name: Build
+    needs: build-wasm
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/upload-artifact
+      - uses: actions/upload-pages-artifact@v4
