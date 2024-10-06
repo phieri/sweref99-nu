@@ -1,0 +1,13 @@
+{
+	"name": "sweref99-nu",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"editorconfig.editorconfig"
+			]
+		}
+	}
+}
