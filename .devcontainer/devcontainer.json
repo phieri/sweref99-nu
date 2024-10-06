@@ -1,5 +1,5 @@
 {
-	"name": "sweref99-nu",
+	"name": "sweref99-nu-devcontainer",
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},

@@ -7,9 +7,7 @@ int main(void) {
     PJ *norm;
     PJ_COORD a, b;
  
-    /* or you may set C=PJ_DEFAULT_CTX if you are sure you will     */
-    /* use PJ objects from only one thread                          */
-    C = proj_context_create();
+    C = PJ_DEFAULT_CTX;
 
     P = proj_create_crs_to_crs(
         C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84", /* or EPSG:32632 */
@@ -46,6 +44,5 @@ int main(void) {
 
     /* Clean up */
     proj_destroy(P);
-    proj_context_destroy(C); /* may be omitted in the single threaded case */
     return 0;
 }
