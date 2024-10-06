@@ -1,5 +1,5 @@
 script.js: sr9.wasm
-	tsc script.ts
+	tsc src/script.ts
 	mv script.js _site/script.js
 	mv sr9.wasm _site/sr9.wasm
 
