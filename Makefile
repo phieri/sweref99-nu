@@ -1,5 +1,5 @@
 script.js:
-	tsc src/script.ts --outfile _site/script.js
+	tsc
 
 sr9.wasm:
 	emcc src/sr9.c
