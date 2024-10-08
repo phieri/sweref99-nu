@@ -31,6 +31,7 @@ jobs:
           sparse-checkout: src/sr9.ts
       - run: |
           mv sweref99-nu/src/sr9.c sr9.c
+          mv sweref99-nu/Makefile Makefile
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
