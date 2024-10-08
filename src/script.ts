@@ -11,10 +11,32 @@ document.addEventListener(
 document.addEventListener(
   "dblclick",
   (event) => {
-    window.alert("Dubbelklick");
+    function success(position) {
+      doSomething(position.coords.latitude, position.coords.longitude);
+    }
+    
+    function error() {
+      alert("Sorry, no position available.");
+    }
+    
+    const options = {
+      enableHighAccuracy: true,
+      maximumAge: 30000,
+      timeout: 27000,
+    };
+    
+    const watchID = navigator.geolocation.watchPosition(success, error, options);    
   },
   false,
 );
+
+if ("geolocation" in navigator) {
+    window.alert("Geoloc avai");
+} else {
+    window.alert("No geolo");
+}
+
+
 
 const shareData = {
   title: "Position",
