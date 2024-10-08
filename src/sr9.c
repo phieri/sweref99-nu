@@ -1,4 +1,4 @@
-#include "src/proj.h"
+#include "proj.h"
 #include <stdio.h>
  
 int main(void) {

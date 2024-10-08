@@ -26,6 +26,6 @@ btn!.addEventListener("click", async () => {
   try {
     await navigator.share(shareData);
   } catch (err) {
-    window.alert("Kunde inte dela.");
+    console.log("Kunde inte dela.");
   }
 });

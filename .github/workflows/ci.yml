@@ -25,10 +25,10 @@ jobs:
         with:
           repository: OSGeo/PROJ
           ref: 9.5.0
-          sparse-checkout: src/
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: src/
+          sparse-checkout: src/sr9.ts
+          path: /
       - run: make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
