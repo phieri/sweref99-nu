@@ -8,6 +8,14 @@ document.addEventListener(
   false,
 );
 
+document.addEventListener(
+  "dblclick",
+  (event) => {
+    window.alert("Dubbelklick");
+  },
+  false,
+);
+
 const shareData = {
   title: "Position",
   text: "SWEREF 99 TM: N E"
