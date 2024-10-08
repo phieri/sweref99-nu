@@ -11,7 +11,7 @@ document.addEventListener(
 document.addEventListener(
   "dblclick",
   (event) => {
-    function success(position) {
+    function success(position: any) {
       window.alert(position.coords.latitude);
     }
     
@@ -35,8 +35,6 @@ if ("geolocation" in navigator) {
 } else {
     window.alert("No geolo");
 }
-
-
 
 const shareData = {
   title: "Position",
