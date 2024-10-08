@@ -12,7 +12,7 @@ document.addEventListener(
   "dblclick",
   (event) => {
     function success(position) {
-      doSomething(position.coords.latitude, position.coords.longitude);
+      window.alert(position.coords.latitude);
     }
     
     function error() {
