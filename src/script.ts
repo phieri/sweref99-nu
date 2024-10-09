@@ -8,17 +8,23 @@ document.addEventListener(
   false,
 );
 
+const uncert = document.querySelector("#uncert");
+const swerefn = document.querySelector("#sweref-n");
+const swerefe = document.querySelector("#sweref-e");
+
 document.addEventListener(
   "dblclick",
   (event) => {
     function success(position: any) {
-      window.alert(position.coords.latitude);
+			uncert!.textContent = "&pm;" + position.coords.accuracy + "&nbsp;m";
+			swerefn!.textContent = "N&NBSP;" + position.coords.latitude;
+			swerefe!.textContent = "E&NBSP;" + position.coords.longitude;
     }
-    
+  
     function error() {
-      alert("Sorry, no position available.");
+      window.alert("Fel: ingen position tillgänglig.");
     }
-    
+  
     const options = {
       enableHighAccuracy: true,
       maximumAge: 30000,
@@ -30,10 +36,8 @@ document.addEventListener(
   false,
 );
 
-if ("geolocation" in navigator) {
-    window.alert("Geoloc avai");
-} else {
-    window.alert("No geolo");
+if (!("geolocation" in navigator)) {
+  window.alert("Fel: platstjänsten är inte tillgänglig.");
 }
 
 const shareData = {

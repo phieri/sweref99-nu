@@ -1,12 +1,12 @@
 #include "src/proj.h"
 #include <stdio.h>
- 
+
 int main(void) {
     PJ_CONTEXT *C;
     PJ *P;
     PJ *norm;
     PJ_COORD a, b;
- 
+
     C = PJ_DEFAULT_CTX;
 
     P = proj_create_crs_to_crs(
