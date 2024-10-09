@@ -16,9 +16,9 @@ document.addEventListener(
   "dblclick",
   (event) => {
     function success(position: any) {
-			uncert!.textContent = "&pm;" + position.coords.accuracy + "&nbsp;m";
-			swerefn!.textContent = "N&NBSP;" + position.coords.latitude;
-			swerefe!.textContent = "E&NBSP;" + position.coords.longitude;
+			uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
+			swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
+			swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
     }
   
     function error() {
