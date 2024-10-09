@@ -32,6 +32,8 @@ jobs:
       - run: |
           mv sweref99-nu/src/sr9.c sr9.c
           mv sweref99-nu/Makefile Makefile
+          emcmake cmake
+          emmake cmake
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
