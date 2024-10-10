@@ -20,7 +20,7 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update
-          sudo apt-get --quiet --assume-yes install emscripten sqlite3
+          sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
