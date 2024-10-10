@@ -59,7 +59,6 @@ if (!("geolocation" in navigator)) {
 const btn = document.querySelector("#share-btn");
 btn!.addEventListener("click", async () => {
   try {
-    const geo = navigator.geolocation.getCurrentPosition();
     const shareData = {
       title: "Position",
       text: "SWEREF 99 TM: N E",
