@@ -20,7 +20,8 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update
-          sudo apt-get --quiet --assume-yes install emscripten
+          sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev
+          emcc -v >> $GITHUB_STEP_SUMMARY
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
@@ -28,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: sweref99-nu
-          sparse-checkout: src/sr9.ts
+          sparse-checkout: src/sr9.c
       - run: |
           mv sweref99-nu/src/sr9.c sr9.c
           mv sweref99-nu/Makefile Makefile
@@ -51,7 +52,9 @@ jobs:
         with:
           name: wasm
           path: _site
-      - run: make script.js
+      - run: |
+          make script.js
+          echo "$adstxt" > _site/ads.txt
       - uses: actions/upload-pages-artifact@v3
   deploy:
     name: Deploy

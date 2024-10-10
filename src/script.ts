@@ -46,7 +46,7 @@ document.addEventListener(
       maximumAge: 30000,
       timeout: 27000,
     };
-    
+  
     const watchID = navigator.geolocation.watchPosition(success, error, options);
   },
   false,
@@ -59,10 +59,9 @@ if (!("geolocation" in navigator)) {
 const btn = document.querySelector("#share-btn");
 btn!.addEventListener("click", async () => {
   try {
-    const geo = navigator.geolocation.getCurrentPosition();
     const shareData = {
       title: "Position",
-      text: "SWEREF 99 TM: N E",
+      text: swerefn!.textContent + " (SWEREF 99 TM)",
       url: "geo:"
     };
     await navigator.share(shareData);
