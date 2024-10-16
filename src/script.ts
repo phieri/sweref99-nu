@@ -23,33 +23,40 @@ const swerefn = document.querySelector("#sweref-n");
 const swerefe = document.querySelector("#sweref-e");
 const sharebtn = document.querySelector("#share-btn");
 
+
+function posHandler(event: any) {
+	function success(position: any) {
+		if (!isInSweden(position)) {
+			window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
+		}
+		uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
+		if (position.coords.accuracy > 10) {
+			uncert!.setAttribute("style", "color: red");
+		} else {
+			uncert!.removeAttribute("style");
+		}
+		swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
+		swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
+		sharebtn!.removeAttribute("disabled");
+	}
+
+	function error() {
+		sharebtn!.setAttribute("disabled", "disabled");
+		window.alert("Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänst i operativsystem samt webbläsare!");
+	}
+
+	const options = {
+		enableHighAccuracy: true,
+		maximumAge: 30000,
+		timeout: 27000,
+	};
+
+	const watchID = navigator.geolocation.watchPosition(success, error, options);
+}
+
+
 document.addEventListener(
-  "dblclick",
-  (event) => {
-    function success(position: any) {
-      if (!isInSweden(position)) {
-        window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
-      }
-			uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
-			swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
-			swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
-      sharebtn!.removeAttribute("disabled");
-    }
-
-    function error() {
-      sharebtn!.setAttribute("disabled", "disabled");
-      window.alert("Fel: ingen position tillgänglig.");
-    }
-
-    const options = {
-      enableHighAccuracy: true,
-      maximumAge: 30000,
-      timeout: 27000,
-    };
-  
-    const watchID = navigator.geolocation.watchPosition(success, error, options);
-  },
-  false,
+  "dblclick", posHandler, false,
 );
 
 if (!("geolocation" in navigator)) {
