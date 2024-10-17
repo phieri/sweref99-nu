@@ -69,8 +69,7 @@ sharebtn!.addEventListener("click", async () => {
   try {
     const shareData = {
       title: "Position",
-      text: swerefn!.textContent + " (SWEREF 99 TM)",
-      url: "geo:"
+      text: "(SWEREF 99 TM)"
     };
     await navigator.share(shareData);
   } catch (err) {

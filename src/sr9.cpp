@@ -1,3 +1,5 @@
+#include <emscripten.h>
+#include "src/proj.h"
 #include <stdio.h>
 
 EMSCRIPTEN_KEEPALIVE
