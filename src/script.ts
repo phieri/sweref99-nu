@@ -18,9 +18,10 @@ function isInSweden(pos: any) {
   }
 }
 
-const uncert = document.querySelector("#uncert");
-const swerefn = document.querySelector("#sweref-n");
-const swerefe = document.querySelector("#sweref-e");
+const uncert   = document.querySelector("#uncert");
+const swerefn  = document.querySelector("#sweref-n");
+const swerefe  = document.querySelector("#sweref-e");
+const posbtn   = document.querySelector("#pos-btn");
 const sharebtn = document.querySelector("#share-btn");
 
 
@@ -42,7 +43,7 @@ function posHandler(event: any) {
 
 	function error() {
 		sharebtn!.setAttribute("disabled", "disabled");
-		window.alert("Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänst i operativsystem samt webbläsare!");
+		window.alert("Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem samt webbläsare!");
 	}
 
 	const options = {
@@ -54,17 +55,17 @@ function posHandler(event: any) {
 	const watchID = navigator.geolocation.watchPosition(success, error, options);
 }
 
-
 document.addEventListener(
   "dblclick", posHandler, false,
 );
 
 if (!("geolocation" in navigator)) {
   window.alert("Fel: platstjänsten är inte tillgänglig.");
+} else {
+	posbtn!.removeAttribute("disabled");
 }
 
-const btn = document.querySelector("#share-btn");
-btn!.addEventListener("click", async () => {
+sharebtn!.addEventListener("click", async () => {
   try {
     const shareData = {
       title: "Position",

@@ -1,7 +1,7 @@
-#include <src/proj.h>
 #include <stdio.h>
 
-int main(void) {
+EMSCRIPTEN_KEEPALIVE
+int sr9(float north, float east) {
     PJ_CONTEXT *C;
     PJ *P;
     PJ *norm;

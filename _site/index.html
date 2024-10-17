@@ -4,8 +4,10 @@
 		<title>SWEREF 99 TM</title>
 		<meta name="color-scheme" content="light dark">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="preload" href="sr9.wasm" as="fetch">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-        <script src="script.js" defer></script>
+        <script src="sr9.js"></script>
+		<script src="script.js" defer></script>
 		<meta name="format-detection" content="telephone=no">
 		<meta name="description" content="Visar koordinaterna för nuvarande position här i formatet SWEREF 99 TM.">
 	</head>
@@ -15,7 +17,7 @@
 			<div id="uncert"></div>
 			<div class="northing" id="sweref-n">N</div>
 			<div class="easting" id="sweref-e">E</div>
-			<button id="pos-btn">Starta</button>
+			<button id="pos-btn" disabled>Starta</button>
 			<button class="secondary" id="share-btn" disabled>Dela</button>
 		</main>
 		<footer class="container">

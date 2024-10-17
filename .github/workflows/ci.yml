@@ -21,7 +21,6 @@ jobs:
       - run: |
           sudo apt-get -qq update
           sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev
-          emcc -v >> $GITHUB_STEP_SUMMARY
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
@@ -29,17 +28,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: sweref99-nu
-          sparse-checkout: src/sr9.c
+          sparse-checkout: src/sr9.cpp
       - run: |
-          mv sweref99-nu/src/sr9.c sr9.c
+          mv sweref99-nu/src/sr9.cpp sr9.cpp
           mv sweref99-nu/Makefile Makefile
-          emcmake cmake
-          emmake cmake
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
           name: wasm
-          path: sr9.wasm
+          path: |
+            sr9.wasm
+            a.out.js
   build:
     name: Build
     runs-on: ubuntu-24.04
