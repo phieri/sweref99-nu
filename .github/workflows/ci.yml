@@ -54,7 +54,7 @@ jobs:
           path: _site
       - run: |
           make script.js
-          echo "$adstxt" > _site/ads.txt
+          echo "${{ vars.adstxt }}" > _site/ads.txt
       - uses: actions/upload-pages-artifact@v3
   deploy:
     name: Deploy
