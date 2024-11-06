@@ -39,7 +39,7 @@ function posHandler(event: any) {
 		} else {
 			uncert!.removeAttribute("style");
 		}
-    speed!.innerHTML = Math.round(position.coords.accuracy) + "&nbsp;m/s";
+    speed!.innerHTML = Math.round(position.coords.speed) + "&nbsp;m/s";
 		if (position.coords.speed > 2) {
 			speed!.setAttribute("style", "color: red");
 		} else {

@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 EMSCRIPTEN_KEEPALIVE
-int sr9(float north, float east) {
+string sr9(float north, float east) {
     PJ_CONTEXT *C;
     PJ *P;
     PJ *norm;
@@ -12,13 +12,7 @@ int sr9(float north, float east) {
     C = PJ_DEFAULT_CTX;
 
     P = proj_create_crs_to_crs(
-        C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84", /* or EPSG:32632 */
-        NULL);
-
-    if (0 == P) {
-        fprintf(stderr, "Failed to create transformation object.\n");
-        return 1;
-    }
+        C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84 +to +espg:3006", NULL);
 
     /* This will ensure that the order of coordinates for the input CRS */
     /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
@@ -31,20 +25,10 @@ int sr9(float north, float east) {
     proj_destroy(P);
     P = norm;
 
-    /* a coordinate union representing Copenhagen: 55d N, 12d E */
-    /* Given that we have used proj_normalize_for_visualization(), the order */
-    /* of coordinates is longitude, latitude, and values are expressed in */
-    /* degrees. */
     a = proj_coord(12, 55, 0, 0);
-
-    /* transform to UTM zone 32, then back to geographical */
     b = proj_trans(P, PJ_FWD, a);
     printf("easting: %.3f, northing: %.3f\n", b.enu.e, b.enu.n);
 
-    b = proj_trans(P, PJ_INV, b);
-    printf("longitude: %g, latitude: %g\n", b.lp.lam, b.lp.phi);
-
-    /* Clean up */
     proj_destroy(P);
-    return 0;
+    return "0";
 }
