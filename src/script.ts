@@ -18,7 +18,10 @@ function isInSweden(pos: any) {
   }
 }
 
+const errorMsg = "Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem samt webbläsare!";
+
 const uncert   = document.querySelector("#uncert");
+const speed    = document.querySelector("#speed");
 const swerefn  = document.querySelector("#sweref-n");
 const swerefe  = document.querySelector("#sweref-e");
 const posbtn   = document.querySelector("#pos-btn");
@@ -36,6 +39,12 @@ function posHandler(event: any) {
 		} else {
 			uncert!.removeAttribute("style");
 		}
+    speed!.innerHTML = Math.round(position.coords.accuracy) + "&nbsp;m/s";
+		if (position.coords.speed > 2) {
+			speed!.setAttribute("style", "color: red");
+		} else {
+			speed!.removeAttribute("style");
+		}
 		swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
 		swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
 		sharebtn!.removeAttribute("disabled");
@@ -43,7 +52,7 @@ function posHandler(event: any) {
 
 	function error() {
 		sharebtn!.setAttribute("disabled", "disabled");
-		window.alert("Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem samt webbläsare!");
+		window.alert(errorMsg);
 	}
 
 	const options = {
@@ -60,7 +69,7 @@ document.addEventListener(
 );
 
 if (!("geolocation" in navigator)) {
-  window.alert("Fel: platstjänsten är inte tillgänglig.");
+  window.alert(errorMsg);
 } else {
 	posbtn!.removeAttribute("disabled");
 }
