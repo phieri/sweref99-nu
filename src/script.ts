@@ -18,7 +18,7 @@ function isInSweden(pos: any) {
   }
 }
 
-const errorMsg = "Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem samt webbläsare!";
+const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
 const uncert   = document.querySelector("#uncert");
 const speed    = document.querySelector("#speed");
