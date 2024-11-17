@@ -1,6 +1,5 @@
 #include <emscripten.h>
 #include <proj.h>
-#include <stdio.h>
 
 EMSCRIPTEN_KEEPALIVE
 string sr9(float north, float east) {
