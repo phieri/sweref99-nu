@@ -20,12 +20,12 @@ function isInSweden(pos: any) {
 
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
-const uncert   = document.querySelector("#uncert");
-const speed    = document.querySelector("#speed");
-const swerefn  = document.querySelector("#sweref-n");
-const swerefe  = document.querySelector("#sweref-e");
-const posbtn   = document.querySelector("#pos-btn");
-const sharebtn = document.querySelector("#share-btn");
+const uncert   = document.getElementById("uncert");
+const speed    = document.getElementById("speed");
+const swerefn  = document.getElementById("sweref-n");
+const swerefe  = document.getElementById("sweref-e");
+const posbtn   = document.getElementById("pos-btn");
+const sharebtn = document.getElementById("share-btn");
 
 
 function posHandler(event: any) {
