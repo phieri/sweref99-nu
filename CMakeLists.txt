@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 3.8)
+
+project(sr9)
+
 set(PROJ_ROOT "${CMAKE_SOURCE_DIR}/libs/proj")
 set(PROJ_INCLUDE_DIR "${PROJ_ROOT}/include")
 set(PROJ_LIB_DIR "${PROJ_ROOT}/lib")
