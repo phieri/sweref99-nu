@@ -11,7 +11,7 @@ string sr9(float north, float east) {
     C = PJ_DEFAULT_CTX;
 
     P = proj_create_crs_to_crs(
-        C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84 +to +espg:3006", NULL);
+        C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84 +to +epsg:3006", NULL);
 
     /* This will ensure that the order of coordinates for the input CRS */
     /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
