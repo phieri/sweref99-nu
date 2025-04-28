@@ -25,8 +25,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
-          ref: 9.5.0
+          ref: 9.6.0
           path: libs/proj
+      - run: |
+          cd libs/proj
+          mkdir build && cd build
+          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=<install-path>
+          emmake make
+          emmake make install
       - run: |
           make sr9.wasm
       - uses: actions/upload-artifact@v4
