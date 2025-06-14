@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
+      - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
       - run: |
           sudo apt-get -qq update
           sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev libtiff-dev libcurl4-openssl-dev
@@ -27,10 +28,21 @@ jobs:
           repository: OSGeo/PROJ
           ref: 9.6.2
           path: libs/proj
+      - name: Build SQLite3 for WebAssembly
+        run: |
+          git clone https://github.com/sqlite/sqlite.git
+          cd sqlite
+          emconfigure ./configure --disable-shared --enable-static --prefix=$HOME/sqlite-wasm
+          emmake make
+          emmake make install
       - run: |
           cd libs/proj
           mkdir build && cd build
-          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/proj-install -DENABLE_SQLITE=OFF -DPROJ_DATABASE=OFF -DPROJ_NETWORK=OFF -DBUILD_PROJ_DATABASE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TIFF=OFF -DENABLE_CURL=OFF
+          emcmake cmake .. \
+            -DCMAKE_INSTALL_PREFIX=$HOME/proj-install \
+            -DSQLite3_INCLUDE_DIR=$HOME/sqlite-wasm/include \
+            -DSQLite3_LIBRARY=$HOME/sqlite-wasm/lib/libsqlite3.a \
+            -DPROJ_DATABASE=OFF -DPROJ_NETWORK=OFF -DBUILD_PROJ_DATABASE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TIFF=OFF -DENABLE_CURL=OFF
           emmake make
           emmake make install
       - run: |
