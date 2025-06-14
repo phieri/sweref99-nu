@@ -25,8 +25,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
-          ref: 9.6.0
+          ref: 9.6.2
           path: libs/proj
+      - name: Patch PROJ CMake to skip SQLite3 for WASM
+        run: |
+          find libs/proj -name CMakeLists.txt -exec sed -i 's/find_package(SQLite3 REQUIRED)/#find_package(SQLite3 REQUIRED)/g' {} +
       - run: |
           cd libs/proj
           mkdir build && cd build
