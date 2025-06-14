@@ -20,26 +20,17 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update
-          sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev
+          sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev libtiff-dev libcurl4-openssl-dev
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
           repository: OSGeo/PROJ
           ref: 9.6.2
           path: libs/proj
-      - name: Patch PROJ CMake to skip SQLite3 for WASM
-        run: |
-          find libs/proj -name CMakeLists.txt -exec sed -i 's/find_package(SQLite3 REQUIRED)/#find_package(SQLite3 REQUIRED)/g' {} +
-      - name: Targeted patch to skip SQLite3 and TIFF hard requirements
-        run: |
-          find libs/proj -name CMakeLists.txt -exec sed -i 's/^\(.*find_package(SQLite3 REQUIRED.*\)/#\1/' {} +
-          find libs/proj -name CMakeLists.txt -exec sed -i 's/^\(.*find_package(TIFF REQUIRED.*\)/#\1/' {} +
-          find libs/proj -name CMakeLists.txt -exec sed -i '/message(FATAL_ERROR.*SQLite3/s/^/#/' {} +
-          find libs/proj -name CMakeLists.txt -exec sed -i '/message(FATAL_ERROR.*TIFF/s/^/#/' {} +
       - run: |
           cd libs/proj
           mkdir build && cd build
-          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/proj-install -DENABLE_SQLITE=OFF -DPROJ_DATABASE=OFF -DPROJ_NETWORK=OFF -DBUILD_PROJ_DATABASE=OFF -DBUILD_SHARED_LIBS=OFF
+          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/proj-install -DENABLE_SQLITE=OFF -DPROJ_DATABASE=OFF -DPROJ_NETWORK=OFF -DBUILD_PROJ_DATABASE=OFF -DBUILD_SHARED_LIBS=OFF -DENABLE_TIFF=OFF -DENABLE_CURL=OFF
           emmake make
           emmake make install
       - run: |
