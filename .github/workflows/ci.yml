@@ -30,7 +30,7 @@ jobs:
       - run: |
           cd libs/proj
           mkdir build && cd build
-          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/proj-install
+          emcmake cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/proj-install -DENABLE_SQLITE=OFF
           emmake make
           emmake make install
       - run: |
