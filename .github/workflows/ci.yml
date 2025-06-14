@@ -30,10 +30,12 @@ jobs:
       - name: Patch PROJ CMake to skip SQLite3 for WASM
         run: |
           find libs/proj -name CMakeLists.txt -exec sed -i 's/find_package(SQLite3 REQUIRED)/#find_package(SQLite3 REQUIRED)/g' {} +
-      - name: Aggressively patch PROJ CMake to skip SQLite3 and TIFF for WASM
+      - name: Targeted patch to skip SQLite3 and TIFF hard requirements
         run: |
-          find libs/proj -name CMakeLists.txt -exec sed -i '/SQLite3/s/^/#/' {} +
-          find libs/proj -name CMakeLists.txt -exec sed -i '/TIFF/s/^/#/' {} +
+          find libs/proj -name CMakeLists.txt -exec sed -i 's/^\(.*find_package(SQLite3 REQUIRED.*\)/#\1/' {} +
+          find libs/proj -name CMakeLists.txt -exec sed -i 's/^\(.*find_package(TIFF REQUIRED.*\)/#\1/' {} +
+          find libs/proj -name CMakeLists.txt -exec sed -i '/message(FATAL_ERROR.*SQLite3/s/^/#/' {} +
+          find libs/proj -name CMakeLists.txt -exec sed -i '/message(FATAL_ERROR.*TIFF/s/^/#/' {} +
       - run: |
           cd libs/proj
           mkdir build && cd build
