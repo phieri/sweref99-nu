@@ -1,11 +1,13 @@
 script.js:
 	tsc
 
-sr9.wasm:
-	touch _site/sr9.wasm
-	touch _site/sr9.js
-	emcmake cmake .
-	emcc -O0 -s WASM=1 -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
-    -I libs/proj/include \
-    src/sr9.cpp \
-	-o sr9.js
+sr9.wasm sr9.js: src/sr9.cpp
+	emcc -O2 -s WASM=1 -s EXPORTED_FUNCTIONS='["_wgs84_to_sweref99tm"]' \
+	  -s EXPORTED_RUNTIME_METHODS='["cwrap"]' \
+	  -I libs/proj/include \
+	  -L $$HOME/proj-install/lib -lproj \
+	  src/sr9.cpp -o sr9.js
+
+_site/sr9.wasm _site/sr9.js: sr9.wasm sr9.js
+	cp sr9.wasm _site/sr9.wasm
+	cp sr9.js _site/sr9.js
