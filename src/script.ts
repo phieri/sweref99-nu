@@ -1,6 +1,5 @@
 document.addEventListener(
-  "keydown",
-  (event) => {
+  "keydown", (event: KeyboardEvent) => {
     if (event.key === "F1") {
       document.location = "https://sweref99.nu/om.html";
     }
@@ -8,10 +7,10 @@ document.addEventListener(
   false,
 );
 
-function isInSweden(pos: any) {
-  if (pos.latitude < 20 || pos.latitude > 65) {
+function isInSweden(pos: {latitude: number; longitude: number}) {
+  if (pos.latitude < 55 || pos.latitude > 69) {
     return false;
-  } else if (pos.longitude < 20 || pos.longitude > 65) {
+  } else if (pos.longitude < 10 || pos.longitude > 24) {
     return false;
   } else {
     return true;
@@ -65,11 +64,11 @@ function posHandler(event: any) {
 }
 
 document.addEventListener(
-  "dblclick", posHandler, false,
+	"dblclick", posHandler, false,
 );
 
 if (!("geolocation" in navigator)) {
-  window.alert(errorMsg);
+	window.alert(errorMsg);
 } else {
 	posbtn!.removeAttribute("disabled");
 }
