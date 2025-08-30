@@ -22,7 +22,7 @@ jobs:
       - run: |
           sudo apt-get -qq update
           sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev libtiff-dev libcurl4-openssl-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build SQLite3 for WebAssembly
         run: |
           git clone https://github.com/sqlite/sqlite.git
@@ -30,7 +30,7 @@ jobs:
           emconfigure ./configure --disable-shared --enable-static --prefix=$HOME/sqlite-wasm
           emmake make
           emmake make install
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
           ref: 9.6.2
@@ -60,8 +60,8 @@ jobs:
     continue-on-error: true
     needs: build-wasm
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         continue-on-error: true
         with:
           name: wasm
@@ -69,7 +69,7 @@ jobs:
       - run: |
           make script.js
           echo "${{ vars.adstxt }}" > _site/ads.txt
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
   deploy:
     name: Deploy
     needs: build
