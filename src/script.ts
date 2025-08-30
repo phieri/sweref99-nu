@@ -25,7 +25,9 @@ const swerefn  = document.getElementById("sweref-n");
 const swerefe  = document.getElementById("sweref-e");
 const posbtn   = document.getElementById("pos-btn");
 const sharebtn = document.getElementById("share-btn");
+const stopbtn  = document.getElementById("stop-btn");
 
+var watchID: any;
 
 function posHandler(event: any) {
 	function success(position: any) {
@@ -46,6 +48,7 @@ function posHandler(event: any) {
 		}
 		swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
 		swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
+		stopbtn!.removeAttribute("disabled");
 		sharebtn!.removeAttribute("disabled");
 	}
 
@@ -60,7 +63,7 @@ function posHandler(event: any) {
 		timeout: 27000,
 	};
 
-	const watchID = navigator.geolocation.watchPosition(success, error, options);
+	watchID = navigator.geolocation.watchPosition(success, error, options);
 }
 
 document.addEventListener(
@@ -77,10 +80,14 @@ sharebtn!.addEventListener("click", async () => {
   try {
     const shareData = {
       title: "Position",
-      text: "(SWEREF 99 TM)"
+      text: swerefn?.textContent + " " + swerefe?.textContent + " (SWEREF 99 TM)"
     };
     await navigator.share(shareData);
   } catch (err) {
     console.log("Kunde inte dela.");
   }
+});
+
+stopbtn!.addEventListener("click", async () => {
+	navigator.geolocation.clearWatch(watchID);
 });
