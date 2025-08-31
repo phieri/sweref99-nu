@@ -1,49 +1,67 @@
 document.addEventListener(
-  "keydown",
-  (event) => {
-    if (event.key === "F1") {
-      document.location = "https://sweref99.nu/om.html";
-    }
-  },
-  false,
+	"keydown", (event: KeyboardEvent) => {
+		if (event.key === "F1") {
+			document.location = "https://sweref99.nu/om.html";
+		}
+	},
+	false,
 );
 
-function isInSweden(pos: any) {
-  if (pos.latitude < 20 || pos.latitude > 65) {
-    return false;
-  } else if (pos.longitude < 20 || pos.longitude > 65) {
-    return false;
-  } else {
-    return true;
-  }
+function isInSweden(pos: GeolocationPosition) {
+	if (pos.coords.latitude < 55 || pos.coords.latitude > 69) {
+		return false;
+	} else if (pos.coords.longitude < 10 || pos.coords.longitude > 24) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
-const uncert   = document.querySelector("#uncert");
-const swerefn  = document.querySelector("#sweref-n");
-const swerefe  = document.querySelector("#sweref-e");
-const posbtn   = document.querySelector("#pos-btn");
-const sharebtn = document.querySelector("#share-btn");
+const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
+const uncert   = document.getElementById("uncert");
+const speed    = document.getElementById("speed");
+const swerefn  = document.getElementById("sweref-n");
+const swerefe  = document.getElementById("sweref-e");
+const wgs84n   = document.getElementById("wgs84-n");
+const wgs84e   = document.getElementById("wgs84-e");
+const posbtn   = document.getElementById("pos-btn");
+const sharebtn = document.getElementById("share-btn");
+const stopbtn  = document.getElementById("stop-btn");
 
-function posHandler(event: any) {
-	function success(position: any) {
+let watchID: number | null = null;
+
+function posInit(event: Event) {
+	function success(position: GeolocationPosition) {
+		if (watchID === null) {
+			return;
+		}
 		if (!isInSweden(position)) {
 			window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
 		}
 		uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
 		if (position.coords.accuracy > 10) {
-			uncert!.setAttribute("style", "color: red");
+			uncert!.classList.add("outofrange");
 		} else {
-			uncert!.removeAttribute("style");
+			uncert!.classList.remove("outofrange");
 		}
-		swerefn!.innerHTML = "N&nbsp;" + position.coords.latitude;
-		swerefe!.innerHTML = "E&nbsp;" + position.coords.longitude;
+		speed!.innerHTML = (position.coords.speed !== null ? Math.round(position.coords.speed) : "–") + "&nbsp;m/s";
+		if (position.coords.speed !== null && position.coords.speed > 2) {
+			speed!.classList.add("outofrange");
+		} else {
+			speed!.classList.remove("outofrange");
+		}
+		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
+		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
+		posbtn!.setAttribute("disabled", "disabled");
+		stopbtn!.removeAttribute("disabled");
 		sharebtn!.removeAttribute("disabled");
+		sharebtn!.removeAttribute("data-tooltip");
 	}
 
 	function error() {
 		sharebtn!.setAttribute("disabled", "disabled");
-		window.alert("Fel: ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem samt webbläsare!");
+		window.alert(errorMsg);
 	}
 
 	const options = {
@@ -52,27 +70,39 @@ function posHandler(event: any) {
 		timeout: 27000,
 	};
 
-	const watchID = navigator.geolocation.watchPosition(success, error, options);
+	if (watchID === null) {
+		watchID = navigator.geolocation.watchPosition(success, error, options);
+	}
 }
 
-document.addEventListener(
-  "dblclick", posHandler, false,
-);
+document.addEventListener("dblclick", posInit, false);
+posbtn!.addEventListener("click", posInit, false);
 
 if (!("geolocation" in navigator)) {
-  window.alert("Fel: platstjänsten är inte tillgänglig.");
+	window.alert(errorMsg);
 } else {
 	posbtn!.removeAttribute("disabled");
 }
 
 sharebtn!.addEventListener("click", async () => {
-  try {
-    const shareData = {
-      title: "Position",
-      text: "(SWEREF 99 TM)"
-    };
-    await navigator.share(shareData);
-  } catch (err) {
-    console.log("Kunde inte dela.");
-  }
+	try {
+		const shareData = {
+			title: "Position",
+			text: swerefn?.textContent + " " + swerefe?.textContent + " (SWEREF 99 TM)",
+		};
+		await navigator.share(shareData);
+	} catch (err: any) {
+		console.log("Kunde inte dela: ", err.message);
+	}
+});
+
+stopbtn!.addEventListener("click", async () => {
+	if (watchID !== null) {
+		navigator.geolocation.clearWatch(watchID);
+		watchID = null;
+	}
+	stopbtn!.setAttribute("disabled", "disabled");
+	posbtn!.removeAttribute("disabled");
+	speed!.innerHTML = "–&nbsp;m/s";
+	speed!.classList.remove("outofrange");
 });

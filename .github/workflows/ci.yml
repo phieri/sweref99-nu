@@ -13,25 +13,46 @@ on:
       - '**.md'
 
 jobs:
-  build-wasm:
-    name: Build Wasm
+  build-proj:
+    name: Build PROJ
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
+      - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
       - run: |
-          sudo apt-get -qq update
-          sudo apt-get --quiet --assume-yes install emscripten libsqlite3-dev
-      - uses: actions/checkout@v4
+          sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
+            libsqlite3-dev curl libcurl4-openssl-dev libtiff-dev build-essential
+      - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
-          ref: 9.5.0
-      - uses: actions/checkout@v4
-        with:
-          path: sweref99-nu
-          sparse-checkout: src/sr9.cpp
+          ref: 9.6.2
       - run: |
-          mv sweref99-nu/src/sr9.cpp sr9.cpp
-          mv sweref99-nu/Makefile Makefile
+          mkdir build
+          cd build
+          cmake .. -DBUILD_APPS=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+          cmake --build .
+          sudo cmake --build . --target install
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proj
+          path: build/lib/libproj.a
+  build-wasm:
+    name: Build Wasm
+    runs-on: ubuntu-24.04
+    needs: build-proj
+    continue-on-error: true
+    steps:
+      - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
+      - run: |
+          sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
+            emscripten build-essential gcc-multilib
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: proj
+          path: build/
+      - run: |
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
@@ -45,8 +66,8 @@ jobs:
     continue-on-error: true
     needs: build-wasm
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         continue-on-error: true
         with:
           name: wasm
@@ -54,7 +75,8 @@ jobs:
       - run: |
           make script.js
           echo "${{ vars.adstxt }}" > _site/ads.txt
-      - uses: actions/upload-pages-artifact@v3
+          curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
+      - uses: actions/upload-pages-artifact@v4
   deploy:
     name: Deploy
     needs: build

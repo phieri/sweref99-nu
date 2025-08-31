@@ -6,24 +6,42 @@
 		<meta name="color-scheme" content="light dark">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="preload" href="sr9.wasm" as="fetch">
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-        <script src="sr9.js"></script>
+		<link rel="stylesheet" href="/pico.min.css">
+		<link rel="stylesheet" href="/stil.css">
+		<script src="sr9.js"></script>
 		<script src="script.js" defer></script>
 		<meta name="format-detection" content="telephone=no">
 		<link rel="manifest" href="/app.webmanifest">
-		<meta name="description" content="Visar koordinaterna för nuvarande position här i formatet SWEREF 99 TM.">
+		<meta name="description" content="Visar koordinaterna för nuvarande position i formatet SWEREF 99 TM.">
 	</head>
 	<body>
-		<header class="container"><h1>BETA</h1></header>
+		<header class="container"><h1>ALFA utvecklingsversion</h1></header>
 		<main class="container">
-			<div id="uncert"></div>
-			<div class="northing" id="sweref-n">N</div>
-			<div class="easting" id="sweref-e">E</div>
-			<button id="pos-btn" disabled>Starta</button>
-			<button class="secondary" id="share-btn" disabled>Dela</button>
+			<details open>
+			<summary>Metadata</summary>
+				<div role="group">
+					<pre class="posmeta" id="uncert" aria-label="Positionsangivelsens noggrannhet" aria-live="polite">m</pre>
+					<pre class="posmeta" id="speed" aria-label="Nuvarande fart" aria-live="polite">-&nbsp;m/s</pre>
+				</div>
+			</details>
+			<details open>
+				<summary>SWEREF 99 TM</summary>
+				<pre class="coords" id="sweref-n" aria-live="polite">N</pre>
+				<pre class="coords" id="sweref-e" aria-live="polite">E</pre>
+			</details>
+			<details class="secondary" open>
+				<summary>WGS 84</summary>
+				<pre class="coords" id="wgs84-n" aria-live="polite">N</pre>
+				<pre class="coords" id="wgs84-e" aria-live="polite">E</pre>
+			</details>
+			<div class="grid">
+				<button id="pos-btn" disabled>Starta</button>
+				<button id="stop-btn" disabled>Stoppa</button>
+				<button class="secondary" id="share-btn" data-tooltip="Starta för att kunna dela" disabled>Dela</button>
+			</div>
 		</main>
 		<footer class="container">
-			<nav><a href="/om.html">Hjälpsida</a></nav>
+			<nav><a href="/om.html" rel="noopener">Hjälpsida</a></nav>
 		</footer>
 	</body>
 </html>

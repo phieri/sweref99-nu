@@ -1,50 +1,44 @@
 #include <emscripten.h>
-#include "src/proj.h"
+#include <proj.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct SwerefResult {
+    double north;
+    double east;
+};
 
 EMSCRIPTEN_KEEPALIVE
-int sr9(float north, float east) {
-    PJ_CONTEXT *C;
-    PJ *P;
-    PJ *norm;
-    PJ_COORD a, b;
-
-    C = PJ_DEFAULT_CTX;
-
-    P = proj_create_crs_to_crs(
-        C, "EPSG:4326", "+proj=utm +zone=32 +datum=WGS84", /* or EPSG:32632 */
-        NULL);
-
-    if (0 == P) {
-        fprintf(stderr, "Failed to create transformation object.\n");
-        return 1;
+SwerefResult wgs84_to_sweref99tm(double lat, double lon) {
+    SwerefResult result = {0, 0};
+    PJ_CONTEXT *C = proj_context_create();
+    PJ *P = proj_create_crs_to_crs(
+        C, "EPSG:4326", "EPSG:3006", NULL);
+    if (!P) {
+        proj_context_destroy(C);
+        return result;
     }
-
-    /* This will ensure that the order of coordinates for the input CRS */
-    /* will be longitude, latitude, whereas EPSG:4326 mandates latitude, */
-    /* longitude */
-    norm = proj_normalize_for_visualization(C, P);
-    if (0 == norm) {
-        fprintf(stderr, "Failed to normalize transformation object.\n");
-        return 1;
+    PJ *norm = proj_normalize_for_visualization(C, P);
+    if (!norm) {
+        proj_destroy(P);
+        proj_context_destroy(C);
+        return result;
     }
     proj_destroy(P);
     P = norm;
-
-    /* a coordinate union representing Copenhagen: 55d N, 12d E */
-    /* Given that we have used proj_normalize_for_visualization(), the order */
-    /* of coordinates is longitude, latitude, and values are expressed in */
-    /* degrees. */
-    a = proj_coord(12, 55, 0, 0);
-
-    /* transform to UTM zone 32, then back to geographical */
-    b = proj_trans(P, PJ_FWD, a);
-    printf("easting: %.3f, northing: %.3f\n", b.enu.e, b.enu.n);
-
-    b = proj_trans(P, PJ_INV, b);
-    printf("longitude: %g, latitude: %g\n", b.lp.lam, b.lp.phi);
-
-    /* Clean up */
+    PJ_COORD a = proj_coord(lon, lat, 0, 0); // Note: lon, lat order
+    PJ_COORD b = proj_trans(P, PJ_FWD, a);
+    result.east = b.xy.x;
+    result.north = b.xy.y;
     proj_destroy(P);
-    return 0;
+    proj_context_destroy(C);
+    return result;
 }
+
+#ifdef __cplusplus
+}
+#endif
