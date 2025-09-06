@@ -13,25 +13,50 @@ on:
       - '**.md'
 
 jobs:
-  build-proj:
-    name: Build PROJ
-    runs-on: ubuntu-24.04
-    continue-on-error: true
+  build-sqlite:
+    name: Build SQLite
+    runs-on: ubuntu-latest
     steps:
       - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            libsqlite3-dev curl libcurl4-openssl-dev libtiff-dev build-essential
+            emscripten libsqlite3-dev build-essential gcc-multilib
+      - uses: actions/checkout@v5
+        with:
+          repository: sqlite/sqlite
+      - run: |
+          mkdir build
+          cd build
+          emmake make .. -DSQLITE_ENABLE_FTS5=ON -DSQLITE_ENABLE_RTREE=ON -DSQLITE_ENABLE_JSON1=ON -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=ON -DSQLITE_BUILD_EXAMPLES=OFF -DSQLITE_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sqlite3
+          path: build/sqlite3.a
+  build-proj:
+    name: Build PROJ
+    runs-on: ubuntu-latest
+    needs: build-sqlite
+    steps:
+      - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
+      - run: |
+          sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
+            emscripten libsqlite3-dev curl libcurl4-openssl-dev libtiff-dev build-essential gcc-multilib
       - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
           ref: 9.6.2
+      - uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: sqlite3
+          path: build/
       - run: |
           mkdir build
           cd build
-          cmake .. -DBUILD_APPS=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
-          cmake --build .
-          sudo cmake --build . --target install
+          set(SQLite3_INCLUDE_DIR "/path/to/sqlite")
+          set(SQLite3_LIBRARY "/path/to/sqlite/.libs/libsqlite3.a")
+          emcmake cmake .. -DBUILD_APPS=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+          make
       - uses: actions/upload-artifact@v4
         with:
           name: proj
@@ -45,7 +70,7 @@ jobs:
       - uses: firebuild/apt-eatmydata-action@1ffc51fd041ed87dcc2ef405913baec405763640
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential gcc-multilib
+            emscripten libproj-dev build-essential gcc-multilib
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v5
         continue-on-error: true
