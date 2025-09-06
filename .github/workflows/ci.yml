@@ -24,10 +24,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: sqlite/sqlite
+          ref: version-3.42.1
       - run: |
           mkdir build
           cd build
-          emmake make .. -DSQLITE_ENABLE_FTS5=ON -DSQLITE_ENABLE_RTREE=ON -DSQLITE_ENABLE_JSON1=ON -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION=ON -DSQLITE_BUILD_EXAMPLES=OFF -DSQLITE_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+          emconfigure ./configure --enable-static --disable-shared
+          emmake make -f Makefile.linux-gcc
       - uses: actions/upload-artifact@v4
         with:
           name: sqlite3
