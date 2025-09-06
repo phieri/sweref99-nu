@@ -19,20 +19,17 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential gcc-multilib
-      - uses: actions/checkout@v5
-        with:
-          repository: sqlite/sqlite
-          ref: version-3.42.1
+            emscripten build-essential
       - run: |
-          mkdir build
-          cd build
-          emconfigure ./configure
-          emmake make -f Makefile.linux-gcc
+          wget https://www.sqlite.org/2023/sqlite-amalgamation-3420000.zip
+          unzip sqlite-amalgamation-3420000.zip
+          cd sqlite-amalgamation-3420000
+          emcc -O2 -c sqlite3.c -o sqlite3.o
+          emar rcs libsqlite3.a sqlite3.o
       - uses: actions/upload-artifact@v4
         with:
           name: sqlite3
-          path: build/sqlite3.a
+          path: sqlite-amalgamation-3420000/libsqlite3.a
   build-proj:
     name: Build PROJ
     runs-on: ubuntu-latest
@@ -40,43 +37,56 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten libsqlite3-dev curl libcurl4-openssl-dev libtiff-dev build-essential gcc-multilib
+            emscripten build-essential cmake curl libtiff-dev
       - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
           ref: 9.6.2
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/download-artifact@v4
         with:
           name: sqlite3
-          path: build/
+          path: ./sqlite3/
       - run: |
           mkdir build
           cd build
-          set(SQLite3_INCLUDE_DIR "/path/to/sqlite")
-          set(SQLite3_LIBRARY "/path/to/sqlite/.libs/libsqlite3.a")
-          emcmake cmake .. -DBUILD_APPS=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
-          make
+          emcmake cmake .. \
+            -DBUILD_APPS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
+            -DSQLite3_LIBRARY=$(pwd)/../sqlite3/libsqlite3.a \
+            -DENABLE_CURL=OFF \
+            -DENABLE_TIFF=OFF \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+          emmake make -j$(nproc)
+          emmake make install
       - uses: actions/upload-artifact@v4
         with:
           name: proj
-          path: build/lib/libproj.a
+          path: |
+            build/install/lib/libproj.a
+            build/install/include/
   build-wasm:
     name: Build Wasm
     runs-on: ubuntu-24.04
     needs: build-proj
-    continue-on-error: true
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten libproj-dev build-essential gcc-multilib
+            emscripten build-essential
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/download-artifact@v4
         with:
           name: proj
-          path: build/
+          path: ./
       - run: |
+          ls -la
+          ls -la build/ || echo "No build directory yet"
+          # Create build directory and move artifacts to expected locations
+          mkdir -p build/include
+          mv libproj.a build/ 2>/dev/null || true
+          mv include/* build/include/ 2>/dev/null || true
+          ls -la build/
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
@@ -87,17 +97,17 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    continue-on-error: true
     needs: build-wasm
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/download-artifact@v4
         with:
           name: wasm
-          path: _site
+          path: ./
       - run: |
           make script.js
+          cp sr9.wasm _site/
+          cp sr9.js _site/
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
       - uses: actions/upload-pages-artifact@v4
