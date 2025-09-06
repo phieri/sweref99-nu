@@ -80,13 +80,32 @@ jobs:
           name: proj
           path: ./
       - run: |
+          echo "=== Checking downloaded artifacts ==="
           ls -la
           ls -la build/ || echo "No build directory yet"
+          echo "=== Creating build structure ==="
           # Create build directory and move artifacts to expected locations
           mkdir -p build/include
-          mv libproj.a build/ 2>/dev/null || true
-          mv include/* build/include/ 2>/dev/null || true
+          # Move libproj.a to expected location
+          if [ -f libproj.a ]; then
+            mv libproj.a build/
+            echo "Moved libproj.a to build/"
+          else
+            echo "ERROR: libproj.a not found"
+            exit 1
+          fi
+          # Move headers to expected location
+          if [ -d include ]; then
+            mv include/* build/include/
+            echo "Moved headers to build/include/"
+          else
+            echo "ERROR: include directory not found"
+            exit 1
+          fi
+          echo "=== Final build structure ==="
           ls -la build/
+          ls -la build/include/
+          echo "=== Building WASM ==="
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
@@ -100,16 +119,29 @@ jobs:
     needs: build-wasm
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g typescript
       - uses: actions/download-artifact@v4
         with:
           name: wasm
           path: ./
       - run: |
+          echo "=== Checking downloaded WASM artifacts ==="
+          ls -la
+          echo "=== Building TypeScript ==="
           make script.js
+          echo "=== Copying WASM files to _site ==="
           cp sr9.wasm _site/
           cp sr9.js _site/
+          echo "=== Final _site contents ==="
+          ls -la _site/
+          echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
+          echo "=== Final _site contents ==="
+          ls -la _site/
       - uses: actions/upload-pages-artifact@v4
   deploy:
     name: Deploy
