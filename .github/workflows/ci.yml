@@ -20,11 +20,30 @@ jobs:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
             emscripten build-essential
-      - run: |
+      - name: Cache SQLite source
+        id: cache-sqlite-source
+        uses: actions/cache@v4
+        with:
+          path: sqlite-amalgamation-3420000.zip
+          key: sqlite-3420000-source
+      - name: Download SQLite source
+        if: steps.cache-sqlite-source.outputs.cache-hit != 'true'
+        run: |
           wget https://www.sqlite.org/2023/sqlite-amalgamation-3420000.zip
+      - name: Cache SQLite build
+        id: cache-sqlite-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            sqlite-amalgamation-3420000/libsqlite3.a
+            sqlite-amalgamation-3420000/sqlite3.h
+          key: sqlite-3420000-build-${{ runner.os }}-emcc
+      - name: Build SQLite
+        if: steps.cache-sqlite-build.outputs.cache-hit != 'true'
+        run: |
           unzip sqlite-amalgamation-3420000.zip
           cd sqlite-amalgamation-3420000
-          emcc -O2 -c sqlite3.c -o sqlite3.o
+          emcc -Os -c sqlite3.c -o sqlite3.o
           emar rcs libsqlite3.a sqlite3.o
       - uses: actions/upload-artifact@v4
         with:
@@ -39,7 +58,7 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential cmake curl libtiff-dev
+            emscripten build-essential cmake
       - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
@@ -48,7 +67,17 @@ jobs:
         with:
           name: sqlite3
           path: ./sqlite3/
-      - run: |
+      - name: Cache PROJ build
+        id: cache-proj-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/install/lib/libproj.a
+            build/install/include
+          key: proj-9.6.2-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}
+      - name: Build PROJ
+        if: steps.cache-proj-build.outputs.cache-hit != 'true'
+        run: |
           mkdir build
           cd build
           emcmake cmake .. \
@@ -136,6 +165,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Cache TypeScript
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-typescript-global
+          restore-keys: |
+            ${{ runner.os }}-typescript-
       - run: npm install -g typescript
       - uses: actions/download-artifact@v4
         with:
