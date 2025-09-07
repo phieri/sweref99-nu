@@ -18,18 +18,53 @@ function isInSweden(pos: GeolocationPosition) {
 }
 
 declare const Module: any;
-const wgs84_to_sweref99tm = Module.cwrap(
-    "wgs84_to_sweref99tm",
-    "number",
-    ["number", "number"]
-);
+
+// WASM module state
+let wgs84_to_sweref99tm: any = null;
+let wasmAvailable = false;
+let wasmInitialized = false;
+
+// Initialize WASM module when available
+function initializeWasm(): boolean {
+    if (wasmInitialized) {
+        return wasmAvailable;
+    }
+    
+    try {
+        if (typeof Module !== 'undefined' && Module.cwrap) {
+            wgs84_to_sweref99tm = Module.cwrap(
+                "wgs84_to_sweref99tm",
+                "number",
+                ["number", "number"]
+            );
+            wasmAvailable = true;
+            console.log("WASM module initialized successfully");
+        }
+    } catch (error) {
+        console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
+        wasmAvailable = false;
+    }
+    
+    wasmInitialized = true;
+    return wasmAvailable;
+}
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
-    const ptr = wgs84_to_sweref99tm(lat, lon);
-    const north = Module.getValue(ptr, "double");
-    const east = Module.getValue(ptr + 8, "double");
-    Module._free(ptr);
-    return { northing: north, easting: east };
+    // Try to initialize WASM if not already done
+    if (!initializeWasm() || !wgs84_to_sweref99tm) {
+        return { northing: 0, easting: 0 };
+    }
+    
+    try {
+        const ptr = wgs84_to_sweref99tm(lat, lon);
+        const north = Module.getValue(ptr, "double");
+        const east = Module.getValue(ptr + 8, "double");
+        Module._free(ptr);
+        return { northing: north, easting: east };
+    } catch (error) {
+        console.error("Error in coordinate transformation:", error);
+        return { northing: 0, easting: 0 };
+    }
 }
 
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
@@ -67,8 +102,14 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-		swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
-		swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+		// Check if we got valid coordinates (non-zero means WASM worked)
+		if (sweref.northing === 0 && sweref.easting === 0) {
+			swerefn!.innerHTML = "N&nbsp;Ej&nbsp;tillgängligt";
+			swerefe!.innerHTML = "E&nbsp;Ej&nbsp;tillgängligt";
+		} else {
+			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+		}
 		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
 		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
 		posbtn!.setAttribute("disabled", "disabled");
