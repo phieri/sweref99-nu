@@ -101,11 +101,12 @@ function posInit(event: Event) {
 		} else {
 			speed!.classList.remove("outofrange");
 		}
+
 		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-		// Check if we got valid coordinates (non-zero means WASM worked)
+
 		if (sweref.northing === 0 && sweref.easting === 0) {
-			swerefn!.innerHTML = "N&nbsp;Ej&nbsp;tillgängligt";
-			swerefe!.innerHTML = "E&nbsp;Ej&nbsp;tillgängligt";
+			swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
+			swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
 		} else {
 			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
 			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";

@@ -38,7 +38,7 @@ make _site/sr9.wasm _site/sr9.js
 - **WASM build is complex** - requires building PROJ library from source, takes 15-45 minutes in CI
 - **App works without WASM** but coordinate transformation will be missing
 - **Swedish language** - UI and comments are in Swedish
-- **Target audience**: Swedish users needing SWEREF 99 TM coordinates
+- **Target audience**: Swedish users needing SWEREF 99 TM coordinates on mobile devices
 
 ## Development Workflow
 1. Make TypeScript changes in `src/script.ts`
