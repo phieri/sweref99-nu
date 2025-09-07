@@ -84,7 +84,6 @@ jobs:
       - run: |
           echo "=== Checking downloaded artifacts ==="
           ls -la
-          ls -la build/ || echo "No build directory yet"
           echo "=== Creating build structure ==="
           # Create build directory and move artifacts to expected locations
           mkdir -p build/include
