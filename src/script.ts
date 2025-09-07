@@ -17,6 +17,21 @@ function isInSweden(pos: GeolocationPosition) {
 	}
 }
 
+declare const Module: any;
+const wgs84_to_sweref99tm = Module.cwrap(
+    "wgs84_to_sweref99tm",
+    "number",
+    ["number", "number"]
+);
+
+function wgs84_to_sweref99tm_js(lat: number, lon: number) {
+    const ptr = wgs84_to_sweref99tm(lat, lon);
+    const north = Module.getValue(ptr, "double");
+    const east = Module.getValue(ptr + 8, "double");
+    Module._free(ptr);
+    return { northing: north, easting: east };
+}
+
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
 const uncert   = document.getElementById("uncert");
@@ -51,6 +66,9 @@ function posInit(event: Event) {
 		} else {
 			speed!.classList.remove("outofrange");
 		}
+		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+		swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+		swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
 		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
 		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
 		posbtn!.setAttribute("disabled", "disabled");
