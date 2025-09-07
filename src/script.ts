@@ -18,18 +18,40 @@ function isInSweden(pos: GeolocationPosition) {
 }
 
 declare const Module: any;
-const wgs84_to_sweref99tm = Module.cwrap(
-    "wgs84_to_sweref99tm",
-    "number",
-    ["number", "number"]
-);
+
+// Check if WASM module is available
+let wgs84_to_sweref99tm: any = null;
+let wasmAvailable = false;
+
+// Try to initialize WASM module if available
+try {
+    if (typeof Module !== 'undefined') {
+        wgs84_to_sweref99tm = Module.cwrap(
+            "wgs84_to_sweref99tm",
+            "number",
+            ["number", "number"]
+        );
+        wasmAvailable = true;
+    }
+} catch (error) {
+    console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
+}
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
-    const ptr = wgs84_to_sweref99tm(lat, lon);
-    const north = Module.getValue(ptr, "double");
-    const east = Module.getValue(ptr + 8, "double");
-    Module._free(ptr);
-    return { northing: north, easting: east };
+    if (!wasmAvailable || !wgs84_to_sweref99tm) {
+        return { northing: 0, easting: 0 };
+    }
+    
+    try {
+        const ptr = wgs84_to_sweref99tm(lat, lon);
+        const north = Module.getValue(ptr, "double");
+        const east = Module.getValue(ptr + 8, "double");
+        Module._free(ptr);
+        return { northing: north, easting: east };
+    } catch (error) {
+        console.error("Error in coordinate transformation:", error);
+        return { northing: 0, easting: 0 };
+    }
 }
 
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
@@ -67,8 +89,13 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-		swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
-		swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+		if (!wasmAvailable) {
+			swerefn!.innerHTML = "N&nbsp;Ej&nbsp;tillgängligt";
+			swerefe!.innerHTML = "E&nbsp;Ej&nbsp;tillgängligt";
+		} else {
+			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+		}
 		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
 		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
 		posbtn!.setAttribute("disabled", "disabled");
