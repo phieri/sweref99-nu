@@ -67,6 +67,8 @@ jobs:
           mkdir -p artifact-staging
           cp build/install/lib/libproj.a artifact-staging/
           cp -r build/install/include artifact-staging/
+          # Include SQLite3 library that PROJ depends on
+          cp sqlite3/libsqlite3.a artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
@@ -96,6 +98,14 @@ jobs:
             echo "Moved libproj.a to build/"
           else
             echo "ERROR: libproj.a not found"
+            exit 1
+          fi
+          # Move libsqlite3.a to expected location
+          if [ -f libsqlite3.a ]; then
+            mv libsqlite3.a build/
+            echo "Moved libsqlite3.a to build/"
+          else
+            echo "ERROR: libsqlite3.a not found"
             exit 1
           fi
           # Move headers to expected location
