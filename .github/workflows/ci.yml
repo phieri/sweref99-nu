@@ -29,7 +29,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: sqlite3
-          path: sqlite-amalgamation-3420000/libsqlite3.a
+          path: |
+            sqlite-amalgamation-3420000/libsqlite3.a
+            sqlite-amalgamation-3420000/sqlite3.h
   build-proj:
     name: Build PROJ
     runs-on: ubuntu-latest
