@@ -62,12 +62,15 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
+      - run: |
+          # Copy files to expected artifact structure
+          mkdir -p artifact-staging
+          cp build/install/lib/libproj.a artifact-staging/
+          cp -r build/install/include artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
-          path: |
-            build/install/lib/libproj.a
-            build/install/include/
+          path: artifact-staging/
   build-wasm:
     name: Build Wasm
     runs-on: ubuntu-24.04
