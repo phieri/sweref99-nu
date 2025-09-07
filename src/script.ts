@@ -19,26 +19,39 @@ function isInSweden(pos: GeolocationPosition) {
 
 declare const Module: any;
 
-// Check if WASM module is available
+// WASM module state
 let wgs84_to_sweref99tm: any = null;
 let wasmAvailable = false;
+let wasmInitialized = false;
 
-// Try to initialize WASM module if available
-try {
-    if (typeof Module !== 'undefined') {
-        wgs84_to_sweref99tm = Module.cwrap(
-            "wgs84_to_sweref99tm",
-            "number",
-            ["number", "number"]
-        );
-        wasmAvailable = true;
+// Initialize WASM module when available
+function initializeWasm(): boolean {
+    if (wasmInitialized) {
+        return wasmAvailable;
     }
-} catch (error) {
-    console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
+    
+    try {
+        if (typeof Module !== 'undefined' && Module.cwrap) {
+            wgs84_to_sweref99tm = Module.cwrap(
+                "wgs84_to_sweref99tm",
+                "number",
+                ["number", "number"]
+            );
+            wasmAvailable = true;
+            console.log("WASM module initialized successfully");
+        }
+    } catch (error) {
+        console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
+        wasmAvailable = false;
+    }
+    
+    wasmInitialized = true;
+    return wasmAvailable;
 }
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
-    if (!wasmAvailable || !wgs84_to_sweref99tm) {
+    // Try to initialize WASM if not already done
+    if (!initializeWasm() || !wgs84_to_sweref99tm) {
         return { northing: 0, easting: 0 };
     }
     
@@ -89,7 +102,8 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-		if (!wasmAvailable) {
+		// Check if we got valid coordinates (non-zero means WASM worked)
+		if (sweref.northing === 0 && sweref.easting === 0) {
 			swerefn!.innerHTML = "N&nbsp;Ej&nbsp;tillgängligt";
 			swerefe!.innerHTML = "E&nbsp;Ej&nbsp;tillgängligt";
 		} else {
