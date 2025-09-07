@@ -19,20 +19,19 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential gcc-multilib
-      - uses: actions/checkout@v5
-        with:
-          repository: sqlite/sqlite
-          ref: version-3.42.1
+            emscripten build-essential
       - run: |
-          mkdir build
-          cd build
-          emconfigure ./configure
-          emmake make -f Makefile.linux-gcc
+          wget https://www.sqlite.org/2023/sqlite-amalgamation-3420000.zip
+          unzip sqlite-amalgamation-3420000.zip
+          cd sqlite-amalgamation-3420000
+          emcc -O2 -c sqlite3.c -o sqlite3.o
+          emar rcs libsqlite3.a sqlite3.o
       - uses: actions/upload-artifact@v4
         with:
           name: sqlite3
-          path: build/sqlite3.a
+          path: |
+            sqlite-amalgamation-3420000/libsqlite3.a
+            sqlite-amalgamation-3420000/sqlite3.h
   build-proj:
     name: Build PROJ
     runs-on: ubuntu-latest
@@ -40,43 +39,87 @@ jobs:
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten libsqlite3-dev curl libcurl4-openssl-dev libtiff-dev build-essential gcc-multilib
+            emscripten build-essential cmake curl libtiff-dev
       - uses: actions/checkout@v5
         with:
           repository: OSGeo/PROJ
           ref: 9.6.2
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/download-artifact@v4
         with:
           name: sqlite3
-          path: build/
+          path: ./sqlite3/
       - run: |
           mkdir build
           cd build
-          set(SQLite3_INCLUDE_DIR "/path/to/sqlite")
-          set(SQLite3_LIBRARY "/path/to/sqlite/.libs/libsqlite3.a")
-          emcmake cmake .. -DBUILD_APPS=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
-          make
+          emcmake cmake .. \
+            -DBUILD_APPS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
+            -DSQLite3_LIBRARY=$(pwd)/../sqlite3/libsqlite3.a \
+            -DENABLE_CURL=OFF \
+            -DENABLE_TIFF=OFF \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+          emmake make -j$(nproc)
+          emmake make install
+      - run: |
+          # Copy files to expected artifact structure
+          mkdir -p artifact-staging
+          cp build/install/lib/libproj.a artifact-staging/
+          cp -r build/install/include artifact-staging/
+          # Include SQLite3 library that PROJ depends on
+          cp sqlite3/libsqlite3.a artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
-          path: build/lib/libproj.a
+          path: artifact-staging/
   build-wasm:
     name: Build Wasm
     runs-on: ubuntu-24.04
     needs: build-proj
-    continue-on-error: true
     steps:
       - run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten libproj-dev build-essential gcc-multilib
+            emscripten build-essential
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/download-artifact@v4
         with:
           name: proj
-          path: build/
+          path: ./
       - run: |
+          echo "=== Checking downloaded artifacts ==="
+          ls -la
+          echo "=== Creating build structure ==="
+          # Create build directory and move artifacts to expected locations
+          mkdir -p build/include
+          # Move libproj.a to expected location
+          if [ -f libproj.a ]; then
+            mv libproj.a build/
+            echo "Moved libproj.a to build/"
+          else
+            echo "ERROR: libproj.a not found"
+            exit 1
+          fi
+          # Move libsqlite3.a to expected location
+          if [ -f libsqlite3.a ]; then
+            mv libsqlite3.a build/
+            echo "Moved libsqlite3.a to build/"
+          else
+            echo "ERROR: libsqlite3.a not found"
+            exit 1
+          fi
+          # Move headers to expected location
+          if [ -d include ]; then
+            mv include/* build/include/
+            echo "Moved headers to build/include/"
+          else
+            echo "ERROR: include directory not found"
+            exit 1
+          fi
+          echo "=== Final build structure ==="
+          ls -la build/
+          ls -la build/include/
+          echo "=== Building WASM ==="
           make sr9.wasm
       - uses: actions/upload-artifact@v4
         with:
@@ -87,19 +130,32 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    continue-on-error: true
     needs: build-wasm
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        continue-on-error: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install -g typescript
+      - uses: actions/download-artifact@v4
         with:
           name: wasm
-          path: _site
+          path: ./
       - run: |
+          echo "=== Checking downloaded WASM artifacts ==="
+          ls -la
+          echo "=== Building TypeScript ==="
           make script.js
+          echo "=== Copying WASM files to _site ==="
+          cp sr9.wasm _site/
+          cp sr9.js _site/
+          echo "=== Final _site contents ==="
+          ls -la _site/
+          echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
+          echo "=== Final _site contents ==="
+          ls -la _site/
       - uses: actions/upload-pages-artifact@v4
   deploy:
     name: Deploy
