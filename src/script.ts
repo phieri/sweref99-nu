@@ -129,7 +129,6 @@ function posInit(event: Event) {
 		posbtn!.setAttribute("disabled", "disabled");
 		stopbtn!.removeAttribute("disabled");
 		sharebtn!.removeAttribute("disabled");
-		sharebtn!.removeAttribute("data-tooltip");
 	}
 
 	function error() {
