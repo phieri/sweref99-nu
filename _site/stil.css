@@ -1,5 +1,5 @@
 :root {
-    --pico-font-size: 87.5%;
+    --pico-font-size: 125%;
     --pico-line-height: 1.25;
     --pico-form-element-spacing-vertical: 0.5rem;
     --pico-form-element-spacing-horizontal: 1.0rem;
@@ -64,5 +64,5 @@ article>footer {
 }
 
 .coords {
-	font-size: 1.5rem;
+	font-size: 1.25rem;
 }
