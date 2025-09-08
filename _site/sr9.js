@@ -10,13 +10,15 @@ var mockCoordinateData = {};
 // Mock the cwrap function that wraps C functions for JavaScript use
 Module.cwrap = function(name, returnType, argTypes) {
     if (name === 'wgs84_to_sweref99tm') {
-        return function(lat, lon) {
+        return function(lat, lon, epoch) {
             // Simplified coordinate transformation for SWEREF 99 TM (EPSG:3006)
             // This uses known reference points for better accuracy
+            // Note: epoch parameter is accepted but not used in mock implementation
             
             // Validate input coordinates are within Sweden's approximate bounds
-            if (lat < 55 || lat > 69 || lon < 10 || lon > 24) {
-                console.warn(`Coordinates outside Sweden: lat=${lat}, lon=${lon}`);
+            if (lat < 55 || lat > 69 || lon < 10 || lon < 24) {
+                console.warn(`Coordinates outside Sweden: lat=${lat}, lon=${lon}, epoch=${epoch || 'current'}`);
+            }
             }
             
             var north, east;
