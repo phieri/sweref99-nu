@@ -1,46 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Swedish flag background (brighter blue) -->
-  <rect width="512" height="512" fill="#0080FF"/>
+  <!-- Blue water background -->
+  <rect width="512" height="512" fill="#2563EB"/>
   
-  <!-- Swedish flag yellow cross - horizontal bar -->
-  <rect x="0" y="192" width="512" height="128" fill="#FFD700"/>
+  <!-- Stylized landmasses in green -->
+  <g fill="#22C55E">
+    <!-- Main landmass (roughly Sweden-inspired shape) -->
+    <path d="M 180 80 Q 200 60 240 70 Q 280 65 320 85 Q 350 110 360 150 Q 370 190 350 230 Q 340 270 320 310 Q 300 350 270 380 Q 240 400 210 390 Q 180 375 160 340 Q 150 300 155 260 Q 160 220 165 180 Q 170 140 180 80 Z"/>
+    
+    <!-- Smaller island/landmass -->
+    <ellipse cx="400" cy="180" rx="35" ry="50"/>
+    
+    <!-- Additional small islands -->
+    <circle cx="120" cy="300" r="15"/>
+    <ellipse cx="380" cy="320" rx="20" ry="12"/>
+    <circle cx="140" cy="150" r="10"/>
+  </g>
   
-  <!-- Swedish flag yellow cross - vertical bar (centered) -->
-  <rect x="192" y="0" width="128" height="512" fill="#FFD700"/>
+  <!-- Angled location pin -->
+  <g transform="translate(245, 220) rotate(-15)">
+    <!-- Pin body (red with white center) -->
+    <ellipse cx="0" cy="0" rx="28" ry="28" fill="#DC2626"/>
+    <ellipse cx="0" cy="0" rx="18" ry="18" fill="#FFFFFF"/>
+    <circle cx="0" cy="0" r="8" fill="#DC2626"/>
+    
+    <!-- Pin needle/point -->
+    <path d="M 0 28 L -8 55 L 8 55 Z" fill="#DC2626"/>
+    
+    <!-- Pin highlight for 3D effect -->
+    <ellipse cx="-8" cy="-8" rx="6" ry="6" fill="#FCA5A5" opacity="0.7"/>
+  </g>
   
-  <!-- Circle-based crosshairs overlay in darker blue for contrast -->
-  <g stroke="#002B5C" fill="none">
-    <!-- Main crosshair circle -->
-    <circle cx="256" cy="256" r="80" stroke-width="16"/>
-    
-    <!-- Horizontal crosshair lines (thicker) -->
-    <line x1="64" y1="256" x2="176" y2="256" stroke-width="12"/>
-    <line x1="336" y1="256" x2="448" y2="256" stroke-width="12"/>
-    
-    <!-- Vertical crosshair lines (thicker) -->
-    <line x1="256" y1="64" x2="256" y2="176" stroke-width="12"/>
-    <line x1="256" y1="336" x2="256" y2="448" stroke-width="12"/>
-    
-    <!-- Center targeting circle -->
-    <circle cx="256" cy="256" r="32" stroke-width="10"/>
-    
-    <!-- Inner precision dot -->
-    <circle cx="256" cy="256" r="8" fill="#002B5C"/>
-    
-    <!-- Radial targeting marks on the main circle -->
-    <g stroke-width="8">
-      <!-- Cardinal directions -->
-      <line x1="256" y1="176" x2="256" y2="188"/>
-      <line x1="256" y1="324" x2="256" y2="336"/>
-      <line x1="176" y1="256" x2="188" y2="256"/>
-      <line x1="324" y1="256" x2="336" y2="256"/>
-      
-      <!-- Diagonal marks -->
-      <line x1="213.1" y1="213.1" x2="221.6" y2="221.6"/>
-      <line x1="298.9" y1="213.1" x2="290.4" y2="221.6"/>
-      <line x1="213.1" y1="298.9" x2="221.6" y2="290.4"/>
-      <line x1="298.9" y1="298.9" x2="290.4" y2="290.4"/>
-    </g>
+  <!-- Optional subtle shadow for the pin -->
+  <g transform="translate(250, 225) rotate(-15)" opacity="0.3">
+    <ellipse cx="0" cy="0" rx="28" ry="28" fill="#000000"/>
+    <path d="M 0 28 L -8 55 L 8 55 Z" fill="#000000"/>
   </g>
 </svg>
