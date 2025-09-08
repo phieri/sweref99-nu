@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Swedish flag background (blue) -->
+  <rect width="512" height="512" fill="#006AA7"/>
+  
+  <!-- Swedish flag yellow cross - horizontal bar -->
+  <rect x="0" y="192" width="512" height="128" fill="#FECC00"/>
+  
+  <!-- Swedish flag yellow cross - vertical bar -->
+  <rect x="128" y="0" width="128" height="512" fill="#FECC00"/>
+  
+  <!-- Crosshairs overlay in darker blue for contrast -->
+  <g stroke="#003d5c" stroke-width="8" fill="none">
+    <!-- Horizontal crosshair line -->
+    <line x1="64" y1="256" x2="192" y2="256"/>
+    <line x1="320" y1="256" x2="448" y2="256"/>
+    
+    <!-- Vertical crosshair line -->
+    <line x1="256" y1="64" x2="256" y2="192"/>
+    <line x1="256" y1="320" x2="256" y2="448"/>
+    
+    <!-- Center circle -->
+    <circle cx="256" cy="256" r="24" stroke-width="6"/>
+    
+    <!-- Corner marks for precise targeting -->
+    <g stroke-width="4">
+      <!-- Top-left corner -->
+      <line x1="232" y1="232" x2="244" y2="232"/>
+      <line x1="232" y1="232" x2="232" y2="244"/>
+      
+      <!-- Top-right corner -->
+      <line x1="280" y1="232" x2="268" y2="232"/>
+      <line x1="280" y1="232" x2="280" y2="244"/>
+      
+      <!-- Bottom-left corner -->
+      <line x1="232" y1="280" x2="244" y2="280"/>
+      <line x1="232" y1="280" x2="232" y2="268"/>
+      
+      <!-- Bottom-right corner -->
+      <line x1="280" y1="280" x2="268" y2="280"/>
+      <line x1="280" y1="280" x2="280" y2="268"/>
+    </g>
+  </g>
+</svg>
