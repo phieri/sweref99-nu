@@ -85,7 +85,7 @@ double* wgs84_to_sweref99tm(double lat, double lon, double epoch) {
     // Use epoch-aware coordinate transformation
     // The 4th parameter (time) should be in decimal years for time-dependent transformations
     PJ_COORD a = proj_coord(lon, lat, 0, epoch); // Note: lon, lat, height, time order
-    PJ_COORD b = proj_trans(P, PJ_FWD, a);
+    PJ_COORD b = proj_trans(global_projection, PJ_FWD, a);
 
     result[0] = b.xy.y; // north
     result[1] = b.xy.x; // east
