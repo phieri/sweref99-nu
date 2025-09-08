@@ -1,4 +1,6 @@
 {
-	"name": "SWEREF 99",
+	"name": "SWEREF 99 TM",
+	"short_name": "SWEREF99",
+	"description": "Visar nuvarande position i SWEREF 99 TM koordinater",
 	"categories": ["navigation", "utilities"]
 }
