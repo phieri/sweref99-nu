@@ -21,6 +21,8 @@ declare const Module: any;
 
 // WASM module state
 let wgs84_to_sweref99tm: any = null;
+let init_proj_context: any = null;
+let destroy_proj_context: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
 let lastKnownPosition: GeolocationPosition | null = null;
@@ -49,6 +51,29 @@ function initializeWasm(): boolean {
                 "number",
                 ["number", "number"]
             );
+            init_proj_context = Module.cwrap(
+                "init_proj_context",
+                "number",
+                []
+            );
+            destroy_proj_context = Module.cwrap(
+                "destroy_proj_context",
+                null,
+                []
+            );
+            
+            // Initialize the PROJ context immediately to reduce memory allocation during first use
+            try {
+                const initResult = init_proj_context();
+                if (initResult === 1) {
+                    console.log("PROJ context initialized successfully");
+                } else {
+                    console.warn("PROJ context initialization failed");
+                }
+            } catch (initError) {
+                console.error("Error initializing PROJ context:", initError);
+            }
+            
             wasmAvailable = true;
             wasmInitialized = true;
             console.log("WASM module initialized successfully");
@@ -135,7 +160,36 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, e
         
         // Check if allocation failed (ptr is null/0)
         if (!ptr) {
-            console.error("Memory allocation failed in WASM module");
+            console.error("Memory allocation failed in WASM module - attempting to reinitialize PROJ context");
+            
+            // Try to reinitialize PROJ context in case of memory issues
+            try {
+                if (destroy_proj_context) {
+                    destroy_proj_context();
+                }
+                if (init_proj_context) {
+                    const reinitResult = init_proj_context();
+                    if (reinitResult === 1) {
+                        console.log("PROJ context reinitialized successfully after memory failure");
+                        // Try the transformation again
+                        const retryPtr = wgs84_to_sweref99tm(lat, lon);
+                        if (retryPtr) {
+                            const north = Module.getValue(retryPtr, "double");
+                            const east = Module.getValue(retryPtr + 8, "double");
+                            Module._free(retryPtr);
+                            
+                            if (!isNaN(north) && !isNaN(east) && !(north === 0 && east === 0)) {
+                                const result = { northing: north, easting: east };
+                                coordinateCache = { lat, lon, result, timestamp: now };
+                                return result;
+                            }
+                        }
+                    }
+                }
+            } catch (reinitError) {
+                console.error("Failed to reinitialize PROJ context:", reinitError);
+            }
+            
             return { northing: 0, easting: 0 };
         }
         
@@ -163,10 +217,28 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, e
         console.error("Error in coordinate transformation:", error);
         
         // Check if this is an OOM error specifically
-        if (error instanceof Error && error.message.includes("OOM")) {
-            console.error("Out of Memory error detected. The WASM module may need more memory allocation.");
+        if (error instanceof Error && (error.message.includes("OOM") || error.message.includes("out of memory"))) {
+            console.error("Out of Memory error detected. Attempting to recover by reinitializing PROJ context.");
+            
             // Clear any existing cache to free up potential references
             coordinateCache = null;
+            
+            // Try to reinitialize PROJ context
+            try {
+                if (destroy_proj_context) {
+                    destroy_proj_context();
+                }
+                if (init_proj_context) {
+                    const reinitResult = init_proj_context();
+                    if (reinitResult === 1) {
+                        console.log("PROJ context reinitialized successfully after OOM error");
+                    } else {
+                        console.error("Failed to reinitialize PROJ context after OOM error");
+                    }
+                }
+            } catch (reinitError) {
+                console.error("Error during PROJ context reinitialization:", reinitError);
+            }
         }
         
         return { northing: 0, easting: 0 };
@@ -301,4 +373,16 @@ stopbtn!.addEventListener("click", async () => {
 	posbtn!.removeAttribute("disabled");
 	speed!.innerHTML = "–&nbsp;m/s";
 	speed!.classList.remove("outofrange");
+});
+
+// Clean up PROJ context when page is unloaded
+window.addEventListener("beforeunload", () => {
+	try {
+		if (destroy_proj_context) {
+			destroy_proj_context();
+			console.log("PROJ context cleaned up");
+		}
+	} catch (error) {
+		console.warn("Error cleaning up PROJ context:", error);
+	}
 });
