@@ -25,6 +25,17 @@ let wasmAvailable = false;
 let wasmInitialized = false;
 let lastKnownPosition: GeolocationPosition | null = null;
 
+// Coordinate caching to reduce WASM calls
+interface CoordinateCache {
+    lat: number;
+    lon: number;
+    result: { northing: number, easting: number };
+    timestamp: number;
+}
+let coordinateCache: CoordinateCache | null = null;
+const CACHE_DURATION_MS = 5000; // Cache results for 5 seconds
+const COORDINATE_PRECISION = 6; // Decimal places for coordinate comparison
+
 // Initialize WASM module when available
 function initializeWasm(): boolean {
     if (wasmInitialized && wasmAvailable) {
@@ -42,10 +53,21 @@ function initializeWasm(): boolean {
             wasmInitialized = true;
             console.log("WASM module initialized successfully");
             
-            // If we have a cached position and WASM just became available, update the display
+            // If we have a cached position and WASM just became available, update the display immediately
             if (lastKnownPosition) {
                 console.log("WASM module now available, updating coordinate display...");
-                updateCoordinateDisplay(lastKnownPosition);
+                // Don't use debouncing for the retry mechanism - update immediately
+                const sweref = wgs84_to_sweref99tm_js(lastKnownPosition.coords.latitude, lastKnownPosition.coords.longitude);
+                
+                if (sweref.northing === 0 && sweref.easting === 0) {
+                    console.warn("SWEREF 99 coordinates unavailable for position:", 
+                        { lat: lastKnownPosition.coords.latitude, lon: lastKnownPosition.coords.longitude });
+                    swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
+                    swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
+                } else {
+                    swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+                    swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+                }
             }
         } else {
             // Don't mark as initialized if Module isn't ready yet
@@ -92,6 +114,16 @@ function startModuleLoadingCheck(): void {
 }
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, easting: number } {
+    // Check cache first to avoid repeated expensive WASM calls
+    const now = Date.now();
+    if (coordinateCache && 
+        Math.abs(coordinateCache.lat - lat) < Math.pow(10, -COORDINATE_PRECISION) &&
+        Math.abs(coordinateCache.lon - lon) < Math.pow(10, -COORDINATE_PRECISION) &&
+        (now - coordinateCache.timestamp) < CACHE_DURATION_MS) {
+        console.log("Using cached coordinate transformation result");
+        return coordinateCache.result;
+    }
+
     // Try to initialize WASM if not already done
     if (!initializeWasm() || !wgs84_to_sweref99tm) {
         console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
@@ -100,6 +132,13 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, e
     
     try {
         const ptr = wgs84_to_sweref99tm(lat, lon);
+        
+        // Check if allocation failed (ptr is null/0)
+        if (!ptr) {
+            console.error("Memory allocation failed in WASM module");
+            return { northing: 0, easting: 0 };
+        }
+        
         const north = Module.getValue(ptr, "double");
         const east = Module.getValue(ptr + 8, "double");
         Module._free(ptr);
@@ -107,28 +146,58 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, e
         // Validate the result
         if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
             console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
+            return { northing: 0, easting: 0 };
         }
         
-        return { northing: north, easting: east };
+        // Cache the successful result
+        const result = { northing: north, easting: east };
+        coordinateCache = {
+            lat: lat,
+            lon: lon,
+            result: result,
+            timestamp: now
+        };
+        
+        return result;
     } catch (error) {
         console.error("Error in coordinate transformation:", error);
+        
+        // Check if this is an OOM error specifically
+        if (error instanceof Error && error.message.includes("OOM")) {
+            console.error("Out of Memory error detected. The WASM module may need more memory allocation.");
+            // Clear any existing cache to free up potential references
+            coordinateCache = null;
+        }
+        
         return { northing: 0, easting: 0 };
     }
 }
 
 // Function to update coordinate display (extracted from success callback)
+let coordinateUpdateTimeout: number | null = null;
+const COORDINATE_UPDATE_DEBOUNCE_MS = 1000; // Debounce coordinate updates by 1 second
+
 function updateCoordinateDisplay(position: GeolocationPosition): void {
-    const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-    
-    if (sweref.northing === 0 && sweref.easting === 0) {
-        console.warn("SWEREF 99 coordinates unavailable for position:", 
-            { lat: position.coords.latitude, lon: position.coords.longitude });
-        swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
-        swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
-    } else {
-        swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
-        swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+    // Clear any pending coordinate update
+    if (coordinateUpdateTimeout) {
+        clearTimeout(coordinateUpdateTimeout);
     }
+    
+    // Debounce the coordinate transformation to reduce WASM calls
+    coordinateUpdateTimeout = window.setTimeout(() => {
+        const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+        
+        if (sweref.northing === 0 && sweref.easting === 0) {
+            console.warn("SWEREF 99 coordinates unavailable for position:", 
+                { lat: position.coords.latitude, lon: position.coords.longitude });
+            swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
+            swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
+        } else {
+            swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+            swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+        }
+        coordinateUpdateTimeout = null;
+    }, COORDINATE_UPDATE_DEBOUNCE_MS);
 }
 
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
