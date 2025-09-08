@@ -1,0 +1,183 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:sweref99-nu-sbom-2024",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2024-09-08T16:00:00Z",
+    "tools": [
+      {
+        "name": "manual",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "sweref99-nu",
+      "name": "sweref99-nu",
+      "version": "1.0.0",
+      "description": "PWA for showing current position in SWEREF 99 TM",
+      "licenses": [
+        {
+          "license": {
+            "name": "Unspecified"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://sweref99.nu/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/phieri/sweref99-nu"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "proj-9.6.2",
+      "name": "PROJ",
+      "version": "9.6.2",
+      "description": "PROJ coordinate transformation software library",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "Copyright (c) 2000, Frank Warmerdam",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://proj.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/OSGeo/PROJ"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "sqlite-3.42.0",
+      "name": "SQLite",
+      "version": "3.42.0",
+      "description": "SQLite database engine",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "name": "Public Domain"
+          }
+        }
+      ],
+      "copyright": "Public Domain",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://sqlite.org/"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "picocss-2.0.0",
+      "name": "Pico.css",
+      "version": "2.0.0",
+      "description": "Minimal CSS Framework for semantic HTML",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "Copyright (c) 2019-2024 Lucas Larroche",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://picocss.com/"
+        },
+        {
+          "type": "distribution",
+          "url": "https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "typescript-5.9.2",
+      "name": "TypeScript",
+      "version": "5.9.2",
+      "description": "TypeScript compiler",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "Copyright Microsoft Corporation",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.typescriptlang.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/microsoft/TypeScript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "emscripten-3.1.0",
+      "name": "Emscripten",
+      "version": "3.1.0",
+      "description": "WebAssembly compiler toolchain",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "copyright": "Copyright (c) 2010-2014 Emscripten authors",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://emscripten.org/"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/emscripten-core/emscripten"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "sweref99-nu",
+      "dependsOn": [
+        "proj-9.6.2",
+        "sqlite-3.42.0",
+        "picocss-2.0.0"
+      ]
+    },
+    {
+      "ref": "proj-9.6.2",
+      "dependsOn": [
+        "sqlite-3.42.0"
+      ]
+    }
+  ]
+}

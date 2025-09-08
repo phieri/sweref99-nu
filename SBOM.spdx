@@ -1,0 +1,84 @@
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: sweref99-nu
+DocumentNamespace: https://github.com/phieri/sweref99-nu/sbom
+Creator: Tool: manual
+
+# Main Package
+PackageName: sweref99-nu
+SPDXID: SPDXRef-Package-sweref99-nu
+PackageVersion: 1.0.0
+PackageSupplier: Person: phieri
+PackageDownloadLocation: https://github.com/phieri/sweref99-nu
+FilesAnalyzed: false
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+
+# PROJ Library
+PackageName: PROJ
+SPDXID: SPDXRef-Package-PROJ
+PackageVersion: 9.6.2
+PackageSupplier: Organization: OSGeo
+PackageDownloadLocation: https://github.com/OSGeo/PROJ
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright (c) 2000, Frank Warmerdam
+ExternalRef: PACKAGE-MANAGER purl pkg:github/OSGeo/PROJ@9.6.2
+
+# SQLite
+PackageName: SQLite
+SPDXID: SPDXRef-Package-SQLite
+PackageVersion: 3.42.0
+PackageSupplier: Person: D. Richard Hipp
+PackageDownloadLocation: https://www.sqlite.org/2023/sqlite-amalgamation-3420000.zip
+FilesAnalyzed: false
+PackageLicenseConcluded: Unlicense
+PackageLicenseDeclared: Unlicense
+PackageCopyrightText: Public Domain
+
+# Pico.css
+PackageName: Pico.css
+SPDXID: SPDXRef-Package-PicoCSS
+PackageVersion: 2.0.0
+PackageSupplier: Person: Lucas Larroche
+PackageDownloadLocation: https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright (c) 2019-2024 Lucas Larroche
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40picocss/pico@2.0.0
+
+# TypeScript
+PackageName: TypeScript
+SPDXID: SPDXRef-Package-TypeScript
+PackageVersion: 5.9.2
+PackageSupplier: Organization: Microsoft Corporation
+PackageDownloadLocation: https://github.com/microsoft/TypeScript
+FilesAnalyzed: false
+PackageLicenseConcluded: Apache-2.0
+PackageLicenseDeclared: Apache-2.0
+PackageCopyrightText: Copyright Microsoft Corporation
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.2
+
+# Emscripten
+PackageName: Emscripten
+SPDXID: SPDXRef-Package-Emscripten
+PackageVersion: 3.1.0
+PackageSupplier: Organization: Emscripten authors
+PackageDownloadLocation: https://github.com/emscripten-core/emscripten
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright (c) 2010-2014 Emscripten authors
+ExternalRef: PACKAGE-MANAGER purl pkg:github/emscripten-core/emscripten@3.1.0
+
+# Relationships
+Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ
+Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-SQLite
+Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
+Relationship: SPDXRef-Package-sweref99-nu BUILD_DEPENDENCY_OF SPDXRef-Package-TypeScript
+Relationship: SPDXRef-Package-sweref99-nu BUILD_DEPENDENCY_OF SPDXRef-Package-Emscripten
+Relationship: SPDXRef-Package-PROJ DEPENDS_ON SPDXRef-Package-SQLite
