@@ -35,7 +35,7 @@ function initializeWasm(): boolean {
             wgs84_to_sweref99tm = Module.cwrap(
                 "wgs84_to_sweref99tm",
                 "number",
-                ["number", "number"]
+                ["number", "number", "number"]
             );
             wasmAvailable = true;
             wasmInitialized = true;
@@ -53,7 +53,17 @@ function initializeWasm(): boolean {
     return wasmAvailable;
 }
 
-function wgs84_to_sweref99tm_js(lat: number, lon: number) {
+// Convert GPS timestamp to decimal year for PROJ time-based transformations
+function timestampToDecimalYear(timestamp?: number): number {
+    const date = timestamp ? new Date(timestamp) : new Date();
+    const year = date.getFullYear();
+    const startOfYear = new Date(year, 0, 1).getTime();
+    const startOfNextYear = new Date(year + 1, 0, 1).getTime();
+    const yearProgress = (date.getTime() - startOfYear) / (startOfNextYear - startOfYear);
+    return year + yearProgress;
+}
+
+function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
     // Try to initialize WASM if not already done
     if (!initializeWasm() || !wgs84_to_sweref99tm) {
         console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
@@ -61,14 +71,17 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
     }
     
     try {
-        const ptr = wgs84_to_sweref99tm(lat, lon);
+        // Convert timestamp to decimal year for epoch-aware transformation
+        const epoch = timestampToDecimalYear(timestamp);
+        
+        const ptr = wgs84_to_sweref99tm(lat, lon, epoch);
         const north = Module.getValue(ptr, "double");
         const east = Module.getValue(ptr + 8, "double");
         Module._free(ptr);
         
         // Validate the result
         if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
+            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${epoch}:`, { north, east });
         }
         
         return { northing: north, easting: east };
@@ -113,7 +126,7 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 
-		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude, position.timestamp);
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", 
