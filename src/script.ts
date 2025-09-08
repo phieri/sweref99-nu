@@ -26,7 +26,7 @@ let wasmInitialized = false;
 
 // Initialize WASM module when available
 function initializeWasm(): boolean {
-    if (wasmInitialized) {
+    if (wasmInitialized && wasmAvailable) {
         return wasmAvailable;
     }
     
@@ -38,20 +38,25 @@ function initializeWasm(): boolean {
                 ["number", "number"]
             );
             wasmAvailable = true;
+            wasmInitialized = true;
             console.log("WASM module initialized successfully");
+        } else {
+            // Don't mark as initialized if Module isn't ready yet
+            wasmAvailable = false;
         }
     } catch (error) {
         console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
         wasmAvailable = false;
+        wasmInitialized = true;
     }
     
-    wasmInitialized = true;
     return wasmAvailable;
 }
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
     // Try to initialize WASM if not already done
     if (!initializeWasm() || !wgs84_to_sweref99tm) {
+        console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
         return { northing: 0, easting: 0 };
     }
     
@@ -60,6 +65,12 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
         const north = Module.getValue(ptr, "double");
         const east = Module.getValue(ptr + 8, "double");
         Module._free(ptr);
+        
+        // Validate the result
+        if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
+            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
+        }
+        
         return { northing: north, easting: east };
     } catch (error) {
         console.error("Error in coordinate transformation:", error);
@@ -105,6 +116,8 @@ function posInit(event: Event) {
 		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
+			console.warn("SWEREF 99 coordinates unavailable for position:", 
+				{ lat: position.coords.latitude, lon: position.coords.longitude });
 			swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
 			swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
 		} else {
