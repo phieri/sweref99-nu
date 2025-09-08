@@ -2,13 +2,12 @@ script.js:
 	tsc
 
 sr9.wasm sr9.js: src/sr9.cpp
-	emcc -Os -s WASM=1 -s EXPORTED_FUNCTIONS='["_wgs84_to_sweref99tm", "_free"]' \
-	  -s EXPORTED_RUNTIME_METHODS='["cwrap", "getValue"]' \
-	  -s INITIAL_MEMORY=32MB \
-	  -s MAXIMUM_MEMORY=64MB \
-	  -s ALLOW_MEMORY_GROWTH=1 \
-	  -s ASSERTIONS=1 \
-	  -s STACK_SIZE=1MB \
+	emcc -O2 -s WASM=1 -s EXPORTED_FUNCTIONS='["_wgs84_to_sweref99tm", "_free"]' \
+	  -sEXPORTED_RUNTIME_METHODS='["cwrap", "getValue"]' \
+	  -sINITIAL_MEMORY=32MB \
+	  -sMAXIMUM_MEMORY=64MB \
+	  -sALLOW_MEMORY_GROWTH=1 \
+	  -sASSERTIONS=1 \
 	  -I build/include/ \
 	  build/libproj.a build/libsqlite3.a \
 	  src/sr9.cpp -o sr9.js
