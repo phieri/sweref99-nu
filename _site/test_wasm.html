@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WASM Module</title>
+</head>
+<body>
+    <h1>Testing WASM Module</h1>
+    <div id="output"></div>
+    
+    <script src="sr9.js"></script>
+    <script>
+        function testWasm() {
+            console.log('Module object:', typeof Module, Module);
+            
+            // Test WASM initialization
+            let wgs84_to_sweref99tm = null;
+            let wasmAvailable = false;
+            
+            try {
+                if (typeof Module !== 'undefined' && Module.cwrap) {
+                    wgs84_to_sweref99tm = Module.cwrap(
+                        "wgs84_to_sweref99tm",
+                        "number",
+                        ["number", "number"]
+                    );
+                    wasmAvailable = true;
+                    console.log("WASM module initialized successfully");
+                } else {
+                    console.log("Module or Module.cwrap not available");
+                }
+            } catch (error) {
+                console.error("Error initializing WASM:", error);
+            }
+            
+            // Test coordinate transformation
+            if (wasmAvailable && wgs84_to_sweref99tm) {
+                console.log('Testing coordinate transformation...');
+                
+                // Test with Stockholm coordinates
+                const lat = 59.3293;
+                const lon = 18.0686;
+                
+                try {
+                    const ptr = wgs84_to_sweref99tm(lat, lon);
+                    console.log('Returned pointer:', ptr);
+                    
+                    const north = Module.getValue(ptr, "double");
+                    const east = Module.getValue(ptr + 8, "double");
+                    
+                    console.log('Coordinates:', { north, east });
+                    
+                    Module._free(ptr);
+                    
+                    document.getElementById('output').innerHTML = 
+                        `<p>Input: ${lat}, ${lon}</p>
+                         <p>Output: N ${north}, E ${east}</p>
+                         <p>Status: ${north === 0 && east === 0 ? 'FAILED' : 'SUCCESS'}</p>`;
+                } catch (error) {
+                    console.error("Error in transformation:", error);
+                    document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p>`;
+                }
+            } else {
+                document.getElementById('output').innerHTML = '<p>WASM not available</p>';
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', testWasm);
+    </script>
+</body>
+</html>
