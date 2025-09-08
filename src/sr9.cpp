@@ -31,7 +31,7 @@ int init_proj() {
     }
     
     PJ *P = proj_create_crs_to_crs(
-        global_context, "EPSG:4326", "EPSG:3006", NULL);
+        global_context, "EPSG:4326+time", "EPSG:3006+time", NULL);
     if (!P) {
         proj_context_destroy(global_context);
         global_context = NULL;
