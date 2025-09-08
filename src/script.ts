@@ -23,6 +23,7 @@ declare const Module: any;
 let wgs84_to_sweref99tm: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
+let lastKnownPosition: GeolocationPosition | null = null;
 
 // Initialize WASM module when available
 function initializeWasm(): boolean {
@@ -40,6 +41,12 @@ function initializeWasm(): boolean {
             wasmAvailable = true;
             wasmInitialized = true;
             console.log("WASM module initialized successfully");
+            
+            // If we have a cached position and WASM just became available, update the display
+            if (lastKnownPosition) {
+                console.log("WASM module now available, updating coordinate display...");
+                updateCoordinateDisplay(lastKnownPosition);
+            }
         } else {
             // Don't mark as initialized if Module isn't ready yet
             wasmAvailable = false;
@@ -53,7 +60,38 @@ function initializeWasm(): boolean {
     return wasmAvailable;
 }
 
-function wgs84_to_sweref99tm_js(lat: number, lon: number) {
+// Setup a Module ready checker that runs periodically if not initialized
+let moduleCheckInterval: number | null = null;
+
+function startModuleLoadingCheck(): void {
+    if (moduleCheckInterval || wasmInitialized) {
+        return;
+    }
+    
+    moduleCheckInterval = window.setInterval(() => {
+        if (initializeWasm()) {
+            // Module is ready, clear the interval
+            if (moduleCheckInterval) {
+                clearInterval(moduleCheckInterval);
+                moduleCheckInterval = null;
+            }
+        }
+    }, 100);
+    
+    // Stop checking after 10 seconds
+    setTimeout(() => {
+        if (moduleCheckInterval) {
+            clearInterval(moduleCheckInterval);
+            moduleCheckInterval = null;
+            if (!wasmInitialized) {
+                wasmInitialized = true;
+                console.warn("Stopped waiting for WASM module after timeout");
+            }
+        }
+    }, 10000);
+}
+
+function wgs84_to_sweref99tm_js(lat: number, lon: number): { northing: number, easting: number } {
     // Try to initialize WASM if not already done
     if (!initializeWasm() || !wgs84_to_sweref99tm) {
         console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
@@ -78,6 +116,21 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
     }
 }
 
+// Function to update coordinate display (extracted from success callback)
+function updateCoordinateDisplay(position: GeolocationPosition): void {
+    const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+    
+    if (sweref.northing === 0 && sweref.easting === 0) {
+        console.warn("SWEREF 99 coordinates unavailable for position:", 
+            { lat: position.coords.latitude, lon: position.coords.longitude });
+        swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
+        swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
+    } else {
+        swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
+        swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+    }
+}
+
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
 const uncert   = document.getElementById("uncert");
@@ -97,6 +150,10 @@ function posInit(event: Event) {
 		if (watchID === null) {
 			return;
 		}
+		
+		// Cache the position for potential WASM retry
+		lastKnownPosition = position;
+		
 		if (!isInSweden(position)) {
 			window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
 		}
@@ -113,17 +170,14 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 
-		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
-
-		if (sweref.northing === 0 && sweref.easting === 0) {
-			console.warn("SWEREF 99 coordinates unavailable for position:", 
-				{ lat: position.coords.latitude, lon: position.coords.longitude });
-			swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
-			swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
-		} else {
-			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",") + "&nbsp;m";
-			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",") + "&nbsp;m";
+		// Update coordinate display (may be retried when WASM becomes available)
+		updateCoordinateDisplay(position);
+		
+		// Start checking for WASM module if not yet available
+		if (!wasmAvailable && !wasmInitialized) {
+			startModuleLoadingCheck();
 		}
+		
 		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
 		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
 		posbtn!.setAttribute("disabled", "disabled");
