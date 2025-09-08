@@ -21,6 +21,7 @@ declare const Module: any;
 
 // WASM module state
 let wgs84_to_sweref99tm: any = null;
+let get_transformation_mode: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
 
@@ -40,9 +41,23 @@ function initializeWasm(): boolean {
                 "number",
                 ["number", "number", "number"]
             );
+            get_transformation_mode = Module.cwrap(
+                "get_transformation_mode",
+                "number",
+                []
+            );
             wasmAvailable = true;
             wasmInitialized = true;
-            console.log("WASM module initialized successfully");
+            
+            // Check which transformation mode is active
+            const mode = get_transformation_mode();
+            if (mode === 1) {
+                console.log("WASM module initialized successfully with time-dependent transformations");
+            } else if (mode === 0) {
+                console.log("WASM module initialized with fallback (non-time-dependent) transformations");
+            } else {
+                console.warn("WASM module initialization unclear, mode:", mode);
+            }
         } else {
             // Don't mark as initialized if Module isn't ready yet
             wasmAvailable = false;
@@ -77,7 +92,8 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
         // Calculate epoch only once and cache it for performance optimization
         if (cachedEpoch === null) {
             cachedEpoch = timestampToDecimalYear(timestamp);
-            console.log(`SWEREF 99 epoch calculated once: ${cachedEpoch}`);
+            const mode = get_transformation_mode && get_transformation_mode();
+            console.log(`SWEREF 99 epoch calculated once: ${cachedEpoch}, transformation mode: ${mode === 1 ? 'time-dependent' : mode === 0 ? 'fallback' : 'unknown'}`);
         }
         
         const ptr = wgs84_to_sweref99tm(lat, lon, cachedEpoch);
@@ -87,7 +103,8 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
         
         // Validate the result
         if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${cachedEpoch}:`, { north, east });
+            const mode = get_transformation_mode && get_transformation_mode();
+            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${cachedEpoch}, mode=${mode}:`, { north, east });
         }
         
         return { northing: north, easting: east };
