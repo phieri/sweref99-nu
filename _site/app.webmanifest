@@ -2,5 +2,35 @@
 	"name": "SWEREF 99 TM",
 	"short_name": "SWEREF99",
 	"description": "Visar nuvarande position i SWEREF 99 TM koordinater",
-	"categories": ["navigation", "utilities"]
+	"categories": ["navigation", "utilities"],
+	"start_url": "/",
+	"display": "standalone",
+	"theme_color": "#006AA7",
+	"background_color": "#006AA7",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "maskable"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	]
 }
