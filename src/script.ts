@@ -24,6 +24,9 @@ let wgs84_to_sweref99tm: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
 
+// Cached epoch for coordinate transformation (calculated once)
+let cachedEpoch: number | null = null;
+
 // Initialize WASM module when available
 function initializeWasm(): boolean {
     if (wasmInitialized && wasmAvailable) {
@@ -71,17 +74,20 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
     }
     
     try {
-        // Convert timestamp to decimal year for epoch-aware transformation
-        const epoch = timestampToDecimalYear(timestamp);
+        // Calculate epoch only once and cache it for performance optimization
+        if (cachedEpoch === null) {
+            cachedEpoch = timestampToDecimalYear(timestamp);
+            console.log(`SWEREF 99 epoch calculated once: ${cachedEpoch}`);
+        }
         
-        const ptr = wgs84_to_sweref99tm(lat, lon, epoch);
+        const ptr = wgs84_to_sweref99tm(lat, lon, cachedEpoch);
         const north = Module.getValue(ptr, "double");
         const east = Module.getValue(ptr + 8, "double");
         Module._free(ptr);
         
         // Validate the result
         if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${epoch}:`, { north, east });
+            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${cachedEpoch}:`, { north, east });
         }
         
         return { northing: north, easting: east };
