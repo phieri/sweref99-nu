@@ -36,7 +36,7 @@ make _site/sr9.wasm _site/sr9.js
 ## Important Notes
 - **TypeScript build is fast and reliable** - use for quick development
 - **WASM build is complex** - requires building PROJ library from source, takes 15-45 minutes in CI
-- **App works without WASM** but coordinate transformation will be missing
+- **App works without WASM** but coordinate transformation will be missing and therefore not useful
 - **Swedish language** - UI and comments are in Swedish
 - **Target audience**: Swedish users needing SWEREF 99 TM coordinates on mobile devices
 
