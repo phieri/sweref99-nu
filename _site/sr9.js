@@ -16,9 +16,8 @@ Module.cwrap = function(name, returnType, argTypes) {
             // Note: epoch parameter is accepted but not used in mock implementation
             
             // Validate input coordinates are within Sweden's approximate bounds
-            if (lat < 55 || lat > 69 || lon < 10 || lon < 24) {
+            if (lat < 55 || lat > 69 || lon < 10 || lon > 24) {
                 console.warn(`Coordinates outside Sweden: lat=${lat}, lon=${lon}, epoch=${epoch || 'current'}`);
-            }
             }
             
             var north, east;

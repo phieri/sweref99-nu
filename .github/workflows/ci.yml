@@ -53,10 +53,72 @@ jobs:
           path: |
             sqlite-amalgamation-3420000/libsqlite3.a
             sqlite-amalgamation-3420000/sqlite3.h
+
+  build-libtiff:
+    name: Build libtiff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache libtiff source
+        id: cache-libtiff-source
+        uses: actions/cache@v4
+        with:
+          path: tiff-4.5.1.tar.gz
+          key: libtiff-4.5.1-source
+      - name: Download libtiff source
+        if: steps.cache-libtiff-source.outputs.cache-hit != 'true'
+        run: |
+          wget https://download.osgeo.org/libtiff/tiff-4.5.1.tar.gz
+      - name: Cache libtiff build
+        id: cache-libtiff-build
+        uses: actions/cache@v4
+        with:
+          path: |
+            tiff-4.5.1/libtiff/libtiff.a
+            tiff-4.5.1/libtiff/tiffio.h
+            tiff-4.5.1/libtiff/tiff.h
+            tiff-4.5.1/libtiff/tiffvers.h
+          key: libtiff-4.5.1-build-${{ runner.os }}-emcc
+      - name: Install build dependencies
+        if: steps.cache-libtiff-build.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
+            emscripten build-essential cmake
+      - name: Build libtiff
+        if: steps.cache-libtiff-build.outputs.cache-hit != 'true'
+        run: |
+          tar -xzf tiff-4.5.1.tar.gz
+          cd tiff-4.5.1
+          # Remove build directory if it exists from previous partial runs
+          rm -rf build
+          mkdir build
+          cd build
+          emcmake cmake .. \
+            -DBUILD_SHARED_LIBS=OFF \
+            -Dzlib=OFF \
+            -Dpixarlog=OFF \
+            -Djpeg=OFF \
+            -Dold-jpeg=OFF \
+            -Djbig=OFF \
+            -Dlzma=OFF \
+            -Dzstd=OFF \
+            -Dwebp=OFF \
+            -Dcxx=OFF \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+          emmake make -j$(nproc)
+          # Copy built library to expected location
+          cp libtiff/libtiff.a ../libtiff/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libtiff
+          path: |
+            tiff-4.5.1/libtiff/libtiff.a
+            tiff-4.5.1/libtiff/tiffio.h
+            tiff-4.5.1/libtiff/tiff.h
+            tiff-4.5.1/libtiff/tiffvers.h
   build-proj:
     name: Build PROJ
     runs-on: ubuntu-latest
-    needs: build-sqlite
+    needs: [build-sqlite, build-libtiff]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -66,6 +128,10 @@ jobs:
         with:
           name: sqlite3
           path: ./sqlite3/
+      - uses: actions/download-artifact@v4
+        with:
+          name: libtiff
+          path: ./libtiff/
       - name: Cache PROJ build
         id: cache-proj-build
         uses: actions/cache@v4
@@ -73,7 +139,7 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-          key: proj-9.6.2-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}
+          key: proj-9.6.2-build-${{ runner.os }}-emcc-libtiff451-${{ hashFiles('sqlite3/libsqlite3.a', 'libtiff/libtiff.a') }}
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
@@ -82,6 +148,8 @@ jobs:
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
+          # Remove build directory if it exists from previous partial runs
+          rm -rf build
           mkdir build
           cd build
           emcmake cmake .. \
@@ -91,7 +159,9 @@ jobs:
             -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
             -DSQLite3_LIBRARY=$(pwd)/../sqlite3/libsqlite3.a \
             -DENABLE_CURL=OFF \
-            -DENABLE_TIFF=OFF \
+            -DENABLE_TIFF=ON \
+            -DTIFF_INCLUDE_DIR=$(pwd)/../libtiff \
+            -DTIFF_LIBRARY=$(pwd)/../libtiff/libtiff.a \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
@@ -103,6 +173,8 @@ jobs:
           cp -r build/install/include artifact-staging/
           # Include SQLite3 library that PROJ depends on
           cp sqlite3/libsqlite3.a artifact-staging/
+          # Include libtiff library that PROJ depends on
+          cp libtiff/libtiff.a artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
@@ -141,6 +213,14 @@ jobs:
             echo "Moved libsqlite3.a to build/"
           else
             echo "ERROR: libsqlite3.a not found"
+            exit 1
+          fi
+          # Move libtiff.a to expected location
+          if [ -f libtiff.a ]; then
+            mv libtiff.a build/
+            echo "Moved libtiff.a to build/"
+          else
+            echo "ERROR: libtiff.a not found"
             exit 1
           fi
           # Move headers to expected location
