@@ -62,22 +62,22 @@ jobs:
         id: cache-libtiff-source
         uses: actions/cache@v4
         with:
-          path: tiff-4.6.0.tar.gz
-          key: libtiff-4.6.0-source
+          path: tiff-4.5.1.tar.gz
+          key: libtiff-4.5.1-source
       - name: Download libtiff source
         if: steps.cache-libtiff-source.outputs.cache-hit != 'true'
         run: |
-          wget https://download.osgeo.org/libtiff/tiff-4.6.0.tar.gz
+          wget https://download.osgeo.org/libtiff/tiff-4.5.1.tar.gz
       - name: Cache libtiff build
         id: cache-libtiff-build
         uses: actions/cache@v4
         with:
           path: |
-            tiff-4.6.0/libtiff/libtiff.a
-            tiff-4.6.0/libtiff/tiffio.h
-            tiff-4.6.0/libtiff/tiff.h
-            tiff-4.6.0/libtiff/tiffvers.h
-          key: libtiff-4.6.0-build-${{ runner.os }}-emcc
+            tiff-4.5.1/libtiff/libtiff.a
+            tiff-4.5.1/libtiff/tiffio.h
+            tiff-4.5.1/libtiff/tiff.h
+            tiff-4.5.1/libtiff/tiffvers.h
+          key: libtiff-4.5.1-build-${{ runner.os }}-emcc
       - name: Install build dependencies
         if: steps.cache-libtiff-build.outputs.cache-hit != 'true'
         run: |
@@ -86,8 +86,8 @@ jobs:
       - name: Build libtiff
         if: steps.cache-libtiff-build.outputs.cache-hit != 'true'
         run: |
-          tar -xzf tiff-4.6.0.tar.gz
-          cd tiff-4.6.0
+          tar -xzf tiff-4.5.1.tar.gz
+          cd tiff-4.5.1
           # Remove build directory if it exists from previous partial runs
           rm -rf build
           mkdir build
@@ -111,10 +111,10 @@ jobs:
         with:
           name: libtiff
           path: |
-            tiff-4.6.0/libtiff/libtiff.a
-            tiff-4.6.0/libtiff/tiffio.h
-            tiff-4.6.0/libtiff/tiff.h
-            tiff-4.6.0/libtiff/tiffvers.h
+            tiff-4.5.1/libtiff/libtiff.a
+            tiff-4.5.1/libtiff/tiffio.h
+            tiff-4.5.1/libtiff/tiff.h
+            tiff-4.5.1/libtiff/tiffvers.h
   build-proj:
     name: Build PROJ
     runs-on: ubuntu-latest
@@ -139,7 +139,7 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-          key: proj-9.6.2-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a', 'libtiff/libtiff.a') }}
+          key: proj-9.6.2-build-${{ runner.os }}-emcc-libtiff451-${{ hashFiles('sqlite3/libsqlite3.a', 'libtiff/libtiff.a') }}
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
