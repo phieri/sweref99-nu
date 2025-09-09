@@ -21,12 +21,8 @@ declare const Module: any;
 
 // WASM module state
 let wgs84_to_sweref99tm: any = null;
-let get_transformation_mode: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
-
-// Cached epoch for coordinate transformation (calculated once)
-let cachedEpoch: number | null = null;
 
 // Initialize WASM module when available
 function initializeWasm(): boolean {
@@ -39,25 +35,12 @@ function initializeWasm(): boolean {
             wgs84_to_sweref99tm = Module.cwrap(
                 "wgs84_to_sweref99tm",
                 "number",
-                ["number", "number", "number"]
-            );
-            get_transformation_mode = Module.cwrap(
-                "get_transformation_mode",
-                "number",
-                []
+                ["number", "number"]
             );
             wasmAvailable = true;
             wasmInitialized = true;
             
-            // Check which transformation mode is active
-            const mode = get_transformation_mode();
-            if (mode === 1) {
-                console.log("WASM module initialized successfully with time-dependent transformations");
-            } else if (mode === 0) {
-                console.log("WASM module initialized with fallback (non-time-dependent) transformations");
-            } else {
-                console.warn("WASM module initialization unclear, mode:", mode);
-            }
+            console.log("WASM module initialized successfully");
         } else {
             // Don't mark as initialized if Module isn't ready yet
             wasmAvailable = false;
@@ -71,17 +54,7 @@ function initializeWasm(): boolean {
     return wasmAvailable;
 }
 
-// Convert GPS timestamp to decimal year for PROJ time-based transformations
-function timestampToDecimalYear(timestamp?: number): number {
-    const date = timestamp ? new Date(timestamp) : new Date();
-    const year = date.getFullYear();
-    const startOfYear = new Date(year, 0, 1).getTime();
-    const startOfNextYear = new Date(year + 1, 0, 1).getTime();
-    const yearProgress = (date.getTime() - startOfYear) / (startOfNextYear - startOfYear);
-    return year + yearProgress;
-}
-
-function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
+function wgs84_to_sweref99tm_js(lat: number, lon: number) {
     // Try to initialize WASM if not already done
     if (!initializeWasm() || !wgs84_to_sweref99tm) {
         console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
@@ -89,22 +62,14 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number, timestamp?: number) {
     }
     
     try {
-        // Calculate epoch only once and cache it for performance optimization
-        if (cachedEpoch === null) {
-            cachedEpoch = timestampToDecimalYear(timestamp);
-            const mode = get_transformation_mode && get_transformation_mode();
-            console.log(`SWEREF 99 epoch calculated once: ${cachedEpoch}, transformation mode: ${mode === 1 ? 'time-dependent' : mode === 0 ? 'fallback' : 'unknown'}`);
-        }
-        
-        const ptr = wgs84_to_sweref99tm(lat, lon, cachedEpoch);
+        const ptr = wgs84_to_sweref99tm(lat, lon);
         const north = Module.getValue(ptr, "double");
         const east = Module.getValue(ptr + 8, "double");
         Module._free(ptr);
         
         // Validate the result
         if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-            const mode = get_transformation_mode && get_transformation_mode();
-            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}, epoch=${cachedEpoch}, mode=${mode}:`, { north, east });
+            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
         }
         
         return { northing: north, easting: east };
@@ -149,7 +114,7 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 
-		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude, position.timestamp);
+		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", 
