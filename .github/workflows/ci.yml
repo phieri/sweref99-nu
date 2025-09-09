@@ -103,7 +103,14 @@ jobs:
             -Dzstd=OFF \
             -Dwebp=OFF \
             -Dcxx=OFF \
-            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+            -DSIZEOF_SIZE_T=4 \
+            -DSIZEOF_PTRDIFF_T=4 \
+            -DSIZEOF_UNSIGNED_CHAR_P=4 \
+            -DSIZEOF_UNSIGNED_INT=4 \
+            -DSIZEOF_UNSIGNED_LONG=4 \
+            -DSIZEOF_UNSIGNED_LONG_LONG=8 \
+            -DSIZEOF_UNSIGNED_SHORT=2
           emmake make -j$(nproc)
           # Copy built library to expected location
           cp libtiff/libtiff.a ../libtiff/
