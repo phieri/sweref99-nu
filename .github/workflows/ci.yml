@@ -88,6 +88,8 @@ jobs:
         run: |
           tar -xzf tiff-4.6.0.tar.gz
           cd tiff-4.6.0
+          # Remove build directory if it exists from previous partial runs
+          rm -rf build
           mkdir build
           cd build
           emcmake cmake .. \
@@ -146,6 +148,8 @@ jobs:
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
+          # Remove build directory if it exists from previous partial runs
+          rm -rf build
           mkdir build
           cd build
           emcmake cmake .. \
