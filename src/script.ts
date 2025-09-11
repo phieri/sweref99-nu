@@ -179,3 +179,34 @@ stopbtn!.addEventListener("click", async () => {
 	speed!.innerHTML = "–&nbsp;m/s";
 	speed!.classList.remove("outofrange");
 });
+
+// Handle page visibility changes and back navigation to restore positioning state
+function handleVisibilityChange() {
+	// Only restore if page becomes visible and UI indicates positioning should be active
+	if (!document.hidden && posbtn!.hasAttribute("disabled") && stopbtn!.hasAttribute("disabled")) {
+		// UI state is inconsistent - reset to stopped state
+		console.log("Detected inconsistent positioning state after navigation, resetting...");
+		stopbtn!.setAttribute("disabled", "disabled");
+		posbtn!.removeAttribute("disabled");
+		speed!.innerHTML = "–&nbsp;m/s";
+		speed!.classList.remove("outofrange");
+		watchID = null;
+	} else if (!document.hidden && posbtn!.hasAttribute("disabled") && !stopbtn!.hasAttribute("disabled")) {
+		// UI indicates positioning should be active, check if watchID is valid
+		if (watchID === null) {
+			console.log("Positioning was active but watch was lost, restarting...");
+			posInit(new Event("restore"));
+		}
+	}
+}
+
+// Listen for page visibility changes (including back/forward navigation)
+document.addEventListener("visibilitychange", handleVisibilityChange);
+
+// Also listen for pageshow event to handle back/forward navigation in some browsers
+window.addEventListener("pageshow", (event) => {
+	// Only trigger for back/forward navigation (persisted pages)
+	if (event.persisted) {
+		handleVisibilityChange();
+	}
+});
