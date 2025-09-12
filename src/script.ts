@@ -137,14 +137,47 @@ function posInit(event: Event) {
 		window.alert(errorMsg);
 	}
 
+	function restoreError() {
+		// Silent error handler for restore attempts - reset UI to stopped state
+		console.log("Positioning restore failed, resetting to stopped state");
+		stopbtn!.setAttribute("disabled", "disabled");
+		posbtn!.removeAttribute("disabled");
+		speed!.innerHTML = "–&nbsp;m/s";
+		speed!.classList.remove("outofrange");
+		if (watchID !== null) {
+			navigator.geolocation.clearWatch(watchID);
+			watchID = null;
+		}
+	}
+
 	const options = {
 		enableHighAccuracy: true,
 		maximumAge: 30000,
 		timeout: 27000,
 	};
 
-	if (watchID === null) {
-		watchID = navigator.geolocation.watchPosition(success, error, options);
+	// Handle restore events differently - test geolocation availability first
+	if (event.type === "restore") {
+		if (!("geolocation" in navigator)) {
+			restoreError();
+			return;
+		}
+		// Test geolocation with a quick position request before starting watch
+		navigator.geolocation.getCurrentPosition(
+			() => {
+				// Geolocation is available, proceed with watch
+				if (watchID === null) {
+					watchID = navigator.geolocation.watchPosition(success, restoreError, options);
+				}
+			},
+			restoreError,
+			{ timeout: 5000, maximumAge: 60000 }
+		);
+	} else {
+		// Regular positioning start
+		if (watchID === null) {
+			watchID = navigator.geolocation.watchPosition(success, error, options);
+		}
 	}
 }
 
