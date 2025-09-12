@@ -45,7 +45,7 @@ jobs:
         run: |
           unzip sqlite-amalgamation-3420000.zip
           cd sqlite-amalgamation-3420000
-          emcc -Os -c sqlite3.c -o sqlite3.o
+          emcc -O1 -c sqlite3.c -o sqlite3.o
           emar rcs libsqlite3.a sqlite3.o
       - uses: actions/upload-artifact@v4
         with:

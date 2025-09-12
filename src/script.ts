@@ -190,7 +190,12 @@ function handleVisibilityChange() {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
-		watchID = null;
+		try {
+			if (watchID !== null) {
+				navigator.geolocation.clearWatch(watchID);
+				watchID = null;
+			}
+		} catch (e) {}
 	} else if (!document.hidden && posbtn!.hasAttribute("disabled") && !stopbtn!.hasAttribute("disabled")) {
 		// UI indicates positioning should be active, check if watchID is valid
 		if (watchID === null) {
