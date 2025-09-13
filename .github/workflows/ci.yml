@@ -46,7 +46,7 @@ jobs:
             -DCMAKE_C_FLAGS="-Os" \
             -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
-            -DENABLE_SQLITE=OFF
+            -DENABLE_SQLITE=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_CURL=OFF \
