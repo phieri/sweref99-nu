@@ -33,7 +33,7 @@ jobs:
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential cmake libsqlite3-dev sqlite3
+            emscripten build-essential cmake libsqlite3-dev
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
@@ -47,15 +47,11 @@ jobs:
             -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
             -DENABLE_SQLITE=OFF \
-            -DENABLE_DATABASE=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_CURL=OFF \
             -DENABLE_TIFF=OFF \
-            -DUSE_EXTERNAL_GTEST=OFF \
             -DBUILD_PROJSYNC=OFF \
-            -DSQLite3_INCLUDE_DIR=/usr/include \
-            -DSQLite3_LIBRARY=/usr/lib/x86_64-linux-gnu/libsqlite3.a \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
