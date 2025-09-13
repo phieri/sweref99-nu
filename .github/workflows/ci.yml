@@ -28,7 +28,7 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-          key: proj-9.6.2-build-${{ runner.os }}-emcc-no-sqlite
+          key: proj-9.6.2-build-${{ runner.os }}-emcc
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
@@ -46,6 +46,7 @@ jobs:
             -DCMAKE_C_FLAGS="-Os" \
             -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
+            -DENABLE_SQLITE=OFF
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_CURL=OFF \
