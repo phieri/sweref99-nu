@@ -45,7 +45,7 @@ jobs:
         run: |
           unzip sqlite-amalgamation-3420000.zip
           cd sqlite-amalgamation-3420000
-          emcc -O1 -c sqlite3.c -o sqlite3.o
+          emcc -Os -c sqlite3.c -o sqlite3.o
           emar rcs libsqlite3.a sqlite3.o
       - uses: actions/upload-artifact@v4
         with:
@@ -89,6 +89,9 @@ jobs:
           mkdir build
           cd build
           emcmake cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_FLAGS="-Os" \
+            -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
