@@ -33,7 +33,7 @@ jobs:
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential cmake
+            emscripten build-essential cmake libsqlite3-dev
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
