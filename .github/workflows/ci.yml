@@ -37,6 +37,9 @@ jobs:
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
+          # Create isolated SQLite3 headers to avoid emscripten header conflicts
+          mkdir -p sqlite-headers
+          cp /usr/include/sqlite3*.h sqlite-headers/
           # Remove build directory if it exists from previous partial runs
           rm -rf build
           mkdir build
@@ -52,7 +55,9 @@ jobs:
             -DENABLE_CURL=OFF \
             -DENABLE_TIFF=OFF \
             -DBUILD_PROJSYNC=OFF \
-            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+            -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite-headers \
+            -DSQLite3_LIBRARY=/usr/lib/x86_64-linux-gnu/libsqlite3.a
           emmake make -j$(nproc)
           emmake make install
       - name: Stage artifacts
