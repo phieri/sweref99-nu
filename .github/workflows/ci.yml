@@ -33,10 +33,13 @@ jobs:
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential cmake
+            emscripten build-essential cmake libsqlite3-dev
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
+          # Create isolated SQLite3 headers to avoid emscripten header conflicts
+          mkdir -p sqlite-headers
+          cp /usr/include/sqlite3*.h sqlite-headers/
           # Remove build directory if it exists from previous partial runs
           rm -rf build
           mkdir build
@@ -46,14 +49,15 @@ jobs:
             -DCMAKE_C_FLAGS="-Os" \
             -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
-            -DENABLE_SQLITE=OFF
+            -DENABLE_SQLITE=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_CURL=OFF \
             -DENABLE_TIFF=OFF \
-            -DUSE_EXTERNAL_GTEST=OFF \
             -DBUILD_PROJSYNC=OFF \
-            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+            -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite-headers \
+            -DSQLite3_LIBRARY=/usr/lib/x86_64-linux-gnu/libsqlite3.a
           emmake make -j$(nproc)
           emmake make install
       - name: Stage artifacts
@@ -165,3 +169,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
