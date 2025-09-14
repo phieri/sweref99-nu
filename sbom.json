@@ -63,6 +63,28 @@
         }
       ]
     },
+		{
+      "type": "library",
+      "bom-ref": "sqlite-3.42.0",
+      "name": "SQLite",
+      "version": "3.42.0",
+      "description": "SQLite database engine",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "name": "Public Domain"
+          }
+        }
+      ],
+      "copyright": "Public Domain",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://sqlite.org/"
+        }
+      ]
+    },
     {
       "type": "library",
       "bom-ref": "picocss-2.0.0",

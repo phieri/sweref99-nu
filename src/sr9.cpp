@@ -9,136 +9,6 @@
 extern "C" {
 #endif
 
-// PROJJSON definition for WGS84 (EPSG:4326)
-static const char* WGS84_PROJJSON = R"({
-  "$schema": "https://proj.org/schemas/v0.7/projjson.schema.json",
-  "type": "GeographicCRS",
-  "name": "WGS 84",
-  "datum": {
-    "type": "GeodeticReferenceFrame",
-    "name": "World Geodetic System 1984",
-    "ellipsoid": {
-      "name": "WGS 84",
-      "semi_major_axis": 6378137,
-      "inverse_flattening": 298.257223563
-    }
-  },
-  "coordinate_system": {
-    "subtype": "ellipsoidal",
-    "axis": [
-      {
-        "name": "Geodetic latitude",
-        "abbreviation": "Lat",
-        "direction": "north",
-        "unit": "degree"
-      },
-      {
-        "name": "Geodetic longitude", 
-        "abbreviation": "Lon",
-        "direction": "east",
-        "unit": "degree"
-      }
-    ]
-  },
-  "id": {
-    "authority": "EPSG",
-    "code": 4326
-  }
-})";
-
-// PROJJSON definition for SWEREF 99 TM (EPSG:3006)
-static const char* SWEREF99_TM_PROJJSON = R"({
-  "$schema": "https://proj.org/schemas/v0.7/projjson.schema.json",
-  "type": "ProjectedCRS",
-  "name": "SWEREF99 TM",
-  "base_crs": {
-    "name": "SWEREF99",
-    "datum": {
-      "type": "GeodeticReferenceFrame",
-      "name": "SWEREF99",
-      "ellipsoid": {
-        "name": "GRS 1980",
-        "semi_major_axis": 6378137,
-        "inverse_flattening": 298.257222101
-      }
-    },
-    "coordinate_system": {
-      "subtype": "ellipsoidal",
-      "axis": [
-        {
-          "name": "Geodetic latitude",
-          "abbreviation": "Lat",
-          "direction": "north",
-          "unit": "degree"
-        },
-        {
-          "name": "Geodetic longitude",
-          "abbreviation": "Lon", 
-          "direction": "east",
-          "unit": "degree"
-        }
-      ]
-    }
-  },
-  "conversion": {
-    "name": "SWEREF99 TM",
-    "method": {
-      "name": "Transverse Mercator",
-      "id": {
-        "authority": "EPSG",
-        "code": 9807
-      }
-    },
-    "parameters": [
-      {
-        "name": "Latitude of natural origin",
-        "value": 0,
-        "unit": "degree"
-      },
-      {
-        "name": "Longitude of natural origin", 
-        "value": 15,
-        "unit": "degree"
-      },
-      {
-        "name": "Scale factor at natural origin",
-        "value": 0.9996
-      },
-      {
-        "name": "False easting",
-        "value": 500000,
-        "unit": "metre"
-      },
-      {
-        "name": "False northing",
-        "value": 0,
-        "unit": "metre"
-      }
-    ]
-  },
-  "coordinate_system": {
-    "subtype": "Cartesian",
-    "axis": [
-      {
-        "name": "Northing",
-        "abbreviation": "N",
-        "direction": "north",
-        "unit": "metre"
-      },
-      {
-        "name": "Easting",
-        "abbreviation": "E",
-        "direction": "east", 
-        "unit": "metre"
-      }
-    ]
-  },
-  "id": {
-    "authority": "EPSG",
-    "code": 3006
-  }
-})";
-
 struct SwerefResult {
     double north;
     double east;
@@ -161,9 +31,9 @@ int init_proj() {
         return 0;
     }
     
-    // Create transformation from WGS84 to SWEREF 99 TM using PROJJSON definitions
+    // Create transformation from WGS84 to SWEREF 99 TM
     PJ *P = proj_create_crs_to_crs(
-        global_context, WGS84_PROJJSON, SWEREF99_TM_PROJJSON, NULL);
+        global_context, "EPSG:4326", "EPSG:3006", NULL);
     if (!P) {
         proj_context_destroy(global_context);
         global_context = NULL;

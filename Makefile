@@ -8,7 +8,7 @@ sr9.wasm sr9.js: src/sr9.cpp
 	  -sMAXIMUM_MEMORY=64MB \
 	  -sALLOW_MEMORY_GROWTH=1 \
 	  -I build/include/ \
-	  build/libproj.a \
+	  build/libproj.a build/libsqlite3.a \
 	  src/sr9.cpp -o sr9.js
 
 _site/sr9.wasm _site/sr9.js: sr9.wasm sr9.js
