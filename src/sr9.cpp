@@ -1,23 +1,16 @@
 #include <emscripten.h>
 #include <proj.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdlib>
+#include <cmath>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct SwerefResult {
-    double north;
-    double east;
-};
-
 // Global PROJ objects for reuse across transformations
-static PJ_CONTEXT *global_context = NULL;
-static PJ *global_projection = NULL;
-static int proj_initialized = 0;
+static PJ_CONTEXT *global_context = nullptr;
+static PJ *global_projection = nullptr;
+static bool proj_initialized = false;
 
 // Initialize PROJ context and projection for reuse
 EMSCRIPTEN_KEEPALIVE
@@ -48,7 +41,7 @@ int init_proj() {
         return 0;
     }
     
-    proj_initialized = 1;
+    proj_initialized = true;
     return 1;
 }
 
@@ -57,52 +50,33 @@ EMSCRIPTEN_KEEPALIVE
 void cleanup_proj() {
     if (global_projection) {
         proj_destroy(global_projection);
-        global_projection = NULL;
+        global_projection = nullptr;
     }
     if (global_context) {
         proj_context_destroy(global_context);
-        global_context = NULL;
+        global_context = nullptr;
     }
-    proj_initialized = 0;
+    proj_initialized = false;
 }
 
 EMSCRIPTEN_KEEPALIVE
-double* wgs84_to_sweref99tm(double lat, double lon) {
-    // Allocate memory for the result (caller must free this)
-    double* result = (double*)malloc(2 * sizeof(double));
-    if (!result) {
-        return NULL;
-    }
-    
-    // Initialize with zeros in case of error
-    result[0] = 0.0; // north
-    result[1] = 0.0; // east
-    
-    // Initialize PROJ if not already done
-    if (!proj_initialized && !init_proj()) {
-        return result; // Return zeros on initialization failure
-    }
+int wgs84_to_sweref99tm_buf(double lat, double lon, double* out, int out_len) {
+    if (!out || out_len < 2) return 0;
+    out[0] = 0.0; // north
+    out[1] = 0.0; // east
 
-    if (!global_projection) {
-        // No valid projection available
-        return result; // Return zeros
-    }
+    if (!proj_initialized && !init_proj()) return 0;
+    if (!global_projection) return 0;
 
-    PJ_COORD a, b;
-    
-    // Use standard coordinate transformation
-    a = proj_coord(lon, lat, 0, 0); // lon, lat, height, time=0
-    
-    b = proj_trans(global_projection, PJ_FWD, a);
-    
-    // Check if transformation was successful
-    if (b.xy.x != HUGE_VAL && b.xy.y != HUGE_VAL) {
-        result[0] = b.xy.y; // north
-        result[1] = b.xy.x; // east
+    PJ_COORD a = proj_coord(lon, lat, 0, 0); // lon, lat, height, time=0
+    PJ_COORD b = proj_trans(global_projection, PJ_FWD, a);
+
+    if (std::isfinite(b.xy.x) && std::isfinite(b.xy.y)) {
+        out[0] = b.xy.y; // north
+        out[1] = b.xy.x; // east
+        return 1;
     }
-    // If transformation failed, result remains zeros
-    
-    return result;
+    return 0;
 }
 
 #ifdef __cplusplus

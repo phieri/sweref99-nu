@@ -169,6 +169,7 @@
       "ref": "sweref99-nu",
       "dependsOn": [
         "proj-9.6.2",
+				"sqlite-3.42.0",
         "picocss-2.0.0"
       ]
     }
