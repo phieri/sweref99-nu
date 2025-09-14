@@ -12,3 +12,4 @@ CMakeUserPresets.json
 
 # Generated JavaScript files
 _site/script.js
+__pycache__/
