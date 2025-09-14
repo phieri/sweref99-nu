@@ -88,10 +88,10 @@ jobs:
           cd build
           emcmake cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_FLAGS="-Os" \
-            -DCMAKE_CXX_FLAGS="-Os" \
+            -DCMAKE_C_FLAGS="-Oz -flto" \
+            -DCMAKE_CXX_FLAGS="-Oz -flto" \
             -DBUILD_APPS=OFF \
-            -DENABLE_SQLITE=OFF
+            -DENABLE_SQLITE=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
@@ -100,6 +100,7 @@ jobs:
             -DENABLE_TIFF=OFF \
             -DUSE_EXTERNAL_GTEST=OFF \
             -DBUILD_PROJSYNC=OFF \
+            -DENABLE_IPO=ON \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/install
           emmake make -j$(nproc)
           emmake make install
@@ -203,7 +204,7 @@ jobs:
           ls -la _site/
           echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
-          curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
+          # Skip downloading Pico.css - using inline critical CSS instead
           echo "=== Final _site contents ==="
           ls -la _site/
       - uses: actions/upload-pages-artifact@v4

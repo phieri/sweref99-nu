@@ -59,6 +59,29 @@ void cleanup_proj() {
     proj_initialized = false;
 }
 
+// Coordinate transformation that returns pointer (for JavaScript compatibility)
+EMSCRIPTEN_KEEPALIVE
+double* wgs84_to_sweref99tm(double lat, double lon) {
+    double* result = (double*)malloc(2 * sizeof(double));
+    if (!result) return nullptr;
+    
+    result[0] = 0.0; // north
+    result[1] = 0.0; // east
+
+    if (!proj_initialized && !init_proj()) return result;
+    if (!global_projection) return result;
+
+    PJ_COORD a = proj_coord(lon, lat, 0, 0); // lon, lat, height, time=0
+    PJ_COORD b = proj_trans(global_projection, PJ_FWD, a);
+
+    if (std::isfinite(b.xy.x) && std::isfinite(b.xy.y)) {
+        result[0] = b.xy.y; // north
+        result[1] = b.xy.x; // east
+    }
+    
+    return result;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int wgs84_to_sweref99tm_buf(double lat, double lon, double* out, int out_len) {
     if (!out || out_len < 2) return 0;

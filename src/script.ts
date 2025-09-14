@@ -17,12 +17,80 @@ function isInSweden(pos: GeolocationPosition) {
 	}
 }
 
-declare const Module: any;
+declare const CreateModule: any;
 
 // WASM module state
 let wgs84_to_sweref99tm: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
+let wasmLoading = false;
+let Module: any = null;
+
+// Lazy load WASM module when needed
+async function loadWasmModule(): Promise<boolean> {
+    if (wasmInitialized) {
+        return wasmAvailable;
+    }
+    
+    if (wasmLoading) {
+        // Wait for existing load attempt
+        return new Promise((resolve) => {
+            const checkLoaded = () => {
+                if (!wasmLoading) {
+                    resolve(wasmAvailable);
+                } else {
+                    setTimeout(checkLoaded, 100);
+                }
+            };
+            checkLoaded();
+        });
+    }
+    
+    wasmLoading = true;
+    
+    try {
+        console.log("Loading WASM module...");
+        
+        // Load WASM module scripts dynamically
+        if (!(window as any).CreateModule) {
+            await loadScript('/sr9.js');
+            
+            // Wait for CreateModule to be available
+            let attempts = 0;
+            while (!(window as any).CreateModule && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+        }
+        
+        if ((window as any).CreateModule) {
+            Module = await (window as any).CreateModule();
+            const success = initializeWasm();
+            wasmLoading = false;
+            console.log("WASM module loading complete:", success);
+            return success;
+        } else {
+            throw new Error("CreateModule not available");
+        }
+    } catch (error) {
+        console.warn("Failed to load WASM module:", error);
+        wasmAvailable = false;
+        wasmInitialized = true;
+        wasmLoading = false;
+        return false;
+    }
+}
+
+// Load script dynamically
+function loadScript(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+        document.head.appendChild(script);
+    });
+}
 
 // Initialize WASM module when available
 function initializeWasm(): boolean {
@@ -31,7 +99,7 @@ function initializeWasm(): boolean {
     }
     
     try {
-        if (typeof Module !== 'undefined' && Module.cwrap) {
+        if (Module && Module.cwrap) {
             wgs84_to_sweref99tm = Module.cwrap(
                 "wgs84_to_sweref99tm",
                 "number",
@@ -54,9 +122,10 @@ function initializeWasm(): boolean {
     return wasmAvailable;
 }
 
-function wgs84_to_sweref99tm_js(lat: number, lon: number) {
-    // Try to initialize WASM if not already done
-    if (!initializeWasm() || !wgs84_to_sweref99tm) {
+async function wgs84_to_sweref99tm_js(lat: number, lon: number): Promise<{northing: number, easting: number}> {
+    // Try to load WASM if not already done
+    const wasmReady = await loadWasmModule();
+    if (!wasmReady || !wgs84_to_sweref99tm) {
         console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
         return { northing: 0, easting: 0 };
     }
@@ -94,7 +163,7 @@ const stopbtn  = document.getElementById("stop-btn");
 let watchID: number | null = null;
 
 function posInit(event: Event) {
-	function success(position: GeolocationPosition) {
+	async function success(position: GeolocationPosition) {
 		if (watchID === null) {
 			return;
 		}
@@ -114,7 +183,7 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 
-		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+		const sweref = await wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", 
