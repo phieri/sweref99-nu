@@ -91,7 +91,6 @@ jobs:
             -DCMAKE_C_FLAGS="-Os" \
             -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
-            -DENABLE_SQLITE=OFF
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
