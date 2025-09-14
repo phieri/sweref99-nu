@@ -156,11 +156,18 @@ def optimize_proj_db(input_path, output_path=None):
             removed_counts[table_name] = 0
     
     # Also handle metadata table - keep it as is
-    cursor = conn.execute("SELECT COUNT(*) FROM metadata")
-    metadata_count = cursor.fetchone()[0]
-    print(f"Keeping all {metadata_count} metadata entries")
+    if 'metadata' in db_objects:
+        cursor = conn.execute("SELECT COUNT(*) FROM metadata")
+        metadata_count = cursor.fetchone()[0]
+        print(f"Keeping all {metadata_count} metadata entries")
+    else:
+        print("No metadata table found")
     
     conn.commit()
+    
+    # Vacuum the database to reclaim space from deleted entries
+    print("Vacuuming database to reclaim space...")
+    conn.execute("VACUUM")
     conn.close()
     
     # Report results
