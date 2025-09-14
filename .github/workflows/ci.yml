@@ -86,7 +86,7 @@ jobs:
           #!/usr/bin/env python3
           """
           Optimize proj.db by removing unwanted coordinate systems using a subtractive approach.
-          This script identifies Swedish coordinate systems and removes all others.
+          This script uses hardcoded IDs for Swedish coordinate systems for performance.
           """
           
           import sqlite3
@@ -96,145 +96,33 @@ jobs:
           def get_swedish_coordinate_systems():
               """Define the coordinate systems needed for Swedish applications"""
               return {
-                  'geodetic_crs': ['4326', '4619'],  # WGS84, SWEREF99
-                  'projected_crs': ['3006'],         # SWEREF99 TM
-                  'conversion': ['17333'],           # SWEREF99 TM conversion
-                  'geodetic_datum': [],
-                  'ellipsoid': [],
-                  'prime_meridian': [],
-                  'unit_of_measure': [],
-                  'celestial_body': [],
-                  'coordinate_system': [],
-                  'extent': [],
-                  'scope': [],
-                  'usage': []
+                  # Hardcoded IDs based on dependency analysis to avoid runtime computation
+                  'geodetic_crs': ['4326', '4619'],
+                  'projected_crs': ['3006'],
+                  'conversion': ['17333'],
+                  'geodetic_datum': ['6326', '6619'],
+                  'ellipsoid': ['7030', '7019'],
+                  'prime_meridian': ['8901'],
+                  'unit_of_measure': ['9001', '9102'],
+                  'celestial_body': ['PROJ:EARTH'],
+                  'coordinate_system': ['6422', '4500'],
+                  'extent': ['2830', '1225'],
+                  'scope': ['1183', '1210'],
+                  'usage': []  # Will be computed based on the above entries
               }
           
-          def analyze_dependencies(db_path):
-              """Analyze what entries are needed based on Swedish coordinate systems"""
-              conn = sqlite3.connect(db_path)
-              needed_ids = get_swedish_coordinate_systems()
-              
-              # Iteratively find dependencies
-              iterations = 0
-              while iterations < 10:  # Prevent infinite loops
-                  prev_total = sum(len(ids) for ids in needed_ids.values())
-                  
-                  # Find dependencies for geodetic_crs
-                  for crs_code in needed_ids['geodetic_crs']:
-                      cursor = conn.execute("""
-                          SELECT datum_auth_name, datum_code, 
-                                 coordinate_system_auth_name, coordinate_system_code
-                          FROM geodetic_crs 
-                          WHERE auth_name='EPSG' AND code=?
-                      """, (crs_code,))
-                      for row in cursor:
-                          if row[0] and row[1]:  # datum
-                              if row[1] not in needed_ids['geodetic_datum']:
-                                  needed_ids['geodetic_datum'].append(row[1])
-                          if row[2] and row[3]:  # coordinate system
-                              if row[3] not in needed_ids['coordinate_system']:
-                                  needed_ids['coordinate_system'].append(row[3])
-                  
-                  # Find dependencies for projected_crs  
-                  for crs_code in needed_ids['projected_crs']:
-                      cursor = conn.execute("""
-                          SELECT geodetic_crs_auth_name, geodetic_crs_code,
-                                 coordinate_system_auth_name, coordinate_system_code,
-                                 conversion_auth_name, conversion_code
-                          FROM projected_crs 
-                          WHERE auth_name='EPSG' AND code=?
-                      """, (crs_code,))
-                      for row in cursor:
-                          if row[0] and row[1]:  # geodetic_crs
-                              if row[1] not in needed_ids['geodetic_crs']:
-                                  needed_ids['geodetic_crs'].append(row[1])
-                          if row[2] and row[3]:  # coordinate_system
-                              if row[3] not in needed_ids['coordinate_system']:
-                                  needed_ids['coordinate_system'].append(row[3])
-                          if row[4] and row[5]:  # conversion
-                              if row[5] not in needed_ids['conversion']:
-                                  needed_ids['conversion'].append(row[5])
-                  
-                  # Find dependencies for geodetic_datum
-                  for datum_code in needed_ids['geodetic_datum']:
-                      cursor = conn.execute("""
-                          SELECT ellipsoid_auth_name, ellipsoid_code,
-                                 prime_meridian_auth_name, prime_meridian_code
-                          FROM geodetic_datum 
-                          WHERE auth_name='EPSG' AND code=?
-                      """, (datum_code,))
-                      for row in cursor:
-                          if row[0] and row[1]:  # ellipsoid
-                              if row[1] not in needed_ids['ellipsoid']:
-                                  needed_ids['ellipsoid'].append(row[1])
-                          if row[2] and row[3]:  # prime_meridian
-                              if row[3] not in needed_ids['prime_meridian']:
-                                  needed_ids['prime_meridian'].append(row[3])
-                  
-                  # Find dependencies for ellipsoid
-                  for ellipsoid_code in needed_ids['ellipsoid']:
-                      cursor = conn.execute("""
-                          SELECT celestial_body_auth_name, celestial_body_code,
-                                 uom_auth_name, uom_code
-                          FROM ellipsoid 
-                          WHERE auth_name='EPSG' AND code=?
-                      """, (ellipsoid_code,))
-                      for row in cursor:
-                          if row[0] and row[1]:  # celestial_body
-                              celestial_key = f"{row[0]}:{row[1]}"
-                              if celestial_key not in needed_ids['celestial_body']:
-                                  needed_ids['celestial_body'].append(celestial_key)
-                          if row[2] and row[3]:  # unit_of_measure
-                              if row[3] not in needed_ids['unit_of_measure']:
-                                  needed_ids['unit_of_measure'].append(row[3])
-                  
-                  # Find dependencies for prime_meridian
-                  for pm_code in needed_ids['prime_meridian']:
-                      cursor = conn.execute("""
-                          SELECT uom_auth_name, uom_code
-                          FROM prime_meridian 
-                          WHERE auth_name='EPSG' AND code=?
-                      """, (pm_code,))
-                      for row in cursor:
-                          if row[0] and row[1]:  # unit_of_measure
-                              if row[1] not in needed_ids['unit_of_measure']:
-                                  needed_ids['unit_of_measure'].append(row[1])
-                  
-                  # Find usage records
-                  for table_name in ['geodetic_crs', 'projected_crs', 'conversion']:
-                      for code in needed_ids[table_name]:
-                          cursor = conn.execute("""
-                              SELECT extent_auth_name, extent_code,
-                                     scope_auth_name, scope_code
-                              FROM usage 
-                              WHERE object_table_name=? AND object_auth_name='EPSG' AND object_code=?
-                          """, (table_name, code))
-                          for row in cursor:
-                              if row[0] and row[1]:  # extent
-                                  if row[1] not in needed_ids['extent']:
-                                      needed_ids['extent'].append(row[1])
-                              if row[2] and row[3]:  # scope
-                                  if row[3] not in needed_ids['scope']:
-                                      needed_ids['scope'].append(row[3])
-                  
-                  # Check if we found new dependencies
-                  new_total = sum(len(ids) for ids in needed_ids.values())
-                  if new_total == prev_total:
-                      break  # No new dependencies found
-                  iterations += 1
-              
-              conn.close()
-              return needed_ids
+          def get_hardcoded_dependencies():
+              """Return hardcoded dependencies instead of runtime analysis for performance"""
+              return get_swedish_coordinate_systems()
           
           def optimize_proj_db(input_path, output_path=None):
               """Remove unwanted entries from proj.db keeping only Swedish coordinate systems"""
               if output_path is None:
                   output_path = input_path
               
-              # Analyze what we need to keep
-              print("Analyzing dependencies for Swedish coordinate systems...")
-              needed_ids = analyze_dependencies(input_path)
+              # Use hardcoded dependencies for performance
+              print("Using hardcoded dependencies for Swedish coordinate systems...")
+              needed_ids = get_hardcoded_dependencies()
               
               # Print what we're keeping
               total_kept = 0
