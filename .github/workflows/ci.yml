@@ -365,7 +365,7 @@ jobs:
         run: |
           # Remove build directory if it exists from previous partial runs
           rm -rf build/proj_build
-          mkdir build/proj_build
+          mkdir -p build/proj_build
           cd build/proj_build
           emcmake cmake ../.. \
             -DCMAKE_BUILD_TYPE=Release \
