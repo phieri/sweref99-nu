@@ -73,20 +73,92 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-          key: proj-9.6.2-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}
+            build/minimal_proj.db
+          key: proj-9.6.2-minimal-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}-v2
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
-            emscripten build-essential cmake
+            emscripten build-essential cmake python3
+      - name: Create minimal proj.db
+        if: steps.cache-proj-build.outputs.cache-hit != 'true'
+        run: |
+          # Create minimal database with only EPSG:4326 and EPSG:3006
+          cat > create_minimal_proj_db.py << 'EOF'
+          #!/usr/bin/env python3
+          import sqlite3
+          import sys
+          import os
+          
+          def create_minimal_proj_db(output_path):
+              conn = sqlite3.connect(output_path)
+              conn.execute("PRAGMA foreign_keys = 0")
+              
+              schema_sql = """
+          CREATE TABLE metadata(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID;
+          CREATE TABLE unit_of_measure(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, conv_factor FLOAT, proj_short_name TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_unit_of_measure PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE celestial_body (auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, semi_major_axis FLOAT NOT NULL, CONSTRAINT pk_celestial_body PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE ellipsoid (auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, celestial_body_auth_name TEXT NOT NULL, celestial_body_code TEXT NOT NULL, semi_major_axis FLOAT NOT NULL, uom_auth_name TEXT NOT NULL, uom_code TEXT NOT NULL, inv_flattening FLOAT, semi_minor_axis FLOAT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_ellipsoid PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE extent(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, south_lat FLOAT, north_lat FLOAT, west_lon FLOAT, east_lon FLOAT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_extent PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE scope(auth_name TEXT NOT NULL, code TEXT NOT NULL, scope TEXT NOT NULL, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_scope PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE prime_meridian(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, greenwich_longitude FLOAT NOT NULL, uom_auth_name TEXT NOT NULL, uom_code TEXT NOT NULL, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_prime_meridian PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE geodetic_datum(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, ellipsoid_auth_name TEXT NOT NULL, ellipsoid_code TEXT NOT NULL, prime_meridian_auth_name TEXT NOT NULL, prime_meridian_code TEXT NOT NULL, publication_date TEXT, frame_reference_epoch FLOAT, ensemble_accuracy FLOAT, origin_description TEXT, coordinates_epoch TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_geodetic_datum PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE coordinate_system(auth_name TEXT NOT NULL, code TEXT NOT NULL, type TEXT NOT NULL, dimension INTEGER NOT NULL, CONSTRAINT pk_coordinate_system PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE geodetic_crs(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, type TEXT NOT NULL, coordinate_system_auth_name TEXT NOT NULL, coordinate_system_code TEXT NOT NULL, datum_auth_name TEXT, datum_code TEXT, text_definition TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_geodetic_crs PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE conversion(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, method_auth_name TEXT NOT NULL, method_code TEXT NOT NULL, method_name TEXT NOT NULL, param1_auth_name TEXT, param1_code TEXT, param1_name TEXT, param1_value FLOAT, param1_uom_auth_name TEXT, param1_uom_code TEXT, param2_auth_name TEXT, param2_code TEXT, param2_name TEXT, param2_value FLOAT, param2_uom_auth_name TEXT, param2_uom_code TEXT, param3_auth_name TEXT, param3_code TEXT, param3_name TEXT, param3_value FLOAT, param3_uom_auth_name TEXT, param3_uom_code TEXT, param4_auth_name TEXT, param4_code TEXT, param4_name TEXT, param4_value FLOAT, param4_uom_auth_name TEXT, param4_uom_code TEXT, param5_auth_name TEXT, param5_code TEXT, param5_name TEXT, param5_value FLOAT, param5_uom_auth_name TEXT, param5_uom_code TEXT, param6_auth_name TEXT, param6_code TEXT, param6_name TEXT, param6_value FLOAT, param6_uom_auth_name TEXT, param6_uom_code TEXT, param7_auth_name TEXT, param7_code TEXT, param7_name TEXT, param7_value FLOAT, param7_uom_auth_name TEXT, param7_uom_code TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_conversion PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE projected_crs(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, coordinate_system_auth_name TEXT NOT NULL, coordinate_system_code TEXT NOT NULL, geodetic_crs_auth_name TEXT NOT NULL, geodetic_crs_code TEXT NOT NULL, conversion_auth_name TEXT NOT NULL, conversion_code TEXT NOT NULL, text_definition TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_projected_crs PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
+          CREATE TABLE usage(auth_name TEXT, code TEXT, object_table_name TEXT NOT NULL, object_auth_name TEXT NOT NULL, object_code TEXT NOT NULL, extent_auth_name TEXT NOT NULL, extent_code TEXT NOT NULL, scope_auth_name TEXT NOT NULL, scope_code TEXT NOT NULL, CONSTRAINT pk_usage PRIMARY KEY (auth_name, code));
+          """
+              
+              conn.executescript(schema_sql)
+              
+              data_sql = """
+          INSERT INTO metadata VALUES('EPSG.VERSION', '10.098');
+          INSERT INTO metadata VALUES('EPSG.DATE', '2024-01-01');
+          INSERT INTO unit_of_measure VALUES('EPSG','9001','metre','length',1.0,'m',0);
+          INSERT INTO unit_of_measure VALUES('EPSG','9102','degree','angle',0.017453292519943295,'deg',0);
+          INSERT INTO unit_of_measure VALUES('EPSG','9122','degree (supplier to define representation)','angle',0.017453292519943295,NULL,0);
+          INSERT INTO unit_of_measure VALUES('EPSG','9201','unity','scale',1.0,NULL,0);
+          INSERT INTO celestial_body VALUES('PROJ', 'EARTH', 'Earth', 6378137.0);
+          INSERT INTO ellipsoid VALUES('EPSG','7019','GRS 1980',NULL,'PROJ','EARTH',6378137.0,'EPSG','9001',298.257222101,NULL,0);
+          INSERT INTO ellipsoid VALUES('EPSG','7030','WGS 84',NULL,'PROJ','EARTH',6378137.0,'EPSG','9001',298.257223563,NULL,0);
+          INSERT INTO extent VALUES('EPSG','1225','Sweden','Sweden - onshore and offshore.',54.96,69.07,10.03,24.17,0);
+          INSERT INTO extent VALUES('EPSG','2830','World (by country)','World.',-90.0,90.0,-180.0,180.0,0);
+          INSERT INTO scope VALUES('EPSG','1183','Horizontal component of 3D system.',0);
+          INSERT INTO scope VALUES('EPSG','1210','Topographic mapping (medium and small scale).',0);
+          INSERT INTO prime_meridian VALUES('EPSG','8901','Greenwich',0.0,'EPSG','9102',0);
+          INSERT INTO geodetic_datum VALUES('EPSG','6326','World Geodetic System 1984 ensemble',NULL,'EPSG','7030','EPSG','8901',NULL,NULL,2.0,NULL,NULL,0);
+          INSERT INTO geodetic_datum VALUES('EPSG','6619','SWEREF99',NULL,'EPSG','7019','EPSG','8901','1999-06-01',NULL,NULL,NULL,NULL,0);
+          INSERT INTO coordinate_system VALUES('EPSG','6422','ellipsoidal',2);
+          INSERT INTO coordinate_system VALUES('EPSG','4500','Cartesian',2);
+          INSERT INTO geodetic_crs VALUES('EPSG','4326','WGS 84',NULL,'geographic 2D','EPSG','6422','EPSG','6326',NULL,0);
+          INSERT INTO geodetic_crs VALUES('EPSG','4619','SWEREF99',NULL,'geographic 2D','EPSG','6422','EPSG','6619',NULL,0);
+          INSERT INTO conversion VALUES('EPSG','17333','SWEREF99 TM','Transverse Mercator projection for Sweden','EPSG','9807','Transverse Mercator','EPSG','8801','Latitude of natural origin',0.0,'EPSG','9102','EPSG','8802','Longitude of natural origin',15.0,'EPSG','9102','EPSG','8805','Scale factor at natural origin',0.9996,'EPSG','9201','EPSG','8806','False easting',500000.0,'EPSG','9001','EPSG','8807','False northing',0.0,'EPSG','9001',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0);
+          INSERT INTO projected_crs VALUES('EPSG','3006','SWEREF99 TM',NULL,'EPSG','4500','EPSG','4619','EPSG','17333',NULL,0);
+          INSERT INTO usage VALUES('EPSG','3202','geodetic_crs','EPSG','4326','EPSG','2830','EPSG','1183');
+          INSERT INTO usage VALUES('EPSG','3453','geodetic_crs','EPSG','4619','EPSG','1225','EPSG','1183');
+          INSERT INTO usage VALUES('EPSG','12512','conversion','EPSG','17333','EPSG','1225','EPSG','1210');
+          INSERT INTO usage VALUES('EPSG','2022','projected_crs','EPSG','3006','EPSG','1225','EPSG','1210');
+          """
+              
+              conn.executescript(data_sql)
+              conn.close()
+              print(f"Created minimal proj.db: {output_path}")
+              print(f"Size: {os.path.getsize(output_path)} bytes")
+              
+          if __name__ == '__main__':
+              output_path = sys.argv[1] if len(sys.argv) > 1 else 'minimal_proj.db'
+              create_minimal_proj_db(output_path)
+          EOF
+          python3 create_minimal_proj_db.py build/minimal_proj.db
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           # Remove build directory if it exists from previous partial runs
-          rm -rf build
-          mkdir build
-          cd build
-          emcmake cmake .. \
+          rm -rf build/proj_build
+          mkdir build/proj_build
+          cd build/proj_build
+          emcmake cmake ../.. \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_FLAGS="-Oz -flto" \
             -DCMAKE_CXX_FLAGS="-Oz -flto" \
@@ -94,14 +166,18 @@ jobs:
             -DENABLE_SQLITE=OFF \
             -DBUILD_TESTING=OFF \
             -DBUILD_SHARED_LIBS=OFF \
-            -DSQLite3_INCLUDE_DIR=$(pwd)/../sqlite3 \
-            -DSQLite3_LIBRARY=$(pwd)/../sqlite3/libsqlite3.a \
+            -DSQLite3_INCLUDE_DIR=$(pwd)/../../sqlite3 \
+            -DSQLite3_LIBRARY=$(pwd)/../../sqlite3/libsqlite3.a \
             -DENABLE_CURL=OFF \
             -DENABLE_TIFF=OFF \
             -DUSE_EXTERNAL_GTEST=OFF \
             -DBUILD_PROJSYNC=OFF \
             -DENABLE_IPO=ON \
-            -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+            -DEMBED_RESOURCE_FILES=ON \
+            -DUSE_ONLY_EMBEDDED_RESOURCE_FILES=ON \
+            -DCMAKE_INSTALL_PREFIX=$(pwd)/../install
+          # Replace the standard proj.db with our minimal one before building
+          cp ../minimal_proj.db data/proj.db
           emmake make -j$(nproc)
           emmake make install
       - name: Stage artifacts
@@ -112,6 +188,8 @@ jobs:
           cp -r build/install/include artifact-staging/
           # Include SQLite3 library that PROJ depends on
           cp sqlite3/libsqlite3.a artifact-staging/
+          # Include minimal database for reference
+          cp build/minimal_proj.db artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
