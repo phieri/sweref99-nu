@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""
+Optimize proj.db by removing unwanted coordinate systems using a subtractive approach.
+This script identifies Swedish coordinate systems and removes all others.
+
+Swedish coordinate systems to keep:
+- EPSG:4326 - WGS 84 (worldwide reference, needed for GPS)
+- EPSG:3006 - SWEREF99 TM (Swedish national grid)
+- EPSG:4619 - SWEREF99 (Swedish geodetic reference)
+- Related dependencies (ellipsoids, datums, etc.)
+"""
+
+import sqlite3
+import sys
+import os
+
+def get_swedish_coordinate_systems():
+    """Define the coordinate systems needed for Swedish applications"""
+    return {
+        # Primary coordinate systems
+        'geodetic_crs': ['4326', '4619'],  # WGS84, SWEREF99
+        'projected_crs': ['3006'],         # SWEREF99 TM
+        
+        # Related systems that may be referenced
+        'conversion': ['17333'],           # SWEREF99 TM conversion
+        
+        # Keep these to be discovered by dependency analysis
+        'geodetic_datum': [],
+        'ellipsoid': [],
+        'prime_meridian': [],
+        'unit_of_measure': [],
+        'celestial_body': [],
+        'coordinate_system': [],
+        'extent': [],
+        'scope': [],
+        'usage': []
+    }
+
+def analyze_dependencies(db_path):
+    """Analyze what entries are needed based on Swedish coordinate systems"""
+    conn = sqlite3.connect(db_path)
+    needed_ids = get_swedish_coordinate_systems()
+    
+    # Iteratively find dependencies
+    iterations = 0
+    while iterations < 10:  # Prevent infinite loops
+        prev_total = sum(len(ids) for ids in needed_ids.values())
+        
+        # Find dependencies for geodetic_crs
+        for crs_code in needed_ids['geodetic_crs']:
+            cursor = conn.execute("""
+                SELECT datum_auth_name, datum_code, 
+                       coordinate_system_auth_name, coordinate_system_code
+                FROM geodetic_crs 
+                WHERE auth_name='EPSG' AND code=?
+            """, (crs_code,))
+            for row in cursor:
+                if row[0] and row[1]:  # datum
+                    datum_key = f"{row[0]}:{row[1]}"
+                    if row[1] not in needed_ids['geodetic_datum']:
+                        needed_ids['geodetic_datum'].append(row[1])
+                if row[2] and row[3]:  # coordinate system
+                    if row[3] not in needed_ids['coordinate_system']:
+                        needed_ids['coordinate_system'].append(row[3])
+        
+        # Find dependencies for projected_crs  
+        for crs_code in needed_ids['projected_crs']:
+            cursor = conn.execute("""
+                SELECT geodetic_crs_auth_name, geodetic_crs_code,
+                       coordinate_system_auth_name, coordinate_system_code,
+                       conversion_auth_name, conversion_code
+                FROM projected_crs 
+                WHERE auth_name='EPSG' AND code=?
+            """, (crs_code,))
+            for row in cursor:
+                if row[0] and row[1]:  # geodetic_crs
+                    if row[1] not in needed_ids['geodetic_crs']:
+                        needed_ids['geodetic_crs'].append(row[1])
+                if row[2] and row[3]:  # coordinate_system
+                    if row[3] not in needed_ids['coordinate_system']:
+                        needed_ids['coordinate_system'].append(row[3])
+                if row[4] and row[5]:  # conversion
+                    if row[5] not in needed_ids['conversion']:
+                        needed_ids['conversion'].append(row[5])
+        
+        # Find dependencies for geodetic_datum
+        for datum_code in needed_ids['geodetic_datum']:
+            cursor = conn.execute("""
+                SELECT ellipsoid_auth_name, ellipsoid_code,
+                       prime_meridian_auth_name, prime_meridian_code
+                FROM geodetic_datum 
+                WHERE auth_name='EPSG' AND code=?
+            """, (datum_code,))
+            for row in cursor:
+                if row[0] and row[1]:  # ellipsoid
+                    if row[1] not in needed_ids['ellipsoid']:
+                        needed_ids['ellipsoid'].append(row[1])
+                if row[2] and row[3]:  # prime_meridian
+                    if row[3] not in needed_ids['prime_meridian']:
+                        needed_ids['prime_meridian'].append(row[3])
+        
+        # Find dependencies for ellipsoid
+        for ellipsoid_code in needed_ids['ellipsoid']:
+            cursor = conn.execute("""
+                SELECT celestial_body_auth_name, celestial_body_code,
+                       uom_auth_name, uom_code
+                FROM ellipsoid 
+                WHERE auth_name='EPSG' AND code=?
+            """, (ellipsoid_code,))
+            for row in cursor:
+                if row[0] and row[1]:  # celestial_body
+                    celestial_key = f"{row[0]}:{row[1]}"
+                    if celestial_key not in needed_ids['celestial_body']:
+                        needed_ids['celestial_body'].append(celestial_key)
+                if row[2] and row[3]:  # unit_of_measure
+                    if row[3] not in needed_ids['unit_of_measure']:
+                        needed_ids['unit_of_measure'].append(row[3])
+        
+        # Find dependencies for prime_meridian
+        for pm_code in needed_ids['prime_meridian']:
+            cursor = conn.execute("""
+                SELECT uom_auth_name, uom_code
+                FROM prime_meridian 
+                WHERE auth_name='EPSG' AND code=?
+            """, (pm_code,))
+            for row in cursor:
+                if row[0] and row[1]:  # unit_of_measure
+                    if row[1] not in needed_ids['unit_of_measure']:
+                        needed_ids['unit_of_measure'].append(row[1])
+        
+        # Find usage records
+        for table_name in ['geodetic_crs', 'projected_crs', 'conversion']:
+            for code in needed_ids[table_name]:
+                cursor = conn.execute("""
+                    SELECT extent_auth_name, extent_code,
+                           scope_auth_name, scope_code
+                    FROM usage 
+                    WHERE object_table_name=? AND object_auth_name='EPSG' AND object_code=?
+                """, (table_name, code))
+                for row in cursor:
+                    if row[0] and row[1]:  # extent
+                        if row[1] not in needed_ids['extent']:
+                            needed_ids['extent'].append(row[1])
+                    if row[2] and row[3]:  # scope
+                        if row[3] not in needed_ids['scope']:
+                            needed_ids['scope'].append(row[3])
+        
+        # Check if we found new dependencies
+        new_total = sum(len(ids) for ids in needed_ids.values())
+        if new_total == prev_total:
+            break  # No new dependencies found
+        iterations += 1
+    
+    conn.close()
+    return needed_ids
+
+def optimize_proj_db(input_path, output_path=None):
+    """Remove unwanted entries from proj.db keeping only Swedish coordinate systems"""
+    if output_path is None:
+        output_path = input_path
+    
+    # Analyze what we need to keep
+    print("Analyzing dependencies for Swedish coordinate systems...")
+    needed_ids = analyze_dependencies(input_path)
+    
+    # Print what we're keeping
+    total_kept = 0
+    for table_name, ids in needed_ids.items():
+        if ids:
+            print(f"Keeping {len(ids)} entries in {table_name}: {ids[:5]}{'...' if len(ids) > 5 else ''}")
+            total_kept += len(ids)
+    
+    print(f"Total entries to keep: {total_kept}")
+    
+    # Get original size
+    original_size = os.path.getsize(input_path)
+    print(f"Original database size: {original_size:,} bytes")
+    
+    # Create optimized database
+    conn = sqlite3.connect(input_path)
+    
+    # Count original entries
+    original_counts = {}
+    for table_name in needed_ids.keys():
+        if table_name != 'celestial_body':  # Special handling for celestial_body
+            cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+            original_counts[table_name] = cursor.fetchone()[0]
+        else:
+            cursor = conn.execute("SELECT COUNT(*) FROM celestial_body")
+            original_counts[table_name] = cursor.fetchone()[0]
+    
+    # Remove unwanted entries
+    removed_counts = {}
+    for table_name, keep_ids in needed_ids.items():
+        if not keep_ids:
+            continue
+            
+        if table_name == 'celestial_body':
+            # Special handling for celestial_body (auth_name:code format)
+            auth_codes = []
+            for item in keep_ids:
+                if ':' in item:
+                    auth, code = item.split(':', 1)
+                    auth_codes.append((auth, code))
+            
+            if auth_codes:
+                placeholders = ','.join(['(?,?)'] * len(auth_codes))
+                flat_params = []
+                for auth, code in auth_codes:
+                    flat_params.extend([auth, code])
+                
+                cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                before_count = cursor.fetchone()[0]
+                
+                conn.execute(f"""
+                    DELETE FROM {table_name} 
+                    WHERE (auth_name, code) NOT IN (VALUES {placeholders})
+                """, flat_params)
+                
+                cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                after_count = cursor.fetchone()[0]
+                removed_counts[table_name] = before_count - after_count
+        else:
+            # Regular tables with EPSG auth_name
+            cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+            before_count = cursor.fetchone()[0]
+            
+            if table_name == 'usage':
+                # For usage table, we need to keep entries that reference our objects
+                keep_usage_sql = """
+                    DELETE FROM usage WHERE NOT (
+                        (object_table_name='geodetic_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                        OR (object_table_name='projected_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                        OR (object_table_name='conversion' AND object_auth_name='EPSG' AND object_code IN ({}))
+                    )
+                """.format(
+                    ','.join('?' * len(needed_ids['geodetic_crs'])),
+                    ','.join('?' * len(needed_ids['projected_crs'])),
+                    ','.join('?' * len(needed_ids['conversion']))
+                )
+                params = needed_ids['geodetic_crs'] + needed_ids['projected_crs'] + needed_ids['conversion']
+                conn.execute(keep_usage_sql, params)
+            else:
+                placeholders = ','.join(['?'] * len(keep_ids))
+                conn.execute(f"""
+                    DELETE FROM {table_name} 
+                    WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
+                """, keep_ids)
+            
+            cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+            after_count = cursor.fetchone()[0]
+            removed_counts[table_name] = before_count - after_count
+    
+    # Also handle metadata table - keep it as is
+    cursor = conn.execute("SELECT COUNT(*) FROM metadata")
+    metadata_count = cursor.fetchone()[0]
+    print(f"Keeping all {metadata_count} metadata entries")
+    
+    conn.commit()
+    conn.close()
+    
+    # Report results
+    optimized_size = os.path.getsize(input_path)
+    print(f"\nOptimization complete!")
+    print(f"Optimized database size: {optimized_size:,} bytes")
+    print(f"Size reduction: {original_size - optimized_size:,} bytes ({(1 - optimized_size/original_size)*100:.1f}%)")
+    
+    print(f"\nEntries removed by table:")
+    total_removed = 0
+    for table_name, removed_count in removed_counts.items():
+        if removed_count > 0:
+            original_count = original_counts.get(table_name, 0)
+            kept_count = original_count - removed_count
+            print(f"  {table_name}: {removed_count:,} removed, {kept_count} kept")
+            total_removed += removed_count
+    
+    print(f"Total entries removed: {total_removed:,}")
+    
+    return optimized_size
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Usage: python3 optimize_proj_db.py <proj.db_path> [output_path]")
+        sys.exit(1)
+    
+    input_path = sys.argv[1]
+    output_path = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    if not os.path.exists(input_path):
+        print(f"Error: Database file not found: {input_path}")
+        sys.exit(1)
+    
+    optimize_proj_db(input_path, output_path)

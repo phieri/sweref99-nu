@@ -73,84 +73,293 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-            build/minimal_proj.db
-          key: proj-9.6.2-minimal-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}-v2
+          key: proj-9.6.2-optimized-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}-v3
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
           sudo apt-get -qq update && sudo apt-get --quiet --assume-yes install \
             emscripten build-essential cmake python3
-      - name: Create minimal proj.db
+      - name: Create optimization script
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
-          # Create minimal database with only EPSG:4326 and EPSG:3006
-          cat > create_minimal_proj_db.py << 'EOF'
+          cat > optimize_proj_db.py << 'EOF'
           #!/usr/bin/env python3
+          """
+          Optimize proj.db by removing unwanted coordinate systems using a subtractive approach.
+          This script identifies Swedish coordinate systems and removes all others.
+          """
+          
           import sqlite3
           import sys
           import os
           
-          def create_minimal_proj_db(output_path):
-              conn = sqlite3.connect(output_path)
-              conn.execute("PRAGMA foreign_keys = 0")
+          def get_swedish_coordinate_systems():
+              """Define the coordinate systems needed for Swedish applications"""
+              return {
+                  'geodetic_crs': ['4326', '4619'],  # WGS84, SWEREF99
+                  'projected_crs': ['3006'],         # SWEREF99 TM
+                  'conversion': ['17333'],           # SWEREF99 TM conversion
+                  'geodetic_datum': [],
+                  'ellipsoid': [],
+                  'prime_meridian': [],
+                  'unit_of_measure': [],
+                  'celestial_body': [],
+                  'coordinate_system': [],
+                  'extent': [],
+                  'scope': [],
+                  'usage': []
+              }
+          
+          def analyze_dependencies(db_path):
+              """Analyze what entries are needed based on Swedish coordinate systems"""
+              conn = sqlite3.connect(db_path)
+              needed_ids = get_swedish_coordinate_systems()
               
-              schema_sql = """
-          CREATE TABLE metadata(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID;
-          CREATE TABLE unit_of_measure(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, conv_factor FLOAT, proj_short_name TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_unit_of_measure PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE celestial_body (auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, semi_major_axis FLOAT NOT NULL, CONSTRAINT pk_celestial_body PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE ellipsoid (auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, celestial_body_auth_name TEXT NOT NULL, celestial_body_code TEXT NOT NULL, semi_major_axis FLOAT NOT NULL, uom_auth_name TEXT NOT NULL, uom_code TEXT NOT NULL, inv_flattening FLOAT, semi_minor_axis FLOAT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_ellipsoid PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE extent(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT NOT NULL, south_lat FLOAT, north_lat FLOAT, west_lon FLOAT, east_lon FLOAT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_extent PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE scope(auth_name TEXT NOT NULL, code TEXT NOT NULL, scope TEXT NOT NULL, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_scope PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE prime_meridian(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, greenwich_longitude FLOAT NOT NULL, uom_auth_name TEXT NOT NULL, uom_code TEXT NOT NULL, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_prime_meridian PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE geodetic_datum(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, ellipsoid_auth_name TEXT NOT NULL, ellipsoid_code TEXT NOT NULL, prime_meridian_auth_name TEXT NOT NULL, prime_meridian_code TEXT NOT NULL, publication_date TEXT, frame_reference_epoch FLOAT, ensemble_accuracy FLOAT, origin_description TEXT, coordinates_epoch TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_geodetic_datum PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE coordinate_system(auth_name TEXT NOT NULL, code TEXT NOT NULL, type TEXT NOT NULL, dimension INTEGER NOT NULL, CONSTRAINT pk_coordinate_system PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE geodetic_crs(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, type TEXT NOT NULL, coordinate_system_auth_name TEXT NOT NULL, coordinate_system_code TEXT NOT NULL, datum_auth_name TEXT, datum_code TEXT, text_definition TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_geodetic_crs PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE conversion(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, method_auth_name TEXT NOT NULL, method_code TEXT NOT NULL, method_name TEXT NOT NULL, param1_auth_name TEXT, param1_code TEXT, param1_name TEXT, param1_value FLOAT, param1_uom_auth_name TEXT, param1_uom_code TEXT, param2_auth_name TEXT, param2_code TEXT, param2_name TEXT, param2_value FLOAT, param2_uom_auth_name TEXT, param2_uom_code TEXT, param3_auth_name TEXT, param3_code TEXT, param3_name TEXT, param3_value FLOAT, param3_uom_auth_name TEXT, param3_uom_code TEXT, param4_auth_name TEXT, param4_code TEXT, param4_name TEXT, param4_value FLOAT, param4_uom_auth_name TEXT, param4_uom_code TEXT, param5_auth_name TEXT, param5_code TEXT, param5_name TEXT, param5_value FLOAT, param5_uom_auth_name TEXT, param5_uom_code TEXT, param6_auth_name TEXT, param6_code TEXT, param6_name TEXT, param6_value FLOAT, param6_uom_auth_name TEXT, param6_uom_code TEXT, param7_auth_name TEXT, param7_code TEXT, param7_name TEXT, param7_value FLOAT, param7_uom_auth_name TEXT, param7_uom_code TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_conversion PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE projected_crs(auth_name TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL, description TEXT, coordinate_system_auth_name TEXT NOT NULL, coordinate_system_code TEXT NOT NULL, geodetic_crs_auth_name TEXT NOT NULL, geodetic_crs_code TEXT NOT NULL, conversion_auth_name TEXT NOT NULL, conversion_code TEXT NOT NULL, text_definition TEXT, deprecated BOOLEAN NOT NULL, CONSTRAINT pk_projected_crs PRIMARY KEY (auth_name, code)) WITHOUT ROWID;
-          CREATE TABLE usage(auth_name TEXT, code TEXT, object_table_name TEXT NOT NULL, object_auth_name TEXT NOT NULL, object_code TEXT NOT NULL, extent_auth_name TEXT NOT NULL, extent_code TEXT NOT NULL, scope_auth_name TEXT NOT NULL, scope_code TEXT NOT NULL, CONSTRAINT pk_usage PRIMARY KEY (auth_name, code));
-          """
+              # Iteratively find dependencies
+              iterations = 0
+              while iterations < 10:  # Prevent infinite loops
+                  prev_total = sum(len(ids) for ids in needed_ids.values())
+                  
+                  # Find dependencies for geodetic_crs
+                  for crs_code in needed_ids['geodetic_crs']:
+                      cursor = conn.execute("""
+                          SELECT datum_auth_name, datum_code, 
+                                 coordinate_system_auth_name, coordinate_system_code
+                          FROM geodetic_crs 
+                          WHERE auth_name='EPSG' AND code=?
+                      """, (crs_code,))
+                      for row in cursor:
+                          if row[0] and row[1]:  # datum
+                              if row[1] not in needed_ids['geodetic_datum']:
+                                  needed_ids['geodetic_datum'].append(row[1])
+                          if row[2] and row[3]:  # coordinate system
+                              if row[3] not in needed_ids['coordinate_system']:
+                                  needed_ids['coordinate_system'].append(row[3])
+                  
+                  # Find dependencies for projected_crs  
+                  for crs_code in needed_ids['projected_crs']:
+                      cursor = conn.execute("""
+                          SELECT geodetic_crs_auth_name, geodetic_crs_code,
+                                 coordinate_system_auth_name, coordinate_system_code,
+                                 conversion_auth_name, conversion_code
+                          FROM projected_crs 
+                          WHERE auth_name='EPSG' AND code=?
+                      """, (crs_code,))
+                      for row in cursor:
+                          if row[0] and row[1]:  # geodetic_crs
+                              if row[1] not in needed_ids['geodetic_crs']:
+                                  needed_ids['geodetic_crs'].append(row[1])
+                          if row[2] and row[3]:  # coordinate_system
+                              if row[3] not in needed_ids['coordinate_system']:
+                                  needed_ids['coordinate_system'].append(row[3])
+                          if row[4] and row[5]:  # conversion
+                              if row[5] not in needed_ids['conversion']:
+                                  needed_ids['conversion'].append(row[5])
+                  
+                  # Find dependencies for geodetic_datum
+                  for datum_code in needed_ids['geodetic_datum']:
+                      cursor = conn.execute("""
+                          SELECT ellipsoid_auth_name, ellipsoid_code,
+                                 prime_meridian_auth_name, prime_meridian_code
+                          FROM geodetic_datum 
+                          WHERE auth_name='EPSG' AND code=?
+                      """, (datum_code,))
+                      for row in cursor:
+                          if row[0] and row[1]:  # ellipsoid
+                              if row[1] not in needed_ids['ellipsoid']:
+                                  needed_ids['ellipsoid'].append(row[1])
+                          if row[2] and row[3]:  # prime_meridian
+                              if row[3] not in needed_ids['prime_meridian']:
+                                  needed_ids['prime_meridian'].append(row[3])
+                  
+                  # Find dependencies for ellipsoid
+                  for ellipsoid_code in needed_ids['ellipsoid']:
+                      cursor = conn.execute("""
+                          SELECT celestial_body_auth_name, celestial_body_code,
+                                 uom_auth_name, uom_code
+                          FROM ellipsoid 
+                          WHERE auth_name='EPSG' AND code=?
+                      """, (ellipsoid_code,))
+                      for row in cursor:
+                          if row[0] and row[1]:  # celestial_body
+                              celestial_key = f"{row[0]}:{row[1]}"
+                              if celestial_key not in needed_ids['celestial_body']:
+                                  needed_ids['celestial_body'].append(celestial_key)
+                          if row[2] and row[3]:  # unit_of_measure
+                              if row[3] not in needed_ids['unit_of_measure']:
+                                  needed_ids['unit_of_measure'].append(row[3])
+                  
+                  # Find dependencies for prime_meridian
+                  for pm_code in needed_ids['prime_meridian']:
+                      cursor = conn.execute("""
+                          SELECT uom_auth_name, uom_code
+                          FROM prime_meridian 
+                          WHERE auth_name='EPSG' AND code=?
+                      """, (pm_code,))
+                      for row in cursor:
+                          if row[0] and row[1]:  # unit_of_measure
+                              if row[1] not in needed_ids['unit_of_measure']:
+                                  needed_ids['unit_of_measure'].append(row[1])
+                  
+                  # Find usage records
+                  for table_name in ['geodetic_crs', 'projected_crs', 'conversion']:
+                      for code in needed_ids[table_name]:
+                          cursor = conn.execute("""
+                              SELECT extent_auth_name, extent_code,
+                                     scope_auth_name, scope_code
+                              FROM usage 
+                              WHERE object_table_name=? AND object_auth_name='EPSG' AND object_code=?
+                          """, (table_name, code))
+                          for row in cursor:
+                              if row[0] and row[1]:  # extent
+                                  if row[1] not in needed_ids['extent']:
+                                      needed_ids['extent'].append(row[1])
+                              if row[2] and row[3]:  # scope
+                                  if row[3] not in needed_ids['scope']:
+                                      needed_ids['scope'].append(row[3])
+                  
+                  # Check if we found new dependencies
+                  new_total = sum(len(ids) for ids in needed_ids.values())
+                  if new_total == prev_total:
+                      break  # No new dependencies found
+                  iterations += 1
               
-              conn.executescript(schema_sql)
-              
-              data_sql = """
-          INSERT INTO metadata VALUES('EPSG.VERSION', '10.098');
-          INSERT INTO metadata VALUES('EPSG.DATE', '2024-01-01');
-          INSERT INTO unit_of_measure VALUES('EPSG','9001','metre','length',1.0,'m',0);
-          INSERT INTO unit_of_measure VALUES('EPSG','9102','degree','angle',0.017453292519943295,'deg',0);
-          INSERT INTO unit_of_measure VALUES('EPSG','9122','degree (supplier to define representation)','angle',0.017453292519943295,NULL,0);
-          INSERT INTO unit_of_measure VALUES('EPSG','9201','unity','scale',1.0,NULL,0);
-          INSERT INTO celestial_body VALUES('PROJ', 'EARTH', 'Earth', 6378137.0);
-          INSERT INTO ellipsoid VALUES('EPSG','7019','GRS 1980',NULL,'PROJ','EARTH',6378137.0,'EPSG','9001',298.257222101,NULL,0);
-          INSERT INTO ellipsoid VALUES('EPSG','7030','WGS 84',NULL,'PROJ','EARTH',6378137.0,'EPSG','9001',298.257223563,NULL,0);
-          INSERT INTO extent VALUES('EPSG','1225','Sweden','Sweden - onshore and offshore.',54.96,69.07,10.03,24.17,0);
-          INSERT INTO extent VALUES('EPSG','2830','World (by country)','World.',-90.0,90.0,-180.0,180.0,0);
-          INSERT INTO scope VALUES('EPSG','1183','Horizontal component of 3D system.',0);
-          INSERT INTO scope VALUES('EPSG','1210','Topographic mapping (medium and small scale).',0);
-          INSERT INTO prime_meridian VALUES('EPSG','8901','Greenwich',0.0,'EPSG','9102',0);
-          INSERT INTO geodetic_datum VALUES('EPSG','6326','World Geodetic System 1984 ensemble',NULL,'EPSG','7030','EPSG','8901',NULL,NULL,2.0,NULL,NULL,0);
-          INSERT INTO geodetic_datum VALUES('EPSG','6619','SWEREF99',NULL,'EPSG','7019','EPSG','8901','1999-06-01',NULL,NULL,NULL,NULL,0);
-          INSERT INTO coordinate_system VALUES('EPSG','6422','ellipsoidal',2);
-          INSERT INTO coordinate_system VALUES('EPSG','4500','Cartesian',2);
-          INSERT INTO geodetic_crs VALUES('EPSG','4326','WGS 84',NULL,'geographic 2D','EPSG','6422','EPSG','6326',NULL,0);
-          INSERT INTO geodetic_crs VALUES('EPSG','4619','SWEREF99',NULL,'geographic 2D','EPSG','6422','EPSG','6619',NULL,0);
-          INSERT INTO conversion VALUES('EPSG','17333','SWEREF99 TM','Transverse Mercator projection for Sweden','EPSG','9807','Transverse Mercator','EPSG','8801','Latitude of natural origin',0.0,'EPSG','9102','EPSG','8802','Longitude of natural origin',15.0,'EPSG','9102','EPSG','8805','Scale factor at natural origin',0.9996,'EPSG','9201','EPSG','8806','False easting',500000.0,'EPSG','9001','EPSG','8807','False northing',0.0,'EPSG','9001',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0);
-          INSERT INTO projected_crs VALUES('EPSG','3006','SWEREF99 TM',NULL,'EPSG','4500','EPSG','4619','EPSG','17333',NULL,0);
-          INSERT INTO usage VALUES('EPSG','3202','geodetic_crs','EPSG','4326','EPSG','2830','EPSG','1183');
-          INSERT INTO usage VALUES('EPSG','3453','geodetic_crs','EPSG','4619','EPSG','1225','EPSG','1183');
-          INSERT INTO usage VALUES('EPSG','12512','conversion','EPSG','17333','EPSG','1225','EPSG','1210');
-          INSERT INTO usage VALUES('EPSG','2022','projected_crs','EPSG','3006','EPSG','1225','EPSG','1210');
-          """
-              
-              conn.executescript(data_sql)
               conn.close()
-              print(f"Created minimal proj.db: {output_path}")
-              print(f"Size: {os.path.getsize(output_path)} bytes")
+              return needed_ids
+          
+          def optimize_proj_db(input_path, output_path=None):
+              """Remove unwanted entries from proj.db keeping only Swedish coordinate systems"""
+              if output_path is None:
+                  output_path = input_path
               
+              # Analyze what we need to keep
+              print("Analyzing dependencies for Swedish coordinate systems...")
+              needed_ids = analyze_dependencies(input_path)
+              
+              # Print what we're keeping
+              total_kept = 0
+              for table_name, ids in needed_ids.items():
+                  if ids:
+                      print(f"Keeping {len(ids)} entries in {table_name}: {ids[:5]}{'...' if len(ids) > 5 else ''}")
+                      total_kept += len(ids)
+              
+              print(f"Total entries to keep: {total_kept}")
+              
+              # Get original size
+              original_size = os.path.getsize(input_path)
+              print(f"Original database size: {original_size:,} bytes")
+              
+              # Create optimized database
+              conn = sqlite3.connect(input_path)
+              
+              # Count original entries
+              original_counts = {}
+              for table_name in needed_ids.keys():
+                  if table_name != 'celestial_body':  # Special handling for celestial_body
+                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                      original_counts[table_name] = cursor.fetchone()[0]
+                  else:
+                      cursor = conn.execute("SELECT COUNT(*) FROM celestial_body")
+                      original_counts[table_name] = cursor.fetchone()[0]
+              
+              # Remove unwanted entries
+              removed_counts = {}
+              for table_name, keep_ids in needed_ids.items():
+                  if not keep_ids:
+                      continue
+                      
+                  if table_name == 'celestial_body':
+                      # Special handling for celestial_body (auth_name:code format)
+                      auth_codes = []
+                      for item in keep_ids:
+                          if ':' in item:
+                              auth, code = item.split(':', 1)
+                              auth_codes.append((auth, code))
+                      
+                      if auth_codes:
+                          placeholders = ','.join(['(?,?)'] * len(auth_codes))
+                          flat_params = []
+                          for auth, code in auth_codes:
+                              flat_params.extend([auth, code])
+                          
+                          cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                          before_count = cursor.fetchone()[0]
+                          
+                          conn.execute(f"""
+                              DELETE FROM {table_name} 
+                              WHERE (auth_name, code) NOT IN (VALUES {placeholders})
+                          """, flat_params)
+                          
+                          cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                          after_count = cursor.fetchone()[0]
+                          removed_counts[table_name] = before_count - after_count
+                  else:
+                      # Regular tables with EPSG auth_name
+                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                      before_count = cursor.fetchone()[0]
+                      
+                      if table_name == 'usage':
+                          # For usage table, we need to keep entries that reference our objects
+                          keep_usage_sql = """
+                              DELETE FROM usage WHERE NOT (
+                                  (object_table_name='geodetic_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                                  OR (object_table_name='projected_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                                  OR (object_table_name='conversion' AND object_auth_name='EPSG' AND object_code IN ({}))
+                              )
+                          """.format(
+                              ','.join('?' * len(needed_ids['geodetic_crs'])),
+                              ','.join('?' * len(needed_ids['projected_crs'])),
+                              ','.join('?' * len(needed_ids['conversion']))
+                          )
+                          params = needed_ids['geodetic_crs'] + needed_ids['projected_crs'] + needed_ids['conversion']
+                          conn.execute(keep_usage_sql, params)
+                      else:
+                          placeholders = ','.join(['?'] * len(keep_ids))
+                          conn.execute(f"""
+                              DELETE FROM {table_name} 
+                              WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
+                          """, keep_ids)
+                      
+                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                      after_count = cursor.fetchone()[0]
+                      removed_counts[table_name] = before_count - after_count
+              
+              conn.commit()
+              conn.close()
+              
+              # Report results
+              optimized_size = os.path.getsize(input_path)
+              print(f"\nOptimization complete!")
+              print(f"Optimized database size: {optimized_size:,} bytes")
+              print(f"Size reduction: {original_size - optimized_size:,} bytes ({(1 - optimized_size/original_size)*100:.1f}%)")
+              
+              print(f"\nEntries removed by table:")
+              total_removed = 0
+              for table_name, removed_count in removed_counts.items():
+                  if removed_count > 0:
+                      original_count = original_counts.get(table_name, 0)
+                      kept_count = original_count - removed_count
+                      print(f"  {table_name}: {removed_count:,} removed, {kept_count} kept")
+                      total_removed += removed_count
+              
+              print(f"Total entries removed: {total_removed:,}")
+              
+              return optimized_size
+          
           if __name__ == '__main__':
-              output_path = sys.argv[1] if len(sys.argv) > 1 else 'minimal_proj.db'
-              create_minimal_proj_db(output_path)
+              if len(sys.argv) < 2:
+                  print("Usage: python3 optimize_proj_db.py <proj.db_path> [output_path]")
+                  sys.exit(1)
+              
+              input_path = sys.argv[1]
+              output_path = sys.argv[2] if len(sys.argv) > 2 else None
+              
+              if not os.path.exists(input_path):
+                  print(f"Error: Database file not found: {input_path}")
+                  sys.exit(1)
+              
+              optimize_proj_db(input_path, output_path)
           EOF
-          python3 create_minimal_proj_db.py build/minimal_proj.db
       - name: Build PROJ
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
@@ -160,8 +369,8 @@ jobs:
           cd build/proj_build
           emcmake cmake ../.. \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_C_FLAGS="-Oz -flto" \
-            -DCMAKE_CXX_FLAGS="-Oz -flto" \
+            -DCMAKE_C_FLAGS="-Os" \
+            -DCMAKE_CXX_FLAGS="-Os" \
             -DBUILD_APPS=OFF \
             -DENABLE_SQLITE=OFF \
             -DBUILD_TESTING=OFF \
@@ -172,14 +381,25 @@ jobs:
             -DENABLE_TIFF=OFF \
             -DUSE_EXTERNAL_GTEST=OFF \
             -DBUILD_PROJSYNC=OFF \
-            -DENABLE_IPO=ON \
-            -DEMBED_RESOURCE_FILES=ON \
-            -DUSE_ONLY_EMBEDDED_RESOURCE_FILES=ON \
             -DCMAKE_INSTALL_PREFIX=$(pwd)/../install
-          # Replace the standard proj.db with our minimal one before building
-          cp ../minimal_proj.db data/proj.db
           emmake make -j$(nproc)
           emmake make install
+      - name: Optimize PROJ database
+        if: steps.cache-proj-build.outputs.cache-hit != 'true'
+        run: |
+          # Find the proj.db in the installed PROJ build
+          PROJ_DB_PATH=$(find build/install -name "proj.db" | head -1)
+          if [ -z "$PROJ_DB_PATH" ]; then
+            echo "Error: proj.db not found in PROJ installation"
+            find build/install -name "*.db" || echo "No .db files found"
+            exit 1
+          fi
+          echo "Found proj.db at: $PROJ_DB_PATH"
+          echo "Original size: $(ls -lh "$PROJ_DB_PATH" | awk '{print $5}')"
+          
+          # Optimize the database using subtractive approach
+          python3 optimize_proj_db.py "$PROJ_DB_PATH"
+          echo "Optimized size: $(ls -lh "$PROJ_DB_PATH" | awk '{print $5}')"
       - name: Stage artifacts
         run: |
           # Copy files to expected artifact structure
@@ -188,8 +408,6 @@ jobs:
           cp -r build/install/include artifact-staging/
           # Include SQLite3 library that PROJ depends on
           cp sqlite3/libsqlite3.a artifact-staging/
-          # Include minimal database for reference
-          cp build/minimal_proj.db artifact-staging/
       - uses: actions/upload-artifact@v4
         with:
           name: proj
@@ -282,7 +500,7 @@ jobs:
           ls -la _site/
           echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
-          # Skip downloading Pico.css - using inline critical CSS instead
+          curl -o _site/pico.min.css https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css
           echo "=== Final _site contents ==="
           ls -la _site/
       - uses: actions/upload-pages-artifact@v4
