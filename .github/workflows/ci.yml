@@ -97,9 +97,9 @@ jobs:
               """Define the coordinate systems needed for Swedish applications"""
               return {
                   # Hardcoded IDs based on dependency analysis to avoid runtime computation
+                  # Note: 'conversion' is excluded as it's a view in PROJ databases, not a table
                   'geodetic_crs': ['4326', '4619'],
                   'projected_crs': ['3006'],
-                  'conversion': ['17333'],
                   'geodetic_datum': ['6326', '6619'],
                   'ellipsoid': ['7030', '7019'],
                   'prime_meridian': ['8901'],
@@ -140,77 +140,104 @@ jobs:
               # Create optimized database
               conn = sqlite3.connect(input_path)
               
-              # Count original entries
+              # Get list of actual tables vs views
+              cursor = conn.execute("SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view')")
+              db_objects = {name: obj_type for name, obj_type in cursor.fetchall()}
+              
+              print("\\nDatabase objects found:")
+              for name, obj_type in sorted(db_objects.items()):
+                  if name in needed_ids:
+                      print(f"  {obj_type}: {name}")
+              
+              # Count original entries (only for tables and views that exist)
               original_counts = {}
               for table_name in needed_ids.keys():
-                  if table_name != 'celestial_body':  # Special handling for celestial_body
-                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
-                      original_counts[table_name] = cursor.fetchone()[0]
-                  else:
-                      cursor = conn.execute("SELECT COUNT(*) FROM celestial_body")
-                      original_counts[table_name] = cursor.fetchone()[0]
+                  if table_name in db_objects:
+                      try:
+                          cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                          original_counts[table_name] = cursor.fetchone()[0]
+                      except sqlite3.Error as e:
+                          print(f"Warning: Could not count {table_name}: {e}")
+                          original_counts[table_name] = 0
               
-              # Remove unwanted entries
+              # Remove unwanted entries (only from tables, not views)
               removed_counts = {}
               for table_name, keep_ids in needed_ids.items():
                   if not keep_ids:
                       continue
                       
-                  if table_name == 'celestial_body':
-                      # Special handling for celestial_body (auth_name:code format)
-                      auth_codes = []
-                      for item in keep_ids:
-                          if ':' in item:
-                              auth, code = item.split(':', 1)
-                              auth_codes.append((auth, code))
+                  # Skip if not in database or is a view
+                  if table_name not in db_objects:
+                      print(f"Skipping {table_name}: not found in database")
+                      continue
                       
-                      if auth_codes:
-                          placeholders = ','.join(['(?,?)'] * len(auth_codes))
-                          flat_params = []
-                          for auth, code in auth_codes:
-                              flat_params.extend([auth, code])
+                  if db_objects[table_name] == 'view':
+                      print(f"Skipping {table_name}: is a view, cannot modify")
+                      continue
+                  
+                  try:
+                      if table_name == 'celestial_body':
+                          # Special handling for celestial_body (auth_name:code format)
+                          auth_codes = []
+                          for item in keep_ids:
+                              if ':' in item:
+                                  auth, code = item.split(':', 1)
+                                  auth_codes.append((auth, code))
                           
+                          if auth_codes:
+                              placeholders = ','.join(['(?,?)'] * len(auth_codes))
+                              flat_params = []
+                              for auth, code in auth_codes:
+                                  flat_params.extend([auth, code])
+                              
+                              cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                              before_count = cursor.fetchone()[0]
+                              
+                              conn.execute(f"""
+                                  DELETE FROM {table_name} 
+                                  WHERE (auth_name, code) NOT IN (VALUES {placeholders})
+                              """, flat_params)
+                              
+                              cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                              after_count = cursor.fetchone()[0]
+                              removed_counts[table_name] = before_count - after_count
+                      else:
+                          # Regular tables with EPSG auth_name
                           cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
                           before_count = cursor.fetchone()[0]
                           
-                          conn.execute(f"""
-                              DELETE FROM {table_name} 
-                              WHERE (auth_name, code) NOT IN (VALUES {placeholders})
-                          """, flat_params)
+                          if table_name == 'usage':
+                              # For usage table, we need to keep entries that reference our objects
+                              keep_usage_sql = """
+                                  DELETE FROM usage WHERE NOT (
+                                      (object_table_name='geodetic_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                                      OR (object_table_name='projected_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
+                                  )
+                              """.format(
+                                  ','.join('?' * len(needed_ids['geodetic_crs'])),
+                                  ','.join('?' * len(needed_ids['projected_crs']))
+                              )
+                              params = needed_ids['geodetic_crs'] + needed_ids['projected_crs']
+                              conn.execute(keep_usage_sql, params)
+                          else:
+                              placeholders = ','.join(['?'] * len(keep_ids))
+                              conn.execute(f"""
+                                  DELETE FROM {table_name} 
+                                  WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
+                              """, keep_ids)
                           
                           cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
                           after_count = cursor.fetchone()[0]
                           removed_counts[table_name] = before_count - after_count
-                  else:
-                      # Regular tables with EPSG auth_name
-                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
-                      before_count = cursor.fetchone()[0]
-                      
-                      if table_name == 'usage':
-                          # For usage table, we need to keep entries that reference our objects
-                          keep_usage_sql = """
-                              DELETE FROM usage WHERE NOT (
-                                  (object_table_name='geodetic_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
-                                  OR (object_table_name='projected_crs' AND object_auth_name='EPSG' AND object_code IN ({}))
-                                  OR (object_table_name='conversion' AND object_auth_name='EPSG' AND object_code IN ({}))
-                              )
-                          """.format(
-                              ','.join('?' * len(needed_ids['geodetic_crs'])),
-                              ','.join('?' * len(needed_ids['projected_crs'])),
-                              ','.join('?' * len(needed_ids['conversion']))
-                          )
-                          params = needed_ids['geodetic_crs'] + needed_ids['projected_crs'] + needed_ids['conversion']
-                          conn.execute(keep_usage_sql, params)
-                      else:
-                          placeholders = ','.join(['?'] * len(keep_ids))
-                          conn.execute(f"""
-                              DELETE FROM {table_name} 
-                              WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
-                          """, keep_ids)
-                      
-                      cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
-                      after_count = cursor.fetchone()[0]
-                      removed_counts[table_name] = before_count - after_count
+                          
+                  except sqlite3.Error as e:
+                      print(f"Error processing {table_name}: {e}")
+                      removed_counts[table_name] = 0
+              
+              # Also handle metadata table - keep it as is
+              cursor = conn.execute("SELECT COUNT(*) FROM metadata")
+              metadata_count = cursor.fetchone()[0]
+              print(f"Keeping all {metadata_count} metadata entries")
               
               conn.commit()
               conn.close()
