@@ -79,6 +79,15 @@ int wgs84_to_sweref99tm_buf(double lat, double lon, double* out, int out_len) {
     return 0;
 }
 
+// Compatibility wrapper: some builds / JS glue expect the symbol
+// `wgs84_to_sweref99tm` (without the `_buf` suffix). Provide a thin
+// wrapper that forwards to the existing implementation so both names
+// are available without duplicating logic.
+EMSCRIPTEN_KEEPALIVE
+int wgs84_to_sweref99tm(double lat, double lon, double* out, int out_len) {
+    return wgs84_to_sweref99tm_buf(lat, lon, out, out_len);
+}
+
 #ifdef __cplusplus
 }
 #endif
