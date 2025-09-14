@@ -20,7 +20,8 @@ function isInSweden(pos: GeolocationPosition) {
 declare const Module: any;
 
 // WASM module state
-let wgs84_to_sweref99tm: any = null;
+// cwrap for the existing C function `wgs84_to_sweref99tm_buf`
+let wgs84_to_sweref99tm_buf: any = null;
 let wasmAvailable = false;
 let wasmInitialized = false;
 
@@ -31,12 +32,14 @@ function initializeWasm(): boolean {
     }
     
     try {
-        if (typeof Module !== 'undefined' && Module.cwrap) {
-            wgs84_to_sweref99tm = Module.cwrap(
-                "wgs84_to_sweref99tm",
-                "number",
-                ["number", "number"]
-            );
+		if (typeof Module !== 'undefined' && Module.cwrap) {
+			// The compiled C function is `wgs84_to_sweref99tm_buf(double lat, double lon, double* out, int out_len)`
+			// Expose it via cwrap with 4 numeric arguments (lat, lon, out_ptr, out_len)
+			wgs84_to_sweref99tm_buf = Module.cwrap(
+				"wgs84_to_sweref99tm_buf",
+				"number",
+				["number", "number", "number", "number"]
+			);
             wasmAvailable = true;
             wasmInitialized = true;
             
@@ -56,27 +59,43 @@ function initializeWasm(): boolean {
 
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
     // Try to initialize WASM if not already done
-    if (!initializeWasm() || !wgs84_to_sweref99tm) {
-        console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
-        return { northing: 0, easting: 0 };
-    }
-    
-    try {
-        const ptr = wgs84_to_sweref99tm(lat, lon);
-        const north = Module.getValue(ptr, "double");
-        const east = Module.getValue(ptr + 8, "double");
-        Module._free(ptr);
-        
-        // Validate the result
-        if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-            console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
-        }
-        
-        return { northing: north, easting: east };
-    } catch (error) {
-        console.error("Error in coordinate transformation:", error);
-        return { northing: 0, easting: 0 };
-    }
+	if (!initializeWasm() || !wgs84_to_sweref99tm_buf) {
+		console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
+		return { northing: 0, easting: 0 };
+	}
+
+	// Allocate space for two doubles (northing, easting)
+	const bytes = 8 * 2;
+	const ptr = Module._malloc(bytes);
+	if (ptr === 0) {
+		console.error("Failed to allocate memory in WASM module");
+		return { northing: 0, easting: 0 };
+	}
+
+	try {
+		// Call the c function: returns 1 on success, 0 on failure
+		const ok = wgs84_to_sweref99tm_buf(lat, lon, ptr, 2);
+		let north = 0;
+		let east = 0;
+		if (ok === 1) {
+			north = Module.getValue(ptr, "double");
+			east = Module.getValue(ptr + 8, "double");
+		} else {
+			console.warn(`WASM transformation returned failure for lat=${lat}, lon=${lon}`);
+		}
+
+		// Validate the result
+		if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
+			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
+		}
+
+		return { northing: north, easting: east };
+	} catch (error) {
+		console.error("Error in coordinate transformation:", error);
+		return { northing: 0, easting: 0 };
+	} finally {
+		Module._free(ptr);
+	}
 }
 
 const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
