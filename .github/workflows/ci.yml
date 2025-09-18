@@ -73,7 +73,7 @@ jobs:
           path: |
             build/install/lib/libproj.a
             build/install/include
-          key: proj-9.6.2-optimized-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}-v4
+          key: proj-9.6.2-optimized-build-${{ runner.os }}-emcc-${{ hashFiles('sqlite3/libsqlite3.a') }}-v5
       - name: Install build dependencies
         if: steps.cache-proj-build.outputs.cache-hit != 'true'
         run: |
@@ -221,9 +221,10 @@ jobs:
                               conn.execute(keep_usage_sql, params)
                           else:
                               placeholders = ','.join(['?'] * len(keep_ids))
+                              # Delete ALL entries except our specific EPSG ones
                               conn.execute(f"""
                                   DELETE FROM {table_name} 
-                                  WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
+                                  WHERE NOT (auth_name='EPSG' AND code IN ({placeholders}))
                               """, keep_ids)
                           
                           cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")

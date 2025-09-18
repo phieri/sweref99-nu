@@ -142,9 +142,10 @@ def optimize_proj_db(input_path, output_path=None):
                     conn.execute(keep_usage_sql, params)
                 else:
                     placeholders = ','.join(['?'] * len(keep_ids))
+                    # Delete ALL entries except our specific EPSG ones
                     conn.execute(f"""
                         DELETE FROM {table_name} 
-                        WHERE auth_name='EPSG' AND code NOT IN ({placeholders})
+                        WHERE NOT (auth_name='EPSG' AND code IN ({placeholders}))
                     """, keep_ids)
                 
                 cursor = conn.execute(f"SELECT COUNT(*) FROM {table_name}")
