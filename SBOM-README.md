@@ -12,13 +12,11 @@ This directory contains Software Bill of Materials (SBOM) files for the sweref99
 The project uses the following external components:
 
 ### Runtime Dependencies
-- **PROJ** (v9.6.2) - MIT License - Geospatial coordinate transformation library
-- **SQLite** (v3.42.0) - Public Domain - Database engine used by PROJ
+- **PROJ4JS** (v2.9.2) - MIT License - Lightweight JavaScript coordinate transformation library
 - **Pico.css** (v2.0.0) - MIT License - Minimal CSS framework
 
 ### Build Dependencies
 - **TypeScript** (v5.9.2) - Apache License 2.0 - TypeScript compiler
-- **Emscripten** (v3.1.0) - MIT License - WebAssembly compilation toolchain
 
 ## License Information
 

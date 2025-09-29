@@ -17,84 +17,45 @@ function isInSweden(pos: GeolocationPosition) {
 	}
 }
 
-declare const Module: any;
+declare const proj4: any;
 
-// WASM module state
-// cwrap for the existing C function `wgs84_to_sweref99tm_buf`
-let wgs84_to_sweref99tm_buf: any = null;
-let wasmAvailable = false;
-let wasmInitialized = false;
-
-// Initialize WASM module when available
-function initializeWasm(): boolean {
-    if (wasmInitialized && wasmAvailable) {
-        return wasmAvailable;
-    }
-    
-    try {
-		if (typeof Module !== 'undefined' && Module.cwrap) {
-			// The compiled C function is `wgs84_to_sweref99tm_buf(double lat, double lon, double* out, int out_len)`
-			// Expose it via cwrap with 4 numeric arguments (lat, lon, out_ptr, out_len)
-			wgs84_to_sweref99tm_buf = Module.cwrap(
-				"wgs84_to_sweref99tm_buf",
-				"number",
-				["number", "number", "number", "number"]
-			);
-            wasmAvailable = true;
-            wasmInitialized = true;
-            
-            console.log("WASM module initialized successfully");
-        } else {
-            // Don't mark as initialized if Module isn't ready yet
-            wasmAvailable = false;
-        }
-    } catch (error) {
-        console.warn("WASM module not available, SWEREF 99 conversion will be unavailable:", error);
-        wasmAvailable = false;
-        wasmInitialized = true;
-    }
-    
-    return wasmAvailable;
-}
-
+// PROJ4JS-based coordinate transformation
 function wgs84_to_sweref99tm_js(lat: number, lon: number) {
-    // Try to initialize WASM if not already done
-	if (!initializeWasm() || !wgs84_to_sweref99tm_buf) {
-		console.warn("SWEREF 99 transformation not available - WASM module failed to initialize");
-		return { northing: 0, easting: 0 };
-	}
-
-	// Allocate space for two doubles (northing, easting)
-	const bytes = 8 * 2;
-	const ptr = Module._malloc(bytes);
-	if (ptr === 0) {
-		console.error("Failed to allocate memory in WASM module");
-		return { northing: 0, easting: 0 };
-	}
-
 	try {
-		// Call the c function: returns 1 on success, 0 on failure
-		const ok = wgs84_to_sweref99tm_buf(lat, lon, ptr, 2);
-		let north = 0;
-		let east = 0;
-		if (ok === 1) {
-			north = Module.getValue(ptr, "double");
-			east = Module.getValue(ptr + 8, "double");
-		} else {
-			console.warn(`WASM transformation returned failure for lat=${lat}, lon=${lon}`);
+		// Check if proj4 library is available
+		if (typeof proj4 === 'undefined') {
+			console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
+			return { northing: 0, easting: 0 };
 		}
+
+		// Validate input coordinates are within reasonable bounds for Sweden
+		if (lat < 55 || lat > 69 || lon < 10 || lon > 24) {
+			console.warn(`Coordinates outside Sweden bounds: lat=${lat}, lon=${lon}`);
+		}
+
+		// Transform coordinates using proj4
+		// Input: [longitude, latitude] in WGS84 (EPSG:4326)
+		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
+		const result = proj4.transform('EPSG:4326', 'EPSG:3006', [lon, lat]);
+		
+		const easting = result[0];
+		const northing = result[1];
 
 		// Validate the result
-		if (isNaN(north) || isNaN(east) || (north === 0 && east === 0)) {
-			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { north, east });
+		if (isNaN(northing) || isNaN(easting)) {
+			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
+			return { northing: 0, easting: 0 };
 		}
 
-		return { northing: north, easting: east };
+		// Sanity check for SWEREF 99 TM bounds in Sweden
+		if (northing < 6100000 || northing > 7700000 || easting < 250000 || easting > 900000) {
+			console.warn(`Transformed coordinates outside expected SWEREF 99 TM bounds: N=${northing}, E=${easting}`);
+		}
+
+		return { northing, easting };
 	} catch (error) {
 		console.error("Error in coordinate transformation:", error);
 		return { northing: 0, easting: 0 };
-	} finally {
-		Module._free(ptr);
 	}
 }
 
