@@ -63,28 +63,6 @@
         }
       ]
     },
-		{
-      "type": "library",
-      "bom-ref": "sqlite-3.42.0",
-      "name": "SQLite",
-      "version": "3.42.0",
-      "description": "SQLite database engine",
-      "scope": "required",
-      "licenses": [
-        {
-          "license": {
-            "name": "Public Domain"
-          }
-        }
-      ],
-      "copyright": "Public Domain",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://sqlite.org/"
-        }
-      ]
-    },
     {
       "type": "library",
       "bom-ref": "picocss-2.0.0",
@@ -134,32 +112,6 @@
         {
           "type": "vcs",
           "url": "https://github.com/microsoft/TypeScript"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "emscripten-3.1.0",
-      "name": "Emscripten",
-      "version": "3.1.0",
-      "description": "WebAssembly compiler toolchain",
-      "scope": "optional",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "copyright": "Copyright (c) 2010-2014 Emscripten authors",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://emscripten.org/"
-        },
-        {
-          "type": "vcs",
-          "url": "https://github.com/emscripten-core/emscripten"
         }
       ]
     }

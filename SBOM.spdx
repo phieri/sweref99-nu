@@ -28,17 +28,6 @@ PackageLicenseDeclared: MIT
 PackageCopyrightText: Copyright (c) 2000, Frank Warmerdam
 ExternalRef: PACKAGE-MANAGER purl pkg:github/OSGeo/PROJ@9.6.2
 
-# SQLite
-PackageName: SQLite
-SPDXID: SPDXRef-Package-SQLite
-PackageVersion: 3.42.0
-PackageSupplier: Person: D. Richard Hipp
-PackageDownloadLocation: https://www.sqlite.org/2023/sqlite-amalgamation-3420000.zip
-FilesAnalyzed: false
-PackageLicenseConcluded: Unlicense
-PackageLicenseDeclared: Unlicense
-PackageCopyrightText: Public Domain
-
 # Pico.css
 PackageName: Pico.css
 SPDXID: SPDXRef-Package-PicoCSS
@@ -63,22 +52,7 @@ PackageLicenseDeclared: Apache-2.0
 PackageCopyrightText: Copyright Microsoft Corporation
 ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.2
 
-# Emscripten
-PackageName: Emscripten
-SPDXID: SPDXRef-Package-Emscripten
-PackageVersion: 3.1.0
-PackageSupplier: Organization: Emscripten authors
-PackageDownloadLocation: https://github.com/emscripten-core/emscripten
-FilesAnalyzed: false
-PackageLicenseConcluded: MIT
-PackageLicenseDeclared: MIT
-PackageCopyrightText: Copyright (c) 2010-2014 Emscripten authors
-ExternalRef: PACKAGE-MANAGER purl pkg:github/emscripten-core/emscripten@3.1.0
-
 # Relationships
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-SQLite
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
 Relationship: SPDXRef-Package-sweref99-nu BUILD_DEPENDENCY_OF SPDXRef-Package-TypeScript
-Relationship: SPDXRef-Package-sweref99-nu BUILD_DEPENDENCY_OF SPDXRef-Package-Emscripten
-Relationship: SPDXRef-Package-PROJ DEPENDS_ON SPDXRef-Package-SQLite

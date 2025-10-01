@@ -28,11 +28,6 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
 			return { northing: 0, easting: 0 };
 		}
 
-		// Validate input coordinates are within reasonable bounds for Sweden
-		if (lat < 55 || lat > 69 || lon < 10 || lon > 24) {
-			console.warn(`Coordinates outside Sweden bounds: lat=${lat}, lon=${lon}`);
-		}
-
 		// Define coordinate systems if not already defined
 		// WGS84 is built-in as 'EPSG:4326'
 		// SWEREF 99 TM (EPSG:3006) definition
@@ -52,11 +47,6 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
 		if (isNaN(northing) || isNaN(easting)) {
 			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
 			return { northing: 0, easting: 0 };
-		}
-
-		// Sanity check for SWEREF 99 TM bounds in Sweden
-		if (northing < 6100000 || northing > 7700000 || easting < 250000 || easting > 900000) {
-			console.warn(`Transformed coordinates outside expected SWEREF 99 TM bounds: N=${northing}, E=${easting}`);
 		}
 
 		return { northing, easting };
