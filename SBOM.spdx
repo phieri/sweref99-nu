@@ -16,17 +16,17 @@ PackageLicenseConcluded: NOASSERTION
 PackageLicenseDeclared: NOASSERTION
 PackageCopyrightText: NOASSERTION
 
-# PROJ Library
-PackageName: PROJ
-SPDXID: SPDXRef-Package-PROJ
-PackageVersion: 9.6.2
-PackageSupplier: Organization: OSGeo
-PackageDownloadLocation: https://github.com/OSGeo/PROJ
+# PROJ4JS Library
+PackageName: PROJ4JS
+SPDXID: SPDXRef-Package-PROJ4JS
+PackageVersion: 2.11.0
+PackageSupplier: Person: Mike Adair et al.
+PackageDownloadLocation: https://github.com/proj4js/proj4js
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
-PackageCopyrightText: Copyright (c) 2000, Frank Warmerdam
-ExternalRef: PACKAGE-MANAGER purl pkg:github/OSGeo/PROJ@9.6.2
+PackageCopyrightText: Copyright (c) 2014, Mike Adair et al.
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/proj4@2.11.0
 
 # Pico.css
 PackageName: Pico.css
@@ -53,6 +53,6 @@ PackageCopyrightText: Copyright Microsoft Corporation
 ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.2
 
 # Relationships
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ
+Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ4JS
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
 Relationship: SPDXRef-Package-sweref99-nu BUILD_DEPENDENCY_OF SPDXRef-Package-TypeScript
