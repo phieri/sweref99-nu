@@ -39,10 +39,10 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "proj-9.6.2",
-      "name": "PROJ",
-      "version": "9.6.2",
-      "description": "PROJ coordinate transformation software library",
+      "bom-ref": "proj4js-2.11.0",
+      "name": "PROJ4JS",
+      "version": "2.11.0",
+      "description": "JavaScript library to transform coordinates from one coordinate system to another",
       "scope": "required",
       "licenses": [
         {
@@ -51,15 +51,19 @@
           }
         }
       ],
-      "copyright": "Copyright (c) 2000, Frank Warmerdam",
+      "copyright": "Copyright (c) 2014, Mike Adair et al.",
       "externalReferences": [
         {
           "type": "website",
-          "url": "https://proj.org/"
+          "url": "https://github.com/proj4js/proj4js"
         },
         {
           "type": "vcs",
-          "url": "https://github.com/OSGeo/PROJ"
+          "url": "https://github.com/proj4js/proj4js"
+        },
+        {
+          "type": "distribution",
+          "url": "https://cdn.jsdelivr.net/npm/proj4@2.11.0/dist/proj4.js"
         }
       ]
     },
@@ -120,8 +124,7 @@
     {
       "ref": "sweref99-nu",
       "dependsOn": [
-        "proj-9.6.2",
-				"sqlite-3.42.0",
+        "proj4js-2.11.0",
         "picocss-2.0.0"
       ]
     }
