@@ -12,3 +12,7 @@ CMakeUserPresets.json
 
 # Generated JavaScript files
 _site/script.js
+
+# Downloaded dependencies (fetched from CDN during build)
+_site/proj4.js
+_site/pico.min.css
