@@ -33,10 +33,17 @@ function wgs84_to_sweref99tm_js(lat: number, lon: number) {
 			console.warn(`Coordinates outside Sweden bounds: lat=${lat}, lon=${lon}`);
 		}
 
+		// Define coordinate systems if not already defined
+		// WGS84 is built-in as 'EPSG:4326'
+		// SWEREF 99 TM (EPSG:3006) definition
+		if (!proj4.defs('EPSG:3006')) {
+			proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+		}
+
 		// Transform coordinates using proj4
 		// Input: [longitude, latitude] in WGS84 (EPSG:4326)
 		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
-		const result = proj4.transform('EPSG:4326', 'EPSG:3006', [lon, lat]);
+		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
 		
 		const easting = result[0];
 		const northing = result[1];
