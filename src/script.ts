@@ -20,7 +20,7 @@ function isInSweden(pos: GeolocationPosition) {
 declare const proj4: any;
 
 // PROJ4JS-based coordinate transformation
-function wgs84_to_sweref99tm_js(lat: number, lon: number) {
+function wgs84_to_sweref99tm(lat: number, lon: number) {
 	try {
 		// Check if proj4 library is available
 		if (typeof proj4 === 'undefined') {
@@ -91,7 +91,7 @@ function posInit(event: Event) {
 			speed!.classList.remove("outofrange");
 		}
 
-		const sweref = wgs84_to_sweref99tm_js(position.coords.latitude, position.coords.longitude);
+		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", 
