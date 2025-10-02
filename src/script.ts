@@ -39,7 +39,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 		// Input: [longitude, latitude] in WGS84 (EPSG:4326)
 		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
 		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
-		
+
 		const easting = result[0];
 		const northing = result[1];
 
@@ -57,6 +57,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 }
 
 const errorMsg_sv = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
+const na_sv = "Ej&nbsp;tillgängligt"
 
 const uncert   = document.getElementById("uncert");
 const speed    = document.getElementById("speed");
@@ -96,8 +97,8 @@ function posInit(event: Event) {
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", 
 				{ lat: position.coords.latitude, lon: position.coords.longitude });
-			swerefn!.innerHTML = "Ej&nbsp;tillgängligt";
-			swerefe!.innerHTML = "Ej&nbsp;tillgängligt";
+			swerefn!.innerHTML = na_sv;
+			swerefe!.innerHTML = na_sv;
 		} else {
 			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",");
 			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",");
