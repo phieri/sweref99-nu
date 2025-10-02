@@ -56,7 +56,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 	}
 }
 
-const errorMsg = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
+const errorMsg_sv = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 
 const uncert   = document.getElementById("uncert");
 const speed    = document.getElementById("speed");
@@ -111,7 +111,7 @@ function posInit(event: Event) {
 
 	function error() {
 		sharebtn!.setAttribute("disabled", "disabled");
-		window.alert(errorMsg);
+		window.alert(errorMsg_sv);
 	}
 
 	function restoreError() {
@@ -162,7 +162,7 @@ document.addEventListener("dblclick", posInit, false);
 posbtn!.addEventListener("click", posInit, false);
 
 if (!("geolocation" in navigator)) {
-	window.alert(errorMsg);
+	window.alert(errorMsg_sv);
 } else {
 	posbtn!.removeAttribute("disabled");
 }
