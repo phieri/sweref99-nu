@@ -12,6 +12,10 @@ CMakeUserPresets.json
 
 # Generated JavaScript files
 _site/script.js
+_site/script.js.map
+
+# TypeScript incremental build info
+.tsbuildinfo
 
 # Downloaded dependencies (fetched from CDN during build)
 _site/proj4.js
