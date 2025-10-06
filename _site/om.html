@@ -30,6 +30,9 @@
 				<li>geografisk analys och GIS-tillämpningar</li>
 				<li>räddningstjänst.</li>
 			</ul>
+			<h2>Teknisk information</h2>
+			<p>Webbappen kompenserar för den tidsberoende skillnaden mellan WGS 84 och SWEREF 99. WGS 84 (som används av GPS) är ett globalt referenssystem som uppdateras kontinuerligt, medan SWEREF 99 är baserat på ETRS89 som fixerades vid epoch 1989.0. På grund av kontinentaldrift rör sig den europeiska plattan cirka 2,5 cm per år nordost relativt det globala referenssystemet.</p>
+			<p>Appen beräknar automatiskt denna korrigering baserat på aktuellt datum. Sedan ETRS89 fixerades 1989 har den totala förskjutningen vuxit till omkring 90 cm (ca 83 cm norrut och 39 cm österut för år 2025).</p>
 			<h2>Licenser och beroenden</h2>
 			<p>Denna webbapp använder följande externa bibliotek och tjänster:</p>
 			<ul>
