@@ -145,10 +145,13 @@ function posInit(event: Event) {
 		
 		// Formatera och visa tidsstämpel (hh:mm:ss)
 		const date = new Date(position.timestamp);
-		const hours = date.getHours().toString().padStart(2, '0');
-		const minutes = date.getMinutes().toString().padStart(2, '0');
-		const seconds = date.getSeconds().toString().padStart(2, '0');
-		timestamp!.innerHTML = `${hours}:${minutes}:${seconds}`;
+		const formatter = new Intl.DateTimeFormat('sv-SE', {
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+			hour12: false
+		});
+		timestamp!.innerHTML = formatter.format(date);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
