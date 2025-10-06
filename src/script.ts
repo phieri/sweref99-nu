@@ -22,7 +22,8 @@ declare const proj4: any;
 // Beräkna tidskorrigering för ITRF/ETRS89-drift
 // WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
 // skiljer sig med tiden pga. kontinentaldrift i Europa
-function calculateItrf2Etrs89Correction(lat: number, lon: number): { dn: number, de: number } {
+// Denna beräkning görs en gång vid appstart
+function calculateItrf2Etrs89Correction(): { dn: number, de: number } {
 	// ETRS89 fixerades vid epoch 1989.0
 	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
 	const etrs89Epoch = 1989.0;
@@ -59,6 +60,9 @@ function calculateItrf2Etrs89Correction(lat: number, lon: number): { dn: number,
 	};
 }
 
+// Beräkna korrigeringen en gång vid appstart
+const itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
+
 // PROJ4JS-based coordinate transformation
 function wgs84_to_sweref99tm(lat: number, lon: number) {
 	try {
@@ -86,9 +90,8 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 		// Applicera tidskorrigering för ITRF->ETRS89 drift
 		// Detta kompenserar för att WGS84 (ITRF-realisering) och SWEREF 99 (ETRS89)
 		// skiljer sig åt och att skillnaden ökar med tiden
-		const correction = calculateItrf2Etrs89Correction(lat, lon);
-		northing += correction.dn;
-		easting += correction.de;
+		northing += itrf2Etrs89Correction.dn;
+		easting += itrf2Etrs89Correction.de;
 
 		// Validate the result
 		if (isNaN(northing) || isNaN(easting)) {
