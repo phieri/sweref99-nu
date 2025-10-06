@@ -120,6 +120,14 @@ const posbtn    = document.getElementById("pos-btn");
 const sharebtn  = document.getElementById("share-btn");
 const stopbtn   = document.getElementById("stop-btn");
 
+// Skapa tidsstämpelformatterare en gång för återanvändning
+const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit',
+	hour12: false
+});
+
 let watchID: number | null = null;
 
 function posInit(event: Event) {
@@ -145,13 +153,7 @@ function posInit(event: Event) {
 		
 		// Formatera och visa tidsstämpel (hh:mm:ss)
 		const date = new Date(position.timestamp);
-		const formatter = new Intl.DateTimeFormat('sv-SE', {
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: false
-		});
-		timestamp!.innerHTML = formatter.format(date);
+		timestamp!.innerHTML = timeFormatter.format(date);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
