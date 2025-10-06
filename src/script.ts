@@ -276,3 +276,16 @@ window.addEventListener("pageshow", (event) => {
 		handleVisibilityChange();
 	}
 });
+
+// Registrera Service Worker för offline-funktionalitet
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', () => {
+		navigator.serviceWorker.register('/sw.js')
+			.then((registration) => {
+				console.log('ServiceWorker registrerad:', registration.scope);
+			})
+			.catch((error) => {
+				console.log('ServiceWorker-registrering misslyckades:', error);
+			});
+	});
+}
