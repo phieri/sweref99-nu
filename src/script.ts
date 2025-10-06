@@ -253,7 +253,6 @@ stopbtn!.addEventListener("click", async () => {
 	posbtn!.removeAttribute("disabled");
 	speed!.innerHTML = "–&nbsp;m/s";
 	speed!.classList.remove("outofrange");
-	timestamp!.innerHTML = "--:--:--";
 });
 
 // Handle page visibility changes and back navigation to restore positioning state
