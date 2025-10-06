@@ -109,15 +109,24 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 const errorMsg_sv = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 const na_sv = "Ej&nbsp;tillgängligt"
 
-const uncert   = document.getElementById("uncert");
-const speed    = document.getElementById("speed");
-const swerefn  = document.getElementById("sweref-n");
-const swerefe  = document.getElementById("sweref-e");
-const wgs84n   = document.getElementById("wgs84-n");
-const wgs84e   = document.getElementById("wgs84-e");
-const posbtn   = document.getElementById("pos-btn");
-const sharebtn = document.getElementById("share-btn");
-const stopbtn  = document.getElementById("stop-btn");
+const uncert    = document.getElementById("uncert");
+const speed     = document.getElementById("speed");
+const timestamp = document.getElementById("timestamp");
+const swerefn   = document.getElementById("sweref-n");
+const swerefe   = document.getElementById("sweref-e");
+const wgs84n    = document.getElementById("wgs84-n");
+const wgs84e    = document.getElementById("wgs84-e");
+const posbtn    = document.getElementById("pos-btn");
+const sharebtn  = document.getElementById("share-btn");
+const stopbtn   = document.getElementById("stop-btn");
+
+// Skapa tidsstämpelformatterare en gång för återanvändning
+const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit',
+	hour12: false
+});
 
 let watchID: number | null = null;
 
@@ -141,6 +150,10 @@ function posInit(event: Event) {
 		} else {
 			speed!.classList.remove("outofrange");
 		}
+		
+		// Formatera och visa tidsstämpel (hh:mm:ss)
+		const date = new Date(position.timestamp);
+		timestamp!.innerHTML = timeFormatter.format(date);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
@@ -172,6 +185,7 @@ function posInit(event: Event) {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
+		timestamp!.innerHTML = "--:--:--";
 		if (watchID !== null) {
 			navigator.geolocation.clearWatch(watchID);
 			watchID = null;
@@ -239,6 +253,7 @@ stopbtn!.addEventListener("click", async () => {
 	posbtn!.removeAttribute("disabled");
 	speed!.innerHTML = "–&nbsp;m/s";
 	speed!.classList.remove("outofrange");
+	timestamp!.innerHTML = "--:--:--";
 });
 
 // Handle page visibility changes and back navigation to restore positioning state
@@ -251,6 +266,7 @@ function handleVisibilityChange() {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
+		timestamp!.innerHTML = "--:--:--";
 		try {
 			if (watchID !== null) {
 				navigator.geolocation.clearWatch(watchID);
