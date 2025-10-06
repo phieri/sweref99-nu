@@ -19,6 +19,46 @@ function isInSweden(pos: GeolocationPosition) {
 
 declare const proj4: any;
 
+// Beräkna tidskorrigering för ITRF/ETRS89-drift
+// WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
+// skiljer sig med tiden pga. kontinentaldrift i Europa
+function calculateItrf2Etrs89Correction(lat: number, lon: number): { dn: number, de: number } {
+	// ETRS89 fixerades vid epoch 1989.0
+	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
+	const etrs89Epoch = 1989.0;
+	const sweref99Epoch = 1999.5;
+	
+	// Beräkna aktuellt år (decimalår)
+	const now = new Date();
+	const yearStart = new Date(now.getFullYear(), 0, 1);
+	const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+	const yearFraction = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
+	const currentEpoch = now.getFullYear() + yearFraction;
+	
+	// Tid sedan ETRS89 fixerades
+	const yearsSinceEtrs89 = currentEpoch - etrs89Epoch;
+	
+	// Europeiska plattan rör sig ungefär 2.5 cm/år relativt ITRF
+	// Riktning: nordost (cirka 25° från norr)
+	// Källa: EUREF, Lantmäteriet tekniska rapporter
+	const plateVelocityMeterPerYear = 0.025; // 2.5 cm/år
+	const azimuthDegrees = 25; // grader från norr, öster är positiv
+	
+	// Konvertera till nord- och östkomponenter
+	const azimuthRad = (azimuthDegrees * Math.PI) / 180;
+	const northVelocity = plateVelocityMeterPerYear * Math.cos(azimuthRad);
+	const eastVelocity = plateVelocityMeterPerYear * Math.sin(azimuthRad);
+	
+	// Total förskjutning sedan ETRS89 epoch
+	const totalNorthShift = northVelocity * yearsSinceEtrs89;
+	const totalEastShift = eastVelocity * yearsSinceEtrs89;
+	
+	return {
+		dn: totalNorthShift,
+		de: totalEastShift
+	};
+}
+
 // PROJ4JS-based coordinate transformation
 function wgs84_to_sweref99tm(lat: number, lon: number) {
 	try {
@@ -40,8 +80,15 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
 		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
 
-		const easting = result[0];
-		const northing = result[1];
+		let easting = result[0];
+		let northing = result[1];
+
+		// Applicera tidskorrigering för ITRF->ETRS89 drift
+		// Detta kompenserar för att WGS84 (ITRF-realisering) och SWEREF 99 (ETRS89)
+		// skiljer sig åt och att skillnaden ökar med tiden
+		const correction = calculateItrf2Etrs89Correction(lat, lon);
+		northing += correction.dn;
+		easting += correction.de;
 
 		// Validate the result
 		if (isNaN(northing) || isNaN(easting)) {
