@@ -26,33 +26,33 @@ declare const proj4: any;
 function calculateItrf2Etrs89Correction(): { dn: number, de: number } {
 	// ETRS89 fixerades vid epoch 1989.0
 	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
-	const etrs89Epoch = 1989.0;
-	const sweref99Epoch = 1999.5;
+	const etrs89Epoch: number = 1989.0;
+	const sweref99Epoch: number = 1999.5;
 	
 	// Beräkna aktuellt år (decimalår)
 	const now = new Date();
 	const yearStart = new Date(now.getFullYear(), 0, 1);
 	const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
-	const yearFraction = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
-	const currentEpoch = now.getFullYear() + yearFraction;
+	const yearFraction: number = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
+	const currentEpoch: number = now.getFullYear() + yearFraction;
 	
 	// Tid sedan ETRS89 fixerades
-	const yearsSinceEtrs89 = currentEpoch - etrs89Epoch;
+	const yearsSinceEtrs89: number = currentEpoch - etrs89Epoch;
 	
 	// Europeiska plattan rör sig ungefär 2.5 cm/år relativt ITRF
 	// Riktning: nordost (cirka 25° från norr)
 	// Källa: EUREF, Lantmäteriet tekniska rapporter
 	const plateVelocityMeterPerYear = 0.025; // 2.5 cm/år
-	const azimuthDegrees = 25; // grader från norr, öster är positiv
+	const azimuthDegrees: number = 25; // grader från norr, öster är positiv
 	
 	// Konvertera till nord- och östkomponenter
-	const azimuthRad = (azimuthDegrees * Math.PI) / 180;
-	const northVelocity = plateVelocityMeterPerYear * Math.cos(azimuthRad);
-	const eastVelocity = plateVelocityMeterPerYear * Math.sin(azimuthRad);
+	const azimuthRad: number = (azimuthDegrees * Math.PI) / 180;
+	const northVelocity: number = plateVelocityMeterPerYear * Math.cos(azimuthRad);
+	const eastVelocity: number = plateVelocityMeterPerYear * Math.sin(azimuthRad);
 	
 	// Total förskjutning sedan ETRS89 epoch
-	const totalNorthShift = northVelocity * yearsSinceEtrs89;
-	const totalEastShift = eastVelocity * yearsSinceEtrs89;
+	const totalNorthShift: number = northVelocity * yearsSinceEtrs89;
+	const totalEastShift: number = eastVelocity * yearsSinceEtrs89;
 	
 	return {
 		dn: totalNorthShift,
@@ -76,7 +76,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 		// WGS84 is built-in as 'EPSG:4326'
 		// SWEREF 99 TM (EPSG:3006) definition
 		if (!proj4.defs('EPSG:3006')) {
-			proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+				proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
 		}
 
 		// Transform coordinates using proj4
@@ -194,8 +194,8 @@ function posInit(event: Event) {
 
 	const options = {
 		enableHighAccuracy: true,
-		maximumAge: 30000,
-		timeout: 27000,
+		maximumAge: 20000,
+		timeout: 28000,
 	};
 
 	// Handle restore events differently - test geolocation availability first
