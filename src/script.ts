@@ -120,33 +120,48 @@ const posbtn: HTMLElement | null    = document.getElementById("pos-btn");
 const sharebtn: HTMLElement | null  = document.getElementById("share-btn");
 const stopbtn: HTMLElement | null   = document.getElementById("stop-btn");
 
-// Hämta popover-elementet
-const notificationPopover = document.getElementById("notification-popover") as HTMLElement;
+// Hämta dialog-elementet
+const notificationDialog = document.getElementById("notification-dialog") as HTMLDialogElement;
+const notificationContent = document.getElementById("notification-content") as HTMLElement;
 
-// Funktion för att visa meddelanden via Popover API
+// Funktion för att visa meddelanden via Dialog API
 function showNotification(message: string, duration: number = 5000): void {
-	if (!notificationPopover) {
-		// Fallback om popover-elementet inte finns
-		console.warn("Notification popover element not found, using alert fallback");
+	if (!notificationDialog || !notificationContent) {
+		// Fallback om dialog-elementet inte finns
+		console.warn("Notification dialog element not found, using alert fallback");
 		window.alert(message);
 		return;
 	}
 	
-	// Stäng eventuellt öppet popover först
-	if (notificationPopover.matches(':popover-open')) {
-		notificationPopover.hidePopover();
+	// Stäng eventuellt öppet dialog först
+	if (notificationDialog.open) {
+		notificationDialog.close();
 	}
 	
-	// Sätt meddelande och visa popover
-	notificationPopover.textContent = message;
-	notificationPopover.showPopover();
+	// Sätt meddelande och visa dialog
+	notificationContent.textContent = message;
+	notificationDialog.showModal();
 	
 	// Dölj automatiskt efter angiven tid
 	setTimeout(() => {
-		if (notificationPopover.matches(':popover-open')) {
-			notificationPopover.hidePopover();
+		if (notificationDialog.open) {
+			notificationDialog.close();
 		}
 	}, duration);
+	
+	// Stäng dialog vid klick utanför (backdrop)
+	notificationDialog.addEventListener('click', function(event) {
+		const rect = notificationDialog.getBoundingClientRect();
+		const isInDialog = (
+			rect.top <= event.clientY &&
+			event.clientY <= rect.top + rect.height &&
+			rect.left <= event.clientX &&
+			event.clientX <= rect.left + rect.width
+		);
+		if (!isInDialog) {
+			notificationDialog.close();
+		}
+	});
 }
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
