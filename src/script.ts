@@ -120,6 +120,35 @@ const posbtn    = document.getElementById("pos-btn");
 const sharebtn  = document.getElementById("share-btn");
 const stopbtn   = document.getElementById("stop-btn");
 
+// Hämta popover-elementet
+const notificationPopover = document.getElementById("notification-popover") as HTMLElement;
+
+// Funktion för att visa meddelanden via Popover API
+function showNotification(message: string, duration: number = 5000) {
+	if (!notificationPopover) {
+		// Fallback om popover-elementet inte finns
+		console.warn("Notification popover element not found, using alert fallback");
+		window.alert(message);
+		return;
+	}
+	
+	// Stäng eventuellt öppet popover först
+	if (notificationPopover.matches(':popover-open')) {
+		notificationPopover.hidePopover();
+	}
+	
+	// Sätt meddelande och visa popover
+	notificationPopover.textContent = message;
+	notificationPopover.showPopover();
+	
+	// Dölj automatiskt efter angiven tid
+	setTimeout(() => {
+		if (notificationPopover.matches(':popover-open')) {
+			notificationPopover.hidePopover();
+		}
+	}, duration);
+}
+
 // Skapa tidsstämpelformatterare en gång för återanvändning
 const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
 	hour: '2-digit',
@@ -152,7 +181,7 @@ function posInit(event: Event) {
 		timestamp!.classList.remove("loading");
 		
 		if (!isInSweden(position)) {
-			window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
+			showNotification("Varning: SWEREF 99 är bara användbart i Sverige.");
 		}
 		uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
 		if (position.coords.accuracy > 10) {
@@ -198,7 +227,7 @@ function posInit(event: Event) {
 		timestamp!.classList.remove("loading");
 		
 		sharebtn!.setAttribute("disabled", "disabled");
-		window.alert(errorMsg_sv);
+		showNotification(errorMsg_sv, 7000);
 	}
 
 	function restoreError() {
@@ -270,7 +299,7 @@ document.addEventListener("dblclick", posInit, false);
 posbtn!.addEventListener("click", posInit, false);
 
 if (!("geolocation" in navigator)) {
-	window.alert(errorMsg_sv);
+	showNotification(errorMsg_sv, 7000);
 } else {
 	posbtn!.removeAttribute("disabled");
 }
