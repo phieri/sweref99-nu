@@ -7,7 +7,7 @@ document.addEventListener(
 	false,
 );
 
-function isInSweden(pos: GeolocationPosition) {
+function isInSweden(pos: GeolocationPosition): boolean {
 	if (pos.coords.latitude < 55 || pos.coords.latitude > 69) {
 		return false;
 	} else if (pos.coords.longitude < 10 || pos.coords.longitude > 24) {
@@ -61,10 +61,10 @@ function calculateItrf2Etrs89Correction(): { dn: number, de: number } {
 }
 
 // Beräkna korrigeringen en gång vid appstart
-const itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
+const itrf2Etrs89Correction: { dn: number, de: number } = calculateItrf2Etrs89Correction();
 
 // PROJ4JS-based coordinate transformation
-function wgs84_to_sweref99tm(lat: number, lon: number) {
+function wgs84_to_sweref99tm(lat: number, lon: number): { northing: number, easting: number } {
 	try {
 		// Check if proj4 library is available
 		if (typeof proj4 === 'undefined') {
@@ -84,8 +84,8 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
 		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
 
-		let easting = result[0];
-		let northing = result[1];
+		let easting: number = result[0];
+		let northing: number = result[1];
 
 		// Applicera tidskorrigering för ITRF->ETRS89 drift
 		// Detta kompenserar för att WGS84 (ITRF-realisering) och SWEREF 99 (ETRS89)
@@ -106,25 +106,25 @@ function wgs84_to_sweref99tm(lat: number, lon: number) {
 	}
 }
 
-const errorMsg_sv = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
-const na_sv = "Ej&nbsp;tillgängligt"
+const errorMsg_sv: string = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
+const na_sv: string = "Ej&nbsp;tillgängligt"
 
-const uncert    = document.getElementById("uncert");
-const speed     = document.getElementById("speed");
-const timestamp = document.getElementById("timestamp");
-const swerefn   = document.getElementById("sweref-n");
-const swerefe   = document.getElementById("sweref-e");
-const wgs84n    = document.getElementById("wgs84-n");
-const wgs84e    = document.getElementById("wgs84-e");
-const posbtn    = document.getElementById("pos-btn");
-const sharebtn  = document.getElementById("share-btn");
-const stopbtn   = document.getElementById("stop-btn");
+const uncert: HTMLElement | null    = document.getElementById("uncert");
+const speed: HTMLElement | null     = document.getElementById("speed");
+const timestamp: HTMLElement | null = document.getElementById("timestamp");
+const swerefn: HTMLElement | null   = document.getElementById("sweref-n");
+const swerefe: HTMLElement | null   = document.getElementById("sweref-e");
+const wgs84n: HTMLElement | null    = document.getElementById("wgs84-n");
+const wgs84e: HTMLElement | null    = document.getElementById("wgs84-e");
+const posbtn: HTMLElement | null    = document.getElementById("pos-btn");
+const sharebtn: HTMLElement | null  = document.getElementById("share-btn");
+const stopbtn: HTMLElement | null   = document.getElementById("stop-btn");
 
 // Hämta popover-elementet
 const notificationPopover = document.getElementById("notification-popover") as HTMLElement;
 
 // Funktion för att visa meddelanden via Popover API
-function showNotification(message: string, duration: number = 5000) {
+function showNotification(message: string, duration: number = 5000): void {
 	if (!notificationPopover) {
 		// Fallback om popover-elementet inte finns
 		console.warn("Notification popover element not found, using alert fallback");
@@ -150,7 +150,7 @@ function showNotification(message: string, duration: number = 5000) {
 }
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
-const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
+const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 	hour: '2-digit',
 	minute: '2-digit',
 	second: '2-digit',
@@ -160,7 +160,7 @@ const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
-function posInit(event: Event) {
+function posInit(event: Event): void {
 	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
 	if (spinnerTimeout !== null) {
 		clearTimeout(spinnerTimeout);
@@ -336,7 +336,7 @@ stopbtn!.addEventListener("click", async () => {
 });
 
 // Handle page visibility changes and back navigation to restore positioning state
-function handleVisibilityChange() {
+function handleVisibilityChange(): void {
 	// Only restore if page becomes visible and UI indicates positioning should be active
 	if (!document.hidden && posbtn!.hasAttribute("disabled") && stopbtn!.hasAttribute("disabled")) {
 		// UI state is inconsistent - reset to stopped state
