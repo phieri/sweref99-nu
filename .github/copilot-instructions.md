@@ -10,6 +10,7 @@ This is a Swedish Progressive Web App (PWA) that shows GPS coordinates in SWEREF
 ## Key Files
 - `src/script.ts` - Main TypeScript application logic
 - `_site/index.html` - Main HTML page
+- `_site/sw.js` - ServiceWorker for offline caching (increment CACHE_VERSION on changes!)
 - `tsconfig.json` - TypeScript configuration
 - `Makefile` - Build configuration
 - `.github/workflows/ci.yml` - CI/CD pipeline
@@ -66,6 +67,7 @@ tsc
 ├── _site/                        # Built output (deployed to GitHub Pages)
 │   ├── index.html                # Main app page
 │   ├── om.html                   # Help/about page
+│   ├── sw.js                     # ServiceWorker (increment CACHE_VERSION!)
 │   ├── stil.css                  # Custom styles
 │   ├── script.js                 # Compiled TypeScript (generated)
 │   ├── script.js.map             # Source maps (generated)
@@ -93,6 +95,42 @@ tsc
 - **Swedish language**: All user-facing text and most comments are in Swedish
 - **No backend**: All coordinate transformation happens client-side using proj4.js
 - **PWA support**: App works offline after first visit (service worker via manifest)
+
+## ServiceWorker Cache Version Management
+**CRITICAL**: The ServiceWorker cache version MUST be incremented whenever any user-facing changes are made to the app. This is essential for users to see updates.
+
+### When to Increment Cache Version
+Increment the `CACHE_VERSION` in `_site/sw.js` whenever you make changes to:
+- **Any HTML files** (`index.html`, `om.html`)
+- **Any CSS files** (`stil.css`, `pico.min.css`)
+- **JavaScript/TypeScript** (`script.ts` → `script.js`)
+- **External dependencies** (proj4.js version updates)
+- **PWA resources** (icons, manifest)
+- **Any other files that are cached by the ServiceWorker**
+
+### How to Increment Cache Version
+1. Open `_site/sw.js`
+2. Find line with `const CACHE_VERSION = 'v2';` (or current version)
+3. Increment the version number: `'v2'` → `'v3'`, `'v3'` → `'v4'`, etc.
+4. **ALWAYS include this change in your PR** when making any user-facing modifications
+
+### Why This Matters
+- Users who have visited the app before have a cached version
+- Without incrementing the cache version, they will continue seeing the old version
+- The ServiceWorker will only fetch new resources when `CACHE_VERSION` changes
+- Old cache is automatically cleaned up when a new version is activated
+
+### Example
+If you're fixing a bug in `script.ts` or updating text in `index.html`:
+```javascript
+// Before
+const CACHE_VERSION = 'v2';
+
+// After
+const CACHE_VERSION = 'v3';
+```
+
+**Remember**: This is one of the most commonly forgotten steps. Always check if you need to update the cache version before finalizing your changes.
 
 ## CI/CD Pipeline
 - Triggered on push/PR to main branch (except .md files)
