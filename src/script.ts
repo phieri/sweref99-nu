@@ -132,6 +132,13 @@ let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
 function posInit(event: Event) {
+	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
+	if (spinnerTimeout !== null) {
+		clearTimeout(spinnerTimeout);
+		spinnerTimeout = null;
+	}
+	timestamp!.classList.remove("loading");
+	
 	function success(position: GeolocationPosition) {
 		if (watchID === null) {
 			return;
@@ -234,6 +241,12 @@ function posInit(event: Event) {
 				// Geolocation is available, proceed with watch
 				if (watchID === null) {
 					watchID = navigator.geolocation.watchPosition(success, restoreError, options);
+					
+					// Starta timer för spinner efter 5 sekunder (även för restore)
+					spinnerTimeout = window.setTimeout(() => {
+						timestamp!.classList.add("loading");
+						spinnerTimeout = null;
+					}, 5000);
 				}
 			},
 			restoreError,
