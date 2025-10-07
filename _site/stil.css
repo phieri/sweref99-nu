@@ -67,6 +67,33 @@ article>footer {
 	font-size: 1.5rem;
 }
 
+/* Spinner animation för fördröjd positionsuppdatering */
+#timestamp::after {
+	content: "";
+	display: none;
+	width: 1rem;
+	height: 1rem;
+	margin-left: 0.5rem;
+	border: 2px solid var(--pico-secondary);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spinner-rotate 0.8s linear infinite;
+	vertical-align: middle;
+}
+
+#timestamp.loading::after {
+	display: inline-block;
+}
+
+@keyframes spinner-rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
 @media (min-width: 768px) {
 	body > header,
 	body > main,
