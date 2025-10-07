@@ -129,12 +129,28 @@ const timeFormatter = new Intl.DateTimeFormat('sv-SE', {
 });
 
 let watchID: number | null = null;
+let spinnerTimeout: number | null = null;
 
 function posInit(event: Event) {
+	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
+	if (spinnerTimeout !== null) {
+		clearTimeout(spinnerTimeout);
+		spinnerTimeout = null;
+	}
+	timestamp!.classList.remove("loading");
+	
 	function success(position: GeolocationPosition) {
 		if (watchID === null) {
 			return;
 		}
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		timestamp!.classList.remove("loading");
+		
 		if (!isInSweden(position)) {
 			window.alert("Varning: SWEREF 99 är bara användbart i Sverige.")
 		}
@@ -174,6 +190,13 @@ function posInit(event: Event) {
 	}
 
 	function error() {
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		timestamp!.classList.remove("loading");
+		
 		sharebtn!.setAttribute("disabled", "disabled");
 		window.alert(errorMsg_sv);
 	}
@@ -181,6 +204,14 @@ function posInit(event: Event) {
 	function restoreError() {
 		// Silent error handler for restore attempts - reset UI to stopped state
 		console.log("Positioning restore failed, resetting to stopped state");
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		timestamp!.classList.remove("loading");
+		
 		stopbtn!.setAttribute("disabled", "disabled");
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
@@ -210,6 +241,12 @@ function posInit(event: Event) {
 				// Geolocation is available, proceed with watch
 				if (watchID === null) {
 					watchID = navigator.geolocation.watchPosition(success, restoreError, options);
+					
+					// Starta timer för spinner efter 5 sekunder (även för restore)
+					spinnerTimeout = window.setTimeout(() => {
+						timestamp!.classList.add("loading");
+						spinnerTimeout = null;
+					}, 5000);
 				}
 			},
 			restoreError,
@@ -219,6 +256,12 @@ function posInit(event: Event) {
 		// Regular positioning start
 		if (watchID === null) {
 			watchID = navigator.geolocation.watchPosition(success, error, options);
+			
+			// Starta timer för spinner efter 5 sekunder
+			spinnerTimeout = window.setTimeout(() => {
+				timestamp!.classList.add("loading");
+				spinnerTimeout = null;
+			}, 5000);
 		}
 	}
 }
@@ -249,6 +292,14 @@ stopbtn!.addEventListener("click", async () => {
 		navigator.geolocation.clearWatch(watchID);
 		watchID = null;
 	}
+	
+	// Ta bort spinner om den visas
+	if (spinnerTimeout !== null) {
+		clearTimeout(spinnerTimeout);
+		spinnerTimeout = null;
+	}
+	timestamp!.classList.remove("loading");
+	
 	stopbtn!.setAttribute("disabled", "disabled");
 	posbtn!.removeAttribute("disabled");
 	speed!.innerHTML = "–&nbsp;m/s";
@@ -261,6 +312,14 @@ function handleVisibilityChange() {
 	if (!document.hidden && posbtn!.hasAttribute("disabled") && stopbtn!.hasAttribute("disabled")) {
 		// UI state is inconsistent - reset to stopped state
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		timestamp!.classList.remove("loading");
+		
 		stopbtn!.setAttribute("disabled", "disabled");
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
