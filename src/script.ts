@@ -139,8 +139,8 @@ const stopbtn: HTMLElement | null   = document.getElementById("stop-btn");
 // Hämta dialog-elementet
 const notificationDialog = document.getElementById("notification-dialog") as HTMLDialogElement;
 const notificationContent = document.getElementById("notification-content") as HTMLElement;
-const notificationHeader = document.getElementById("notification-header") as HTMLElement;
-const notificationTitle = document.getElementById("notification-title") as HTMLElement;
+const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
+const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 
 // Funktion för att visa meddelanden via Dialog API
 function showNotification(message: string, duration: number = 5000, title?: string): void {
