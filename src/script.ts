@@ -139,9 +139,11 @@ const stopbtn: HTMLElement | null   = document.getElementById("stop-btn");
 // Hämta dialog-elementet
 const notificationDialog = document.getElementById("notification-dialog") as HTMLDialogElement;
 const notificationContent = document.getElementById("notification-content") as HTMLElement;
+const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
+const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 
 // Funktion för att visa meddelanden via Dialog API
-function showNotification(message: string, duration: number = 5000): void {
+function showNotification(message: string, duration: number = 5000, title?: string): void {
 	if (!notificationDialog || !notificationContent) {
 		window.alert(message);
 		return;
@@ -150,6 +152,14 @@ function showNotification(message: string, duration: number = 5000): void {
 	// Stäng eventuellt öppet dialog först
 	if (notificationDialog.open) {
 		notificationDialog.close();
+	}
+
+	// Sätt rubrik om angiven
+	if (title && notificationHeader && notificationTitle) {
+		notificationTitle.textContent = title;
+		notificationHeader.style.display = '';
+	} else if (notificationHeader) {
+		notificationHeader.style.display = 'none';
 	}
 
 	// Sätt meddelande och visa dialog
