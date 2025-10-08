@@ -20,3 +20,9 @@ _site/script.js.map
 # Downloaded dependencies (fetched from CDN during build)
 _site/proj4.js
 _site/pico.min.css
+
+# Generated icon files (built from src/icon.svg)
+_site/favicon.ico
+_site/apple-touch-icon.png
+_site/icon-192.png
+_site/icon-512.png

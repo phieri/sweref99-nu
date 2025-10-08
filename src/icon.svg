@@ -1,37 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Blue water background -->
-  <rect width="512" height="512" fill="#2563EB"/>
+  <!-- Background: Swedish flag blue (#006AA7) -->
+  <rect width="512" height="512" rx="115" fill="#006AA7"/>
   
-  <!-- Stylized landmasses in green -->
-  <g fill="#22C55E">
-    <!-- Main landmass extending beyond left edge to look like coastline -->
-    <path d="M -50 100 Q 0 80 50 85 Q 100 75 150 85 Q 200 80 250 90 Q 300 100 340 130 Q 370 160 380 200 Q 390 240 370 280 Q 360 320 340 360 Q 310 390 270 410 Q 230 420 190 410 Q 150 395 120 370 Q 90 340 70 300 Q 50 260 55 220 Q 60 180 70 140 Q 80 100 -50 100 Z"/>
+  <!-- Location pin in Swedish flag yellow (#FECC00) -->
+  <g>
+    <!-- Pin shadow for depth (subtle) -->
+    <ellipse cx="260" cy="382" rx="65" ry="20" fill="#000000" opacity="0.2"/>
     
-    <!-- Additional landmass on right side -->
-    <ellipse cx="420" cy="180" rx="40" ry="60"/>
+    <!-- Main pin body -->
+    <circle cx="256" cy="180" r="90" fill="#FECC00"/>
     
-    <!-- Small coastal features -->
-    <ellipse cx="400" cy="320" rx="25" ry="15"/>
+    <!-- Inner circle for detail -->
+    <circle cx="256" cy="180" r="60" fill="#006AA7"/>
+    <circle cx="256" cy="180" r="35" fill="#FECC00"/>
+    
+    <!-- Pin point/needle -->
+    <path d="M 256 270 L 220 370 L 256 390 L 292 370 Z" fill="#FECC00"/>
+    
+    <!-- Highlight for 3D effect -->
+    <ellipse cx="226" cy="155" rx="25" ry="30" fill="#FFFFFF" opacity="0.35"/>
   </g>
   
-  <!-- Much larger angled location pin -->
-  <g transform="translate(220, 200) rotate(-15)">
-    <!-- Pin body (red with white center) -->
-    <ellipse cx="0" cy="0" rx="45" ry="45" fill="#DC2626"/>
-    <ellipse cx="0" cy="0" rx="30" ry="30" fill="#FFFFFF"/>
-    <circle cx="0" cy="0" r="15" fill="#DC2626"/>
+  <!-- Coordinate grid lines for navigation theme (subtle) -->
+  <g stroke="#FECC00" stroke-width="3" opacity="0.15" fill="none">
+    <!-- Vertical lines -->
+    <line x1="85" y1="50" x2="85" y2="130"/>
+    <line x1="170" y1="50" x2="170" y2="130"/>
+    <line x1="342" y1="50" x2="342" y2="130"/>
+    <line x1="427" y1="50" x2="427" y2="130"/>
     
-    <!-- Pin needle/point -->
-    <path d="M 0 45 L -12 80 L 12 80 Z" fill="#DC2626"/>
-    
-    <!-- Pin highlight for 3D effect -->
-    <ellipse cx="-12" cy="-12" rx="10" ry="10" fill="#FCA5A5" opacity="0.7"/>
-  </g>
-  
-  <!-- Optional subtle shadow for the pin -->
-  <g transform="translate(225, 205) rotate(-15)" opacity="0.3">
-    <ellipse cx="0" cy="0" rx="45" ry="45" fill="#000000"/>
-    <path d="M 0 45 L -12 80 L 12 80 Z" fill="#000000"/>
+    <!-- Horizontal lines -->
+    <line x1="50" y1="85" x2="130" y2="85"/>
+    <line x1="50" y1="170" x2="130" y2="170"/>
+    <line x1="382" y1="85" x2="462" y2="85"/>
+    <line x1="382" y1="170" x2="462" y2="170"/>
   </g>
 </svg>

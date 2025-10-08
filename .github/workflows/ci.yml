@@ -29,9 +29,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-typescript-
       - run: npm install -g typescript
+      - name: Install icon generation tools
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin imagemagick
       - run: |
           echo "=== Building TypeScript ==="
           make script.js
+          echo "=== Generating icons ==="
+          make icons
           echo "=== Final _site contents ==="
           ls -la _site/
           echo "=== Adding additional files ==="
