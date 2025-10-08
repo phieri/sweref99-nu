@@ -143,17 +143,15 @@ const notificationContent = document.getElementById("notification-content") as H
 // Funktion för att visa meddelanden via Dialog API
 function showNotification(message: string, duration: number = 5000): void {
 	if (!notificationDialog || !notificationContent) {
-		// Fallback om dialog-elementet inte finns
-		console.warn("Notification dialog element not found, using alert fallback");
 		window.alert(message);
 		return;
 	}
-	
+
 	// Stäng eventuellt öppet dialog först
 	if (notificationDialog.open) {
 		notificationDialog.close();
 	}
-	
+
 	// Sätt meddelande och visa dialog
 	notificationContent.textContent = message;
 	notificationDialog.showModal();
@@ -220,7 +218,7 @@ function posInit(event: Event): void {
 		} else {
 			uncert!.classList.remove("outofrange");
 		}
-		speed!.innerHTML = (position.coords.speed !== null ? Math.round(position.coords.speed) : "–") + "&nbsp;m/s";
+		speed!.innerHTML = (position.coords.speed !== null ? Math.round(position.coords.speed) : "?") + "&nbsp;m/s";
 		if (position.coords.speed !== null && position.coords.speed > SPEED_THRESHOLD_MS) {
 			speed!.classList.add("outofrange");
 		} else {
