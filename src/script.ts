@@ -109,6 +109,22 @@ function wgs84_to_sweref99tm(lat: number, lon: number): { northing: number, east
 const errorMsg_sv: string = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
 const na_sv: string = "Ej&nbsp;tillgängligt"
 
+// Position accuracy threshold (meters)
+// Smartphone GPS typically achieves 3-5m accuracy in optimal conditions and 10-20m in real-world
+// scenarios with signal obstructions. SWEREF 99 transformation accuracy is within 1m.
+// A 5m threshold represents typical optimal smartphone GPS accuracy and is appropriate for
+// general navigation and coordinate display purposes.
+// Sources: Smartphone GNSS research (Link et al., 2025; DXOMark GPS testing)
+const ACCURACY_THRESHOLD_METERS: number = 5;
+
+// Speed threshold (m/s) for distinguishing stationary/walking from faster movement
+// Typical pedestrian walking speed ranges from 1.1-1.4 m/s (4-5 km/h). GPS positioning
+// when stationary can show spurious movement due to signal noise. A threshold of 1.4 m/s
+// corresponds to the upper end of normal walking speed and effectively distinguishes
+// between pedestrian movement and faster travel (cycling, driving, etc.).
+// Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GPS accuracy studies
+const SPEED_THRESHOLD_MS: number = 1.4;
+
 const uncert: HTMLElement | null    = document.getElementById("uncert");
 const speed: HTMLElement | null     = document.getElementById("speed");
 const timestamp: HTMLElement | null = document.getElementById("timestamp");
@@ -199,13 +215,13 @@ function posInit(event: Event): void {
 			showNotification("Varning: SWEREF 99 är bara användbart i Sverige.");
 		}
 		uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
-		if (position.coords.accuracy > 10) {
+		if (position.coords.accuracy > ACCURACY_THRESHOLD_METERS) {
 			uncert!.classList.add("outofrange");
 		} else {
 			uncert!.classList.remove("outofrange");
 		}
 		speed!.innerHTML = (position.coords.speed !== null ? Math.round(position.coords.speed) : "–") + "&nbsp;m/s";
-		if (position.coords.speed !== null && position.coords.speed > 2) {
+		if (position.coords.speed !== null && position.coords.speed > SPEED_THRESHOLD_MS) {
 			speed!.classList.add("outofrange");
 		} else {
 			speed!.classList.remove("outofrange");
