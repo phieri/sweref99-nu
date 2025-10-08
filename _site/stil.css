@@ -71,6 +71,7 @@ article>footer {
 #timestamp::after {
 	content: "";
 	display: none;
+	position: relative;
 	width: 1rem;
 	height: 1rem;
 	margin-left: 0.5rem;
