@@ -313,6 +313,8 @@ function posInit(event: Event): void {
 					// Starta timer för spinner efter 5 sekunder (även för restore)
 					spinnerTimeout = window.setTimeout(() => {
 						timestamp!.classList.add("loading");
+						// Force reflow to ensure WebKit/Safari renders the ::after pseudo-element
+						void timestamp!.offsetHeight;
 						spinnerTimeout = null;
 					}, 5000);
 				}
@@ -328,6 +330,8 @@ function posInit(event: Event): void {
 			// Starta timer för spinner efter 5 sekunder
 			spinnerTimeout = window.setTimeout(() => {
 				timestamp!.classList.add("loading");
+				// Force reflow to ensure WebKit/Safari renders the ::after pseudo-element
+				void timestamp!.offsetHeight;
 				spinnerTimeout = null;
 			}, 5000);
 		}
