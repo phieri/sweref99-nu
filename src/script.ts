@@ -199,6 +199,15 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
+// Force browser reflow to work around WebKit/Safari rendering bug with pseudo-elements
+// When a class is added that shows a ::after pseudo-element with animations, WebKit
+// may not render it immediately. Accessing offsetHeight forces a synchronous layout
+// recalculation, ensuring the pseudo-element appears.
+// See: https://bugs.webkit.org/show_bug.cgi?id=236618 and similar WebKit issues
+function forceWebKitReflow(element: HTMLElement): void {
+	void element.offsetHeight;
+}
+
 function posInit(event: Event): void {
 	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
 	if (spinnerTimeout !== null) {
@@ -313,8 +322,7 @@ function posInit(event: Event): void {
 					// Starta timer för spinner efter 5 sekunder (även för restore)
 					spinnerTimeout = window.setTimeout(() => {
 						timestamp!.classList.add("loading");
-						// Force reflow to ensure WebKit/Safari renders the ::after pseudo-element
-						void timestamp!.offsetHeight;
+						forceWebKitReflow(timestamp!);
 						spinnerTimeout = null;
 					}, 5000);
 				}
@@ -330,8 +338,7 @@ function posInit(event: Event): void {
 			// Starta timer för spinner efter 5 sekunder
 			spinnerTimeout = window.setTimeout(() => {
 				timestamp!.classList.add("loading");
-				// Force reflow to ensure WebKit/Safari renders the ::after pseudo-element
-				void timestamp!.offsetHeight;
+				forceWebKitReflow(timestamp!);
 				spinnerTimeout = null;
 			}, 5000);
 		}
