@@ -237,7 +237,7 @@ function posInit(event: Event): void {
 		
 		// Formatera och visa tidsstämpel (hh:mm:ss)
 		const date = new Date(position.timestamp);
-		timestamp!.innerHTML = timeFormatter.format(date);
+		timestamp!.textContent = timeFormatter.format(date);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
@@ -284,7 +284,7 @@ function posInit(event: Event): void {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		timestamp!.textContent = "--:--:--";
 		if (watchID !== null) {
 			navigator.geolocation.clearWatch(watchID);
 			watchID = null;
@@ -392,7 +392,7 @@ function handleVisibilityChange(): void {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		timestamp!.textContent = "--:--:--";
 		try {
 			if (watchID !== null) {
 				navigator.geolocation.clearWatch(watchID);
