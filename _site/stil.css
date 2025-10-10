@@ -93,17 +93,37 @@ article>footer {
 	border-radius: 50%;
 	animation: spinner-rotate 0.8s linear infinite;
 	vertical-align: middle;
+	/* Force GPU acceleration for better mobile performance */
+	transform: translateZ(0);
+	will-change: transform;
+	/* Ensure proper rendering on WebKit/Safari */
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
 }
 
 #timestamp.loading::after {
 	display: inline-block;
 }
 
-@keyframes spinner-rotate {
+/* Include webkit prefix for older iOS devices */
+@-webkit-keyframes spinner-rotate {
 	from {
+		-webkit-transform: rotate(0deg);
 		transform: rotate(0deg);
 	}
 	to {
+		-webkit-transform: rotate(360deg);
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes spinner-rotate {
+	from {
+		-webkit-transform: rotate(0deg);
+		transform: rotate(0deg);
+	}
+	to {
+		-webkit-transform: rotate(360deg);
 		transform: rotate(360deg);
 	}
 }

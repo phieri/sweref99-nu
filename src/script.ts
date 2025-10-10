@@ -199,6 +199,15 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
+// Force browser reflow to work around WebKit/Safari rendering bug with pseudo-elements
+// When a class is added that shows a ::after pseudo-element with animations, WebKit
+// may not render it immediately. Accessing offsetHeight forces a synchronous layout
+// recalculation, ensuring the pseudo-element appears.
+// See: https://bugs.webkit.org/show_bug.cgi?id=236618 and similar WebKit issues
+function forceWebKitReflow(element: HTMLElement): void {
+	void element.offsetHeight;
+}
+
 function posInit(event: Event): void {
 	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
 	if (spinnerTimeout !== null) {
@@ -237,7 +246,7 @@ function posInit(event: Event): void {
 		
 		// Formatera och visa tidsstämpel (hh:mm:ss)
 		const date = new Date(position.timestamp);
-		timestamp!.innerHTML = timeFormatter.format(date);
+		timestamp!.textContent = timeFormatter.format(date);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 
@@ -284,7 +293,7 @@ function posInit(event: Event): void {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		timestamp!.textContent = "--:--:--";
 		if (watchID !== null) {
 			navigator.geolocation.clearWatch(watchID);
 			watchID = null;
@@ -313,6 +322,7 @@ function posInit(event: Event): void {
 					// Starta timer för spinner efter 5 sekunder (även för restore)
 					spinnerTimeout = window.setTimeout(() => {
 						timestamp!.classList.add("loading");
+						forceWebKitReflow(timestamp!);
 						spinnerTimeout = null;
 					}, 5000);
 				}
@@ -328,6 +338,7 @@ function posInit(event: Event): void {
 			// Starta timer för spinner efter 5 sekunder
 			spinnerTimeout = window.setTimeout(() => {
 				timestamp!.classList.add("loading");
+				forceWebKitReflow(timestamp!);
 				spinnerTimeout = null;
 			}, 5000);
 		}
@@ -392,7 +403,7 @@ function handleVisibilityChange(): void {
 		posbtn!.removeAttribute("disabled");
 		speed!.innerHTML = "–&nbsp;m/s";
 		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		timestamp!.textContent = "--:--:--";
 		try {
 			if (watchID !== null) {
 				navigator.geolocation.clearWatch(watchID);
