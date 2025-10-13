@@ -19,11 +19,22 @@ function isInSweden(pos: GeolocationPosition): boolean {
 
 declare const proj4: any;
 
+// Interfaces för koordinatsystem och transformationer
+interface SwerefCoordinates {
+	northing: number;
+	easting: number;
+}
+
+interface Itrf2Etrs89Correction {
+	dn: number;
+	de: number;
+}
+
 // Beräkna tidskorrigering för ITRF/ETRS89-drift
 // WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
 // skiljer sig med tiden pga. kontinentaldrift i Europa
 // Denna beräkning görs en gång vid appstart
-function calculateItrf2Etrs89Correction(): { dn: number, de: number } {
+function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 	// ETRS89 fixerades vid epoch 1989.0
 	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
 	const etrs89Epoch: number = 1989.0;
@@ -61,10 +72,10 @@ function calculateItrf2Etrs89Correction(): { dn: number, de: number } {
 }
 
 // Beräkna korrigeringen en gång vid appstart
-const itrf2Etrs89Correction: { dn: number, de: number } = calculateItrf2Etrs89Correction();
+const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
 
 // PROJ4JS-based coordinate transformation
-function wgs84_to_sweref99tm(lat: number, lon: number): { northing: number, easting: number } {
+function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
 		// Check if proj4 library is available
 		if (typeof proj4 === 'undefined') {
