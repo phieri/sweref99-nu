@@ -25,7 +25,10 @@ interface Itrf2Etrs89Correction {
 	de: number;
 }
 
-// CoordinateTransformer - hanterar koordinattransformationer
+/**
+ * CoordinateTransformer - hanterar koordinattransformationer mellan WGS84 och SWEREF 99 TM
+ * Inkluderar tidskorrigering för ITRF/ETRS89-drift
+ */
 class CoordinateTransformer {
 	private correction: Itrf2Etrs89Correction;
 	private proj4Initialized = false;
@@ -171,7 +174,10 @@ const notificationContent = document.getElementById("notification-content") as H
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 
-// NotificationManager - hanterar meddelanden via Dialog API
+/**
+ * NotificationManager - hanterar meddelanden via Dialog API
+ * Inkluderar auto-close och klick-utanför-stängning
+ */
 class NotificationManager {
 	private dialog: HTMLDialogElement | null;
 	private content: HTMLElement | null;
@@ -264,7 +270,10 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 	hour12: false
 });
 
-// UI Helper Functions
+/**
+ * UIHelper - centraliserar all DOM-manipulation och UI-state management
+ * Ger enkelt API för att uppdatera alla UI-element
+ */
 class UIHelper {
 	private elements: {
 		uncert: HTMLElement | null;
@@ -400,7 +409,10 @@ class UIHelper {
 
 const uiHelper = new UIHelper();
 
-// GeolocationManager - hanterar positionering och state
+/**
+ * GeolocationManager - hanterar positionering och state
+ * Kapslar in watchID, spinner state och all positioneringslogik
+ */
 class GeolocationManager {
 	private watchID: number | null = null;
 	private spinnerTimeout: number | null = null;
@@ -586,8 +598,8 @@ sharebtn!.addEventListener("click", async () => {
 			text: uiHelper.getShareText()
 		};
 		await navigator.share(shareData);
-	} catch (err: any) {
-		console.log("Kunde inte dela: ", err.message);
+	} catch (err) {
+		console.log("Kunde inte dela: ", err instanceof Error ? err.message : String(err));
 	}
 });
 
