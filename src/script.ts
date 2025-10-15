@@ -209,7 +209,26 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 
 /**
  * UIHelper - centraliserar all DOM-manipulation och UI-state management
- * Ger enkelt API för att uppdatera alla UI-element
+ * 
+ * Design Pattern: Helper/Utility Class med Facade-pattern för DOM-manipulation
+ * 
+ * Denna klass följer etablerade mönster från:
+ * - **Facade Pattern**: Ger ett förenklat interface till DOM-manipulation och state management
+ *   (källa: "Design Patterns: Elements of Reusable Object-Oriented Software", Gang of Four)
+ * - **Helper/Utility Class Pattern**: Kapslar in återanvändbar logik för UI-operationer
+ *   (vanligt i moderna JavaScript/TypeScript applikationer)
+ * 
+ * Fördelar med detta mönster:
+ * - Separation of Concerns: Isolerar all UI-logik från affärslogik
+ * - Single Responsibility: Klassen har ett enda ansvar - hantera UI-uppdateringar
+ * - DRY (Don't Repeat Yourself): Eliminerar duplicerad DOM-manipuleringskod
+ * - Testbarhet: UI-logik kan testas isolerat från resten av applikationen
+ * - Null Safety: Konsekvent null-hantering för alla DOM-element
+ * 
+ * Liknande implementationer finns i:
+ * - React's rendering layer (abstraherar DOM-manipulation)
+ * - Angular's ViewChild/Renderer2 (kapslar DOM-åtkomst)
+ * - Vue's template bindings (centraliserad UI-uppdatering)
  */
 class UIHelper {
 	private elements: {
