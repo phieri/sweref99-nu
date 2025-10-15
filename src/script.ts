@@ -8,8 +8,13 @@ document.addEventListener(
 );
 
 function isInSweden(pos: GeolocationPosition): boolean {
-	const { latitude, longitude } = pos.coords;
-	return latitude >= 55 && latitude <= 69 && longitude >= 10 && longitude <= 24;
+	if (pos.coords.latitude < 55 || pos.coords.latitude > 69) {
+		return false;
+	} else if (pos.coords.longitude < 10 || pos.coords.longitude > 24) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 declare const proj4: any;
@@ -25,117 +30,91 @@ interface Itrf2Etrs89Correction {
 	de: number;
 }
 
-/**
- * CoordinateTransformer - hanterar koordinattransformationer mellan WGS84 och SWEREF 99 TM
- * Inkluderar tidskorrigering för ITRF/ETRS89-drift
- */
-class CoordinateTransformer {
-	private correction: Itrf2Etrs89Correction;
-	private proj4Initialized = false;
+// Beräkna tidskorrigering för ITRF/ETRS89-drift
+// WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
+// skiljer sig med tiden pga. kontinentaldrift i Europa
+// Denna beräkning görs en gång vid appstart
+function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
+	// ETRS89 fixerades vid epoch 1989.0
+	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
+	const etrs89Epoch: number = 1989.0;
+	const sweref99Epoch: number = 1999.5;
+	
+	// Beräkna aktuellt år (decimalår)
+	const now = new Date();
+	const yearStart = new Date(now.getFullYear(), 0, 1);
+	const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+	const yearFraction: number = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
+	const currentEpoch: number = now.getFullYear() + yearFraction;
+	
+	// Tid sedan ETRS89 fixerades
+	const yearsSinceEtrs89: number = currentEpoch - etrs89Epoch;
+	
+	// Europeiska plattan rör sig ungefär 2.5 cm/år relativt ITRF
+	// Riktning: nordost (cirka 25° från norr)
+	// Källa: EUREF, Lantmäteriet tekniska rapporter
+	const plateVelocityMeterPerYear = 0.025; // 2.5 cm/år
+	const azimuthDegrees: number = 25; // grader från norr, öster är positiv
+	
+	// Konvertera till nord- och östkomponenter
+	const azimuthRad: number = (azimuthDegrees * Math.PI) / 180;
+	const northVelocity: number = plateVelocityMeterPerYear * Math.cos(azimuthRad);
+	const eastVelocity: number = plateVelocityMeterPerYear * Math.sin(azimuthRad);
+	
+	// Total förskjutning sedan ETRS89 epoch
+	const totalNorthShift: number = northVelocity * yearsSinceEtrs89;
+	const totalEastShift: number = eastVelocity * yearsSinceEtrs89;
+	
+	return {
+		dn: totalNorthShift,
+		de: totalEastShift
+	};
+}
 
-	constructor() {
-		this.correction = this.calculateItrf2Etrs89Correction();
-	}
+// Beräkna korrigeringen en gång vid appstart
+const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
 
-	// Beräkna tidskorrigering för ITRF/ETRS89-drift
-	// WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
-	// skiljer sig med tiden pga. kontinentaldrift i Europa
-	private calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
-		// ETRS89 fixerades vid epoch 1989.0
-		// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
-		const etrs89Epoch = 1989.0;
-		
-		// Beräkna aktuellt år (decimalår)
-		const now = new Date();
-		const yearStart = new Date(now.getFullYear(), 0, 1);
-		const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
-		const yearFraction = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
-		const currentEpoch = now.getFullYear() + yearFraction;
-		
-		// Tid sedan ETRS89 fixerades
-		const yearsSinceEtrs89 = currentEpoch - etrs89Epoch;
-		
-		// Europeiska plattan rör sig ungefär 2.5 cm/år relativt ITRF
-		// Riktning: nordost (cirka 25° från norr)
-		// Källa: EUREF, Lantmäteriet tekniska rapporter
-		const plateVelocityMeterPerYear = 0.025; // 2.5 cm/år
-		const azimuthDegrees = 25; // grader från norr, öster är positiv
-		
-		// Konvertera till nord- och östkomponenter
-		const azimuthRad = (azimuthDegrees * Math.PI) / 180;
-		const northVelocity = plateVelocityMeterPerYear * Math.cos(azimuthRad);
-		const eastVelocity = plateVelocityMeterPerYear * Math.sin(azimuthRad);
-		
-		// Total förskjutning sedan ETRS89 epoch
-		const totalNorthShift = northVelocity * yearsSinceEtrs89;
-		const totalEastShift = eastVelocity * yearsSinceEtrs89;
-		
-		return {
-			dn: totalNorthShift,
-			de: totalEastShift
-		};
-	}
-
-	private initializeProj4(): boolean {
-		if (this.proj4Initialized) {
-			return true;
-		}
-
+// PROJ4JS-based coordinate transformation
+function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
+	try {
+		// Check if proj4 library is available
 		if (typeof proj4 === 'undefined') {
 			console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
-			return false;
+			return { northing: 0, easting: 0 };
 		}
 
 		// Define coordinate systems if not already defined
 		// WGS84 is built-in as 'EPSG:4326'
 		// SWEREF 99 TM (EPSG:3006) definition
 		if (!proj4.defs('EPSG:3006')) {
-			proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+				proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
 		}
 
-		this.proj4Initialized = true;
-		return true;
-	}
+		// Transform coordinates using proj4
+		// Input: [longitude, latitude] in WGS84 (EPSG:4326)
+		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
+		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
 
-	wgs84ToSweref99TM(lat: number, lon: number): SwerefCoordinates {
-		try {
-			if (!this.initializeProj4()) {
-				return { northing: 0, easting: 0 };
-			}
+		let easting: number = result[0];
+		let northing: number = result[1];
 
-			// Transform coordinates using proj4
-			// Input: [longitude, latitude] in WGS84 (EPSG:4326)
-			// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
-			const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
+		// Applicera tidskorrigering för ITRF->ETRS89 drift
+		// Detta kompenserar för att WGS84 (ITRF-realisering) och SWEREF 99 (ETRS89)
+		// skiljer sig åt och att skillnaden ökar med tiden
+		northing += itrf2Etrs89Correction.dn;
+		easting += itrf2Etrs89Correction.de;
 
-			let easting = result[0];
-			let northing = result[1];
-
-			// Applicera tidskorrigering för ITRF->ETRS89 drift
-			// Detta kompenserar för att WGS84 (ITRF-realisering) och SWEREF 99 (ETRS89)
-			// skiljer sig åt och att skillnaden ökar med tiden
-			northing += this.correction.dn;
-			easting += this.correction.de;
-
-			// Validate the result
-			if (isNaN(northing) || isNaN(easting)) {
-				console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
-				return { northing: 0, easting: 0 };
-			}
-
-			return { northing, easting };
-		} catch (error) {
-			console.error("Error in coordinate transformation:", error);
+		// Validate the result
+		if (isNaN(northing) || isNaN(easting)) {
+			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
 			return { northing: 0, easting: 0 };
 		}
+
+		return { northing, easting };
+	} catch (error) {
+		console.error("Error in coordinate transformation:", error);
+		return { northing: 0, easting: 0 };
 	}
-}
-
-const coordinateTransformer = new CoordinateTransformer();
-
-// Bakåtkompatibel funktion för befintlig kod
-function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
-	return coordinateTransformer.wgs84ToSweref99TM(lat, lon);
 }
 
 const errorMsg_sv: string = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
@@ -174,92 +153,50 @@ const notificationContent = document.getElementById("notification-content") as H
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 
-/**
- * NotificationManager - hanterar meddelanden via Dialog API
- * Inkluderar auto-close och klick-utanför-stängning
- */
-class NotificationManager {
-	private dialog: HTMLDialogElement | null;
-	private content: HTMLElement | null;
-	private header: HTMLElement | null;
-	private titleElement: HTMLElement | null;
-	private backdropListenerAdded = false;
-
-	constructor(
-		dialog: HTMLDialogElement | null,
-		content: HTMLElement | null,
-		header: HTMLElement | null,
-		titleElement: HTMLElement | null
-	) {
-		this.dialog = dialog;
-		this.content = content;
-		this.header = header;
-		this.titleElement = titleElement;
-		this.setupBackdropListener();
-	}
-
-	private setupBackdropListener(): void {
-		if (!this.dialog || this.backdropListenerAdded) {
-			return;
-		}
-
-		this.dialog.addEventListener('click', (event) => {
-			const rect = this.dialog!.getBoundingClientRect();
-			const isInDialog = (
-				rect.top <= event.clientY &&
-				event.clientY <= rect.top + rect.height &&
-				rect.left <= event.clientX &&
-				event.clientX <= rect.left + rect.width
-			);
-			if (!isInDialog) {
-				this.dialog!.close();
-			}
-		});
-		this.backdropListenerAdded = true;
-	}
-
-	show(message: string, duration: number = 5000, title?: string): void {
-		if (!this.dialog || !this.content) {
-			window.alert(message);
-			return;
-		}
-
-		// Stäng eventuellt öppet dialog först
-		if (this.dialog.open) {
-			this.dialog.close();
-		}
-
-		// Sätt rubrik om angiven
-		if (title && this.header && this.titleElement) {
-			this.titleElement.textContent = title;
-			this.header.style.display = '';
-		} else if (this.header) {
-			this.header.style.display = 'none';
-		}
-
-		// Sätt meddelande och visa dialog
-		this.content.textContent = message;
-		this.dialog.showModal();
-
-		// Dölj automatiskt efter angiven tid
-		setTimeout(() => {
-			if (this.dialog?.open) {
-				this.dialog.close();
-			}
-		}, duration);
-	}
-}
-
-const notificationManager = new NotificationManager(
-	notificationDialog,
-	notificationContent,
-	notificationHeader,
-	notificationTitle
-);
-
-// Bakåtkompatibel funktion för befintlig kod
+// Funktion för att visa meddelanden via Dialog API
 function showNotification(message: string, duration: number = 5000, title?: string): void {
-	notificationManager.show(message, duration, title);
+	if (!notificationDialog || !notificationContent) {
+		window.alert(message);
+		return;
+	}
+
+	// Stäng eventuellt öppet dialog först
+	if (notificationDialog.open) {
+		notificationDialog.close();
+	}
+
+	// Sätt rubrik om angiven
+	if (title && notificationHeader && notificationTitle) {
+		notificationTitle.textContent = title;
+		notificationHeader.style.display = '';
+	} else if (notificationHeader) {
+		notificationHeader.style.display = 'none';
+	}
+
+	// Sätt meddelande och visa dialog
+	notificationContent.textContent = message;
+	notificationDialog.showModal();
+	
+	// Dölj automatiskt efter angiven tid
+	setTimeout(() => {
+		if (notificationDialog.open) {
+			notificationDialog.close();
+		}
+	}, duration);
+	
+	// Stäng dialog vid klick utanför (backdrop)
+	notificationDialog.addEventListener('click', function(event) {
+		const rect = notificationDialog.getBoundingClientRect();
+		const isInDialog = (
+			rect.top <= event.clientY &&
+			event.clientY <= rect.top + rect.height &&
+			rect.left <= event.clientX &&
+			event.clientX <= rect.left + rect.width
+		);
+		if (!isInDialog) {
+			notificationDialog.close();
+		}
+	});
 }
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
@@ -409,177 +346,111 @@ class UIHelper {
 
 const uiHelper = new UIHelper();
 
-/**
- * GeolocationManager - hanterar positionering och state
- * Kapslar in watchID, spinner state och all positioneringslogik
- */
-class GeolocationManager {
-	private watchID: number | null = null;
-	private spinnerTimeout: number | null = null;
-	private readonly options: PositionOptions = {
+let watchID: number | null = null;
+let spinnerTimeout: number | null = null;
+
+function posInit(event: Event): void {
+	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
+	if (spinnerTimeout !== null) {
+		clearTimeout(spinnerTimeout);
+		spinnerTimeout = null;
+	}
+	uiHelper.setLoadingState(false);
+	
+	function success(position: GeolocationPosition) {
+		if (watchID === null) {
+			return;
+		}
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		uiHelper.setLoadingState(false);
+		
+		if (!isInSweden(position)) {
+			showNotification("Varning: SWEREF 99 är bara användbart i Sverige.");
+		}
+		
+		uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
+		uiHelper.updateSpeed(position.coords.speed, SPEED_THRESHOLD_MS);
+		uiHelper.updateTimestamp(position.timestamp);
+
+		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
+		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude, na_sv);
+		uiHelper.setButtonState('active');
+	}
+
+	function error() {
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		uiHelper.setLoadingState(false);
+		
+		sharebtn!.setAttribute("disabled", "disabled");
+		showNotification(errorMsg_sv, 7000);
+	}
+
+	function restoreError() {
+		// Silent error handler for restore attempts - reset UI to stopped state
+		console.log("Positioning restore failed, resetting to stopped state");
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		uiHelper.resetUI();
+		if (watchID !== null) {
+			navigator.geolocation.clearWatch(watchID);
+			watchID = null;
+		}
+	}
+
+	const options = {
 		enableHighAccuracy: true,
 		maximumAge: 20000,
-		timeout: 28000
+		timeout: 28000,
 	};
 
-	constructor(
-		private ui: UIHelper,
-		private transformer: CoordinateTransformer,
-		private notification: NotificationManager,
-		private errorMsg: string,
-		private accuracyThreshold: number,
-		private speedThreshold: number,
-		private naText: string
-	) {}
-
-	private clearSpinner(): void {
-		if (this.spinnerTimeout !== null) {
-			clearTimeout(this.spinnerTimeout);
-			this.spinnerTimeout = null;
-		}
-		this.ui.setLoadingState(false);
-	}
-
-	private startSpinner(): void {
-		this.spinnerTimeout = window.setTimeout(() => {
-			this.ui.setLoadingState(true);
-			this.spinnerTimeout = null;
-		}, 5000);
-	}
-
-	private handleSuccess = (position: GeolocationPosition): void => {
-		if (this.watchID === null) {
+	// Handle restore events differently - test geolocation availability first
+	if (event.type === "restore") {
+		if (!("geolocation" in navigator)) {
+			restoreError();
 			return;
 		}
-
-		this.clearSpinner();
-
-		if (!isInSweden(position)) {
-			this.notification.show("Varning: SWEREF 99 är bara användbart i Sverige.");
-		}
-
-		this.ui.updateAccuracy(position.coords.accuracy, this.accuracyThreshold);
-		this.ui.updateSpeed(position.coords.speed, this.speedThreshold);
-		this.ui.updateTimestamp(position.timestamp);
-
-		const sweref = this.transformer.wgs84ToSweref99TM(
-			position.coords.latitude,
-			position.coords.longitude
-		);
-		this.ui.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude, this.naText);
-		this.ui.setButtonState('active');
-	};
-
-	private handleError = (): void => {
-		this.clearSpinner();
-		this.ui.setButtonState('stopped');
-		this.ui.getShareText(); // Trigger share button disable via state
-		this.notification.show(this.errorMsg, 7000);
-	};
-
-	private handleRestoreError = (): void => {
-		console.log("Positioning restore failed, resetting to stopped state");
-		this.clearSpinner();
-		this.ui.resetUI();
-		if (this.watchID !== null) {
-			navigator.geolocation.clearWatch(this.watchID);
-			this.watchID = null;
-		}
-	};
-
-	start(isRestore: boolean = false): void {
-		this.clearSpinner();
-
-		if (isRestore) {
-			if (!("geolocation" in navigator)) {
-				this.handleRestoreError();
-				return;
-			}
-
-			// Test geolocation with a quick position request before starting watch
-			navigator.geolocation.getCurrentPosition(
-				() => {
-					if (this.watchID === null) {
-						this.watchID = navigator.geolocation.watchPosition(
-							this.handleSuccess,
-							this.handleRestoreError,
-							this.options
-						);
-						this.startSpinner();
-					}
-				},
-				this.handleRestoreError,
-				{ timeout: 5000, maximumAge: 60000 }
-			);
-		} else {
-			if (this.watchID === null) {
-				this.watchID = navigator.geolocation.watchPosition(
-					this.handleSuccess,
-					this.handleError,
-					this.options
-				);
-				this.startSpinner();
-			}
-		}
-	}
-
-	stop(): void {
-		if (this.watchID !== null) {
-			navigator.geolocation.clearWatch(this.watchID);
-			this.watchID = null;
-		}
-		this.clearSpinner();
-		this.ui.setButtonState('stopped');
-		// Reset speed display
-		const speedEl = document.getElementById("speed");
-		if (speedEl) {
-			speedEl.innerHTML = "–&nbsp;m/s";
-			speedEl.classList.remove("outofrange");
-		}
-	}
-
-	isActive(): boolean {
-		return this.watchID !== null;
-	}
-
-	handleVisibilityChange(): void {
-		if (document.hidden) {
-			return;
-		}
-
-		if (this.ui.isUIInconsistent()) {
-			console.log("Detected inconsistent positioning state after navigation, resetting...");
-			this.clearSpinner();
-			this.ui.resetUI();
-			try {
-				if (this.watchID !== null) {
-					navigator.geolocation.clearWatch(this.watchID);
-					this.watchID = null;
+		// Test geolocation with a quick position request before starting watch
+		navigator.geolocation.getCurrentPosition(
+			() => {
+				// Geolocation is available, proceed with watch
+				if (watchID === null) {
+					watchID = navigator.geolocation.watchPosition(success, restoreError, options);
+					
+					// Starta timer för spinner efter 5 sekunder (även för restore)
+					spinnerTimeout = window.setTimeout(() => {
+						uiHelper.setLoadingState(true);
+						spinnerTimeout = null;
+					}, 5000);
 				}
-			} catch (e) {
-				console.error("Error clearing watch:", e);
-			}
-		} else if (this.ui.isPositioningUIActive() && this.watchID === null) {
-			console.log("Positioning was active but watch was lost, restarting...");
-			this.start(true);
+			},
+			restoreError,
+			{ timeout: 5000, maximumAge: 60000 }
+		);
+	} else {
+		// Regular positioning start
+		if (watchID === null) {
+			watchID = navigator.geolocation.watchPosition(success, error, options);
+			
+			// Starta timer för spinner efter 5 sekunder
+			spinnerTimeout = window.setTimeout(() => {
+				uiHelper.setLoadingState(true);
+				spinnerTimeout = null;
+			}, 5000);
 		}
 	}
-}
-
-const geolocationManager = new GeolocationManager(
-	uiHelper,
-	coordinateTransformer,
-	notificationManager,
-	errorMsg_sv,
-	ACCURACY_THRESHOLD_METERS,
-	SPEED_THRESHOLD_MS,
-	na_sv
-);
-
-// Bakåtkompatibel funktion för event handlers
-function posInit(event: Event): void {
-	const isRestore = event.type === "restore";
-	geolocationManager.start(isRestore);
 }
 
 document.addEventListener("dblclick", posInit, false);
@@ -598,19 +469,55 @@ sharebtn!.addEventListener("click", async () => {
 			text: uiHelper.getShareText()
 		};
 		await navigator.share(shareData);
-	} catch (err) {
-		// Share can fail if user cancels or share is not supported - log for debugging
-		console.error("Kunde inte dela: ", err instanceof Error ? err.message : String(err));
+	} catch (err: any) {
+		console.log("Kunde inte dela: ", err.message);
 	}
 });
 
-stopbtn!.addEventListener("click", () => {
-	geolocationManager.stop();
+stopbtn!.addEventListener("click", async () => {
+	if (watchID !== null) {
+		navigator.geolocation.clearWatch(watchID);
+		watchID = null;
+	}
+	
+	// Ta bort spinner om den visas
+	if (spinnerTimeout !== null) {
+		clearTimeout(spinnerTimeout);
+		spinnerTimeout = null;
+	}
+	uiHelper.setLoadingState(false);
+	
+	uiHelper.setButtonState('stopped');
+	speed!.innerHTML = "–&nbsp;m/s";
+	speed!.classList.remove("outofrange");
 });
 
 // Handle page visibility changes and back navigation to restore positioning state
 function handleVisibilityChange(): void {
-	geolocationManager.handleVisibilityChange();
+	// Only restore if page becomes visible and UI indicates positioning should be active
+	if (!document.hidden && uiHelper.isUIInconsistent()) {
+		// UI state is inconsistent - reset to stopped state
+		console.log("Detected inconsistent positioning state after navigation, resetting...");
+		
+		// Ta bort spinner om den visas
+		if (spinnerTimeout !== null) {
+			clearTimeout(spinnerTimeout);
+			spinnerTimeout = null;
+		}
+		uiHelper.resetUI();
+		try {
+			if (watchID !== null) {
+				navigator.geolocation.clearWatch(watchID);
+				watchID = null;
+			}
+		} catch (e) {}
+	} else if (!document.hidden && uiHelper.isPositioningUIActive()) {
+		// UI indicates positioning should be active, check if watchID is valid
+		if (watchID === null) {
+			console.log("Positioning was active but watch was lost, restarting...");
+			posInit(new Event("restore"));
+		}
+	}
 }
 
 // Listen for page visibility changes (including back/forward navigation)
