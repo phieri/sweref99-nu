@@ -599,7 +599,8 @@ sharebtn!.addEventListener("click", async () => {
 		};
 		await navigator.share(shareData);
 	} catch (err) {
-		console.log("Kunde inte dela: ", err instanceof Error ? err.message : String(err));
+		// Share can fail if user cancels or share is not supported - log for debugging
+		console.error("Kunde inte dela: ", err instanceof Error ? err.message : String(err));
 	}
 });
 
