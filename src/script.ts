@@ -1,45 +1,148 @@
-document.addEventListener(
-	"keydown", (event: KeyboardEvent) => {
-		if (event.key === "F1") {
-			document.location = "https://sweref99.nu/om.html";
-		}
-	},
-	false,
-);
-
-function isInSweden(pos: GeolocationPosition): boolean {
-	if (pos.coords.latitude < 55 || pos.coords.latitude > 69) {
-		return false;
-	} else if (pos.coords.longitude < 10 || pos.coords.longitude > 24) {
-		return false;
-	} else {
-		return true;
-	}
-}
+// ============================================================================
+// TYPE DEFINITIONS AND INTERFACES
+// ============================================================================
 
 declare const proj4: any;
 
-// Interfaces för koordinatsystem och transformationer
+/**
+ * Represents coordinates in the SWEREF 99 TM coordinate system
+ */
 interface SwerefCoordinates {
 	northing: number;
 	easting: number;
 }
 
+/**
+ * Represents the correction needed for ITRF to ETRS89 continental drift
+ */
 interface Itrf2Etrs89Correction {
-	dn: number;
-	de: number;
+	dn: number; // North correction in meters
+	de: number; // East correction in meters
 }
 
-// Beräkna tidskorrigering för ITRF/ETRS89-drift
-// WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
-// skiljer sig med tiden pga. kontinentaldrift i Europa
-// Denna beräkning görs en gång vid appstart
+// ============================================================================
+// CONFIGURATION CONSTANTS
+// ============================================================================
+
+/**
+ * Geographic bounds for Sweden
+ * Used to validate if coordinates are within Swedish territory
+ */
+const SWEDEN_BOUNDS = {
+	MIN_LATITUDE: 55,
+	MAX_LATITUDE: 69,
+	MIN_LONGITUDE: 10,
+	MAX_LONGITUDE: 24
+} as const;
+
+/**
+ * Position accuracy threshold (meters)
+ * Smartphone GPS typically achieves 3-5m accuracy in optimal conditions and 10-20m in real-world
+ * scenarios with signal obstructions. SWEREF 99 transformation accuracy is within 1m.
+ * A 5m threshold represents typical optimal smartphone GPS accuracy and is appropriate for
+ * general navigation and coordinate display purposes.
+ * Sources: Smartphone GNSS research (Link et al., 2025; DXOMark GPS testing)
+ */
+const ACCURACY_THRESHOLD_METERS: number = 5;
+
+/**
+ * Speed threshold (m/s) for distinguishing stationary/walking from faster movement
+ * Typical pedestrian walking speed ranges from 1.1-1.4 m/s (4-5 km/h). GPS positioning
+ * when stationary can show spurious movement due to signal noise. A threshold of 1.4 m/s
+ * corresponds to the upper end of normal walking speed and effectively distinguishes
+ * between pedestrian movement and faster travel (cycling, driving, etc.).
+ * Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GPS accuracy studies
+ */
+const SPEED_THRESHOLD_MS: number = 1.4;
+
+/**
+ * Delay before showing loading spinner (milliseconds)
+ * Prevents UI flicker for fast position updates
+ */
+const SPINNER_DELAY_MS: number = 5000;
+
+/**
+ * ETRS89 and SWEREF 99 epoch constants
+ * Used for calculating continental drift correction
+ */
+const ETRS89_EPOCH: number = 1989.0;
+const SWEREF99_EPOCH: number = 1999.5;
+
+/**
+ * European plate velocity parameters
+ * The European tectonic plate moves approximately 2.5 cm/year relative to ITRF
+ * Direction: northeast (approximately 25° from north)
+ * Sources: EUREF, Lantmäteriet technical reports
+ */
+const PLATE_VELOCITY = {
+	METERS_PER_YEAR: 0.025, // 2.5 cm/år
+	AZIMUTH_DEGREES: 25 // grader från norr, öster är positiv
+} as const;
+
+/**
+ * Geolocation API options
+ */
+const GEOLOCATION_OPTIONS = {
+	enableHighAccuracy: true,
+	maximumAge: 20000,
+	timeout: 28000,
+} as const;
+
+/**
+ * Geolocation test options for restore operations
+ */
+const GEOLOCATION_TEST_OPTIONS = {
+	timeout: 5000,
+	maximumAge: 60000
+} as const;
+
+/**
+ * UI text constants (Swedish)
+ */
+const UI_TEXT = {
+	ERROR_NO_POSITION: "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!",
+	NOT_AVAILABLE: "Ej&nbsp;tillgängligt",
+	WARNING_NOT_IN_SWEDEN: "Varning: SWEREF 99 är bara användbart i Sverige.",
+	HELP_URL: "https://sweref99.nu/om.html"
+} as const;
+
+/**
+ * Notification duration (milliseconds)
+ */
+const NOTIFICATION_DURATION = {
+	DEFAULT: 5000,
+	ERROR: 7000
+} as const;
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Checks if a position is within Swedish territory
+ * @param pos - GeolocationPosition to check
+ * @returns true if position is within Sweden's approximate bounds
+ */
+function isInSweden(pos: GeolocationPosition): boolean {
+	const { latitude, longitude } = pos.coords;
+	return (
+		latitude >= SWEDEN_BOUNDS.MIN_LATITUDE &&
+		latitude <= SWEDEN_BOUNDS.MAX_LATITUDE &&
+		longitude >= SWEDEN_BOUNDS.MIN_LONGITUDE &&
+		longitude <= SWEDEN_BOUNDS.MAX_LONGITUDE
+	);
+}
+
+/**
+ * Beräkna tidskorrigering för ITRF/ETRS89-drift
+ * 
+ * WGS84 (realiserat via ITRF) och SWEREF 99 (ETRS89 epoch 1999.5) 
+ * skiljer sig med tiden pga. kontinentaldrift i Europa.
+ * Denna beräkning görs en gång vid appstart.
+ * 
+ * @returns Correction values for northing and easting in meters
+ */
 function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
-	// ETRS89 fixerades vid epoch 1989.0
-	// SWEREF 99 är en realisering av ETRS89 vid epoch 1999.5
-	const etrs89Epoch: number = 1989.0;
-	const sweref99Epoch: number = 1999.5;
-	
 	// Beräkna aktuellt år (decimalår)
 	const now = new Date();
 	const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -48,18 +151,12 @@ function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 	const currentEpoch: number = now.getFullYear() + yearFraction;
 	
 	// Tid sedan ETRS89 fixerades
-	const yearsSinceEtrs89: number = currentEpoch - etrs89Epoch;
-	
-	// Europeiska plattan rör sig ungefär 2.5 cm/år relativt ITRF
-	// Riktning: nordost (cirka 25° från norr)
-	// Källa: EUREF, Lantmäteriet tekniska rapporter
-	const plateVelocityMeterPerYear = 0.025; // 2.5 cm/år
-	const azimuthDegrees: number = 25; // grader från norr, öster är positiv
+	const yearsSinceEtrs89: number = currentEpoch - ETRS89_EPOCH;
 	
 	// Konvertera till nord- och östkomponenter
-	const azimuthRad: number = (azimuthDegrees * Math.PI) / 180;
-	const northVelocity: number = plateVelocityMeterPerYear * Math.cos(azimuthRad);
-	const eastVelocity: number = plateVelocityMeterPerYear * Math.sin(azimuthRad);
+	const azimuthRad: number = (PLATE_VELOCITY.AZIMUTH_DEGREES * Math.PI) / 180;
+	const northVelocity: number = PLATE_VELOCITY.METERS_PER_YEAR * Math.cos(azimuthRad);
+	const eastVelocity: number = PLATE_VELOCITY.METERS_PER_YEAR * Math.sin(azimuthRad);
 	
 	// Total förskjutning sedan ETRS89 epoch
 	const totalNorthShift: number = northVelocity * yearsSinceEtrs89;
@@ -74,7 +171,13 @@ function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 // Beräkna korrigeringen en gång vid appstart
 const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
 
-// PROJ4JS-based coordinate transformation
+/**
+ * Transforms WGS84 coordinates to SWEREF 99 TM using PROJ4JS
+ * 
+ * @param lat - Latitude in WGS84 decimal degrees
+ * @param lon - Longitude in WGS84 decimal degrees
+ * @returns SWEREF 99 TM coordinates with ITRF/ETRS89 drift correction applied
+ */
 function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
 		// Check if proj4 library is available
@@ -117,24 +220,9 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	}
 }
 
-const errorMsg_sv: string = "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!";
-const na_sv: string = "Ej&nbsp;tillgängligt"
-
-// Position accuracy threshold (meters)
-// Smartphone GPS typically achieves 3-5m accuracy in optimal conditions and 10-20m in real-world
-// scenarios with signal obstructions. SWEREF 99 transformation accuracy is within 1m.
-// A 5m threshold represents typical optimal smartphone GPS accuracy and is appropriate for
-// general navigation and coordinate display purposes.
-// Sources: Smartphone GNSS research (Link et al., 2025; DXOMark GPS testing)
-const ACCURACY_THRESHOLD_METERS: number = 5;
-
-// Speed threshold (m/s) for distinguishing stationary/walking from faster movement
-// Typical pedestrian walking speed ranges from 1.1-1.4 m/s (4-5 km/h). GPS positioning
-// when stationary can show spurious movement due to signal noise. A threshold of 1.4 m/s
-// corresponds to the upper end of normal walking speed and effectively distinguishes
-// between pedestrian movement and faster travel (cycling, driving, etc.).
-// Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GPS accuracy studies
-const SPEED_THRESHOLD_MS: number = 1.4;
+// ============================================================================
+// DOM ELEMENTS AND UI REFERENCES
+// ============================================================================
 
 const uncert: HTMLElement | null    = document.getElementById("uncert");
 const speed: HTMLElement | null     = document.getElementById("speed");
@@ -153,8 +241,26 @@ const notificationContent = document.getElementById("notification-content") as H
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 
-// Funktion för att visa meddelanden via Dialog API
-function showNotification(message: string, duration: number = 5000, title?: string): void {
+// Skapa tidsstämpelformatterare en gång för återanvändning
+const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit',
+	hour12: false
+});
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+
+/**
+ * Visar meddelanden via Dialog API
+ * 
+ * @param message - Message to display
+ * @param duration - Duration in milliseconds (default: 5000)
+ * @param title - Optional title for the notification
+ */
+function showNotification(message: string, duration: number = NOTIFICATION_DURATION.DEFAULT, title?: string): void {
 	if (!notificationDialog || !notificationContent) {
 		window.alert(message);
 		return;
@@ -199,13 +305,9 @@ function showNotification(message: string, duration: number = 5000, title?: stri
 	});
 }
 
-// Skapa tidsstämpelformatterare en gång för återanvändning
-const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
-	hour: '2-digit',
-	minute: '2-digit',
-	second: '2-digit',
-	hour12: false
-});
+// ============================================================================
+// UI HELPER CLASS
+// ============================================================================
 
 /**
  * UIHelper - centraliserar all DOM-manipulation och UI-state management
@@ -259,6 +361,9 @@ class UIHelper {
 		};
 	}
 
+	/**
+	 * Updates the accuracy display and applies styling based on threshold
+	 */
 	updateAccuracy(accuracy: number, threshold: number): void {
 		const { uncert } = this.elements;
 		if (!uncert) return;
@@ -271,6 +376,9 @@ class UIHelper {
 		}
 	}
 
+	/**
+	 * Updates the speed display and applies styling based on threshold
+	 */
 	updateSpeed(speed: number | null, threshold: number): void {
 		const { speed: speedEl } = this.elements;
 		if (!speedEl) return;
@@ -285,6 +393,9 @@ class UIHelper {
 		}
 	}
 
+	/**
+	 * Updates the timestamp display
+	 */
 	updateTimestamp(timestamp: number): void {
 		const { timestamp: timestampEl } = this.elements;
 		if (!timestampEl) return;
@@ -293,13 +404,16 @@ class UIHelper {
 		timestampEl.innerHTML = timeFormatter.format(date);
 	}
 
-	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number, na_sv: string): void {
+	/**
+	 * Updates coordinate displays for both SWEREF 99 and WGS84
+	 */
+	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number): void {
 		const { swerefn, swerefe, wgs84n, wgs84e } = this.elements;
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", { lat, lon });
-			if (swerefn) swerefn.innerHTML = na_sv;
-			if (swerefe) swerefe.innerHTML = na_sv;
+			if (swerefn) swerefn.innerHTML = UI_TEXT.NOT_AVAILABLE;
+			if (swerefe) swerefe.innerHTML = UI_TEXT.NOT_AVAILABLE;
 		} else {
 			if (swerefn) swerefn.innerHTML = `N&nbsp;${Math.round(sweref.northing).toString().replace(".", ",")}`;
 			if (swerefe) swerefe.innerHTML = `E&nbsp;${Math.round(sweref.easting).toString().replace(".", ",")}`;
@@ -309,6 +423,9 @@ class UIHelper {
 		if (wgs84e) wgs84e.innerHTML = `E&nbsp;${lon.toString().replace(".", ",")}&deg;`;
 	}
 
+	/**
+	 * Sets loading state (shows/hides spinner)
+	 */
 	setLoadingState(isLoading: boolean): void {
 		const { timestamp } = this.elements;
 		if (!timestamp) return;
@@ -320,6 +437,9 @@ class UIHelper {
 		}
 	}
 
+	/**
+	 * Sets button states for active/stopped positioning
+	 */
 	setButtonState(state: 'active' | 'stopped'): void {
 		const { posbtn, stopbtn, sharebtn } = this.elements;
 
@@ -334,29 +454,42 @@ class UIHelper {
 		}
 	}
 
+	/**
+	 * Resets UI to stopped state
+	 */
 	resetUI(): void {
-		const { speed, timestamp } = this.elements;
+		const { speed } = this.elements;
 		this.setLoadingState(false);
 		this.setButtonState('stopped');
 		if (speed) {
 			speed.innerHTML = "–&nbsp;m/s";
 			speed.classList.remove("outofrange");
 		}
+		const { timestamp } = this.elements;
 		if (timestamp) {
 			timestamp.innerHTML = "--:--:--";
 		}
 	}
 
+	/**
+	 * Gets formatted text for sharing coordinates
+	 */
 	getShareText(): string {
 		const { swerefn, swerefe } = this.elements;
 		return `${swerefn?.textContent ?? ''} ${swerefe?.textContent ?? ''} (SWEREF 99 TM)`;
 	}
 
+	/**
+	 * Checks if positioning UI is active
+	 */
 	isPositioningUIActive(): boolean {
 		const { posbtn, stopbtn } = this.elements;
 		return posbtn?.hasAttribute("disabled") === true && stopbtn?.hasAttribute("disabled") === false;
 	}
 
+	/**
+	 * Checks if UI is in an inconsistent state
+	 */
 	isUIInconsistent(): boolean {
 		const { posbtn, stopbtn } = this.elements;
 		return posbtn?.hasAttribute("disabled") === true && stopbtn?.hasAttribute("disabled") === true;
@@ -365,80 +498,111 @@ class UIHelper {
 
 const uiHelper = new UIHelper();
 
+// ============================================================================
+// GEOLOCATION STATE MANAGEMENT
+// ============================================================================
+
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
-function posInit(event: Event): void {
-	// Rensa eventuell befintlig spinner-timer för att undvika flimmer
+/**
+ * Clears the spinner timeout if it exists
+ * This prevents UI flicker and ensures clean state management
+ */
+function clearSpinnerTimeout(): void {
 	if (spinnerTimeout !== null) {
 		clearTimeout(spinnerTimeout);
 		spinnerTimeout = null;
 	}
+}
+
+/**
+ * Starts the spinner timeout
+ * Shows loading indicator after SPINNER_DELAY_MS if position hasn't been received
+ */
+function startSpinnerTimeout(): void {
+	clearSpinnerTimeout();
+	spinnerTimeout = window.setTimeout(() => {
+		uiHelper.setLoadingState(true);
+		spinnerTimeout = null;
+	}, SPINNER_DELAY_MS);
+}
+
+/**
+ * Clears geolocation watch and resets state
+ */
+function stopGeolocationWatch(): void {
+	if (watchID !== null) {
+		navigator.geolocation.clearWatch(watchID);
+		watchID = null;
+	}
+	clearSpinnerTimeout();
+	uiHelper.setLoadingState(false);
+}
+
+// ============================================================================
+// GEOLOCATION HANDLERS
+// ============================================================================
+
+/**
+ * Position success handler
+ * Called when a new position is received from the Geolocation API
+ */
+function handlePositionSuccess(position: GeolocationPosition): void {
+	if (watchID === null) {
+		return;
+	}
+	
+	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
 	
-	function success(position: GeolocationPosition) {
-		if (watchID === null) {
-			return;
-		}
-		
-		// Ta bort spinner om den visas
-		if (spinnerTimeout !== null) {
-			clearTimeout(spinnerTimeout);
-			spinnerTimeout = null;
-		}
-		uiHelper.setLoadingState(false);
-		
-		if (!isInSweden(position)) {
-			showNotification("Varning: SWEREF 99 är bara användbart i Sverige.");
-		}
-		
-		uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
-		uiHelper.updateSpeed(position.coords.speed, SPEED_THRESHOLD_MS);
-		uiHelper.updateTimestamp(position.timestamp);
-
-		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
-		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude, na_sv);
-		uiHelper.setButtonState('active');
+	if (!isInSweden(position)) {
+		showNotification(UI_TEXT.WARNING_NOT_IN_SWEDEN);
 	}
+	
+	uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
+	uiHelper.updateSpeed(position.coords.speed, SPEED_THRESHOLD_MS);
+	uiHelper.updateTimestamp(position.timestamp);
 
-	function error() {
-		// Ta bort spinner om den visas
-		if (spinnerTimeout !== null) {
-			clearTimeout(spinnerTimeout);
-			spinnerTimeout = null;
-		}
-		uiHelper.setLoadingState(false);
-		
-		sharebtn!.setAttribute("disabled", "disabled");
-		showNotification(errorMsg_sv, 7000);
-	}
+	const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
+	uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
+	uiHelper.setButtonState('active');
+}
 
-	function restoreError() {
-		// Silent error handler for restore attempts - reset UI to stopped state
-		console.log("Positioning restore failed, resetting to stopped state");
-		
-		// Ta bort spinner om den visas
-		if (spinnerTimeout !== null) {
-			clearTimeout(spinnerTimeout);
-			spinnerTimeout = null;
-		}
-		uiHelper.resetUI();
-		if (watchID !== null) {
-			navigator.geolocation.clearWatch(watchID);
-			watchID = null;
-		}
-	}
+/**
+ * Position error handler
+ * Called when geolocation fails (user denied permission or technical error)
+ */
+function handlePositionError(): void {
+	clearSpinnerTimeout();
+	uiHelper.setLoadingState(false);
+	sharebtn!.setAttribute("disabled", "disabled");
+	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR);
+}
 
-	const options = {
-		enableHighAccuracy: true,
-		maximumAge: 20000,
-		timeout: 28000,
-	};
+/**
+ * Position restore error handler
+ * Silent error handler for restore attempts - resets UI to stopped state
+ */
+function handlePositionRestoreError(): void {
+	console.log("Positioning restore failed, resetting to stopped state");
+	stopGeolocationWatch();
+	uiHelper.resetUI();
+}
+
+/**
+ * Initializes and starts position tracking
+ * 
+ * @param event - Event that triggered position initialization (click, dblclick, or restore)
+ */
+function posInit(event: Event): void {
+	clearSpinnerTimeout();
+	uiHelper.setLoadingState(false);
 
 	// Handle restore events differently - test geolocation availability first
 	if (event.type === "restore") {
 		if (!("geolocation" in navigator)) {
-			restoreError();
+			handlePositionRestoreError();
 			return;
 		}
 		// Test geolocation with a quick position request before starting watch
@@ -446,83 +610,43 @@ function posInit(event: Event): void {
 			() => {
 				// Geolocation is available, proceed with watch
 				if (watchID === null) {
-					watchID = navigator.geolocation.watchPosition(success, restoreError, options);
-					
-					// Starta timer för spinner efter 5 sekunder (även för restore)
-					spinnerTimeout = window.setTimeout(() => {
-						uiHelper.setLoadingState(true);
-						spinnerTimeout = null;
-					}, 5000);
+					watchID = navigator.geolocation.watchPosition(
+						handlePositionSuccess, 
+						handlePositionRestoreError, 
+						GEOLOCATION_OPTIONS
+					);
+					startSpinnerTimeout();
 				}
 			},
-			restoreError,
-			{ timeout: 5000, maximumAge: 60000 }
+			handlePositionRestoreError,
+			GEOLOCATION_TEST_OPTIONS
 		);
 	} else {
 		// Regular positioning start
 		if (watchID === null) {
-			watchID = navigator.geolocation.watchPosition(success, error, options);
-			
-			// Starta timer för spinner efter 5 sekunder
-			spinnerTimeout = window.setTimeout(() => {
-				uiHelper.setLoadingState(true);
-				spinnerTimeout = null;
-			}, 5000);
+			watchID = navigator.geolocation.watchPosition(
+				handlePositionSuccess, 
+				handlePositionError, 
+				GEOLOCATION_OPTIONS
+			);
+			startSpinnerTimeout();
 		}
 	}
 }
 
-document.addEventListener("dblclick", posInit, false);
-posbtn!.addEventListener("click", posInit, false);
+// ============================================================================
+// PAGE VISIBILITY AND NAVIGATION HANDLERS
+// ============================================================================
 
-if (!("geolocation" in navigator)) {
-	showNotification(errorMsg_sv, 7000);
-} else {
-	posbtn!.removeAttribute("disabled");
-}
-
-sharebtn!.addEventListener("click", async () => {
-	try {
-		const shareData = {
-			title: "Position",
-			text: uiHelper.getShareText()
-		};
-		await navigator.share(shareData);
-	} catch (err: any) {
-		console.log("Kunde inte dela: ", err.message);
-	}
-});
-
-stopbtn!.addEventListener("click", async () => {
-	if (watchID !== null) {
-		navigator.geolocation.clearWatch(watchID);
-		watchID = null;
-	}
-	
-	// Ta bort spinner om den visas
-	if (spinnerTimeout !== null) {
-		clearTimeout(spinnerTimeout);
-		spinnerTimeout = null;
-	}
-	uiHelper.setLoadingState(false);
-	
-	uiHelper.setButtonState('stopped');
-	speed!.innerHTML = "–&nbsp;m/s";
-	speed!.classList.remove("outofrange");
-});
-
-// Handle page visibility changes and back navigation to restore positioning state
+/**
+ * Handle page visibility changes and back navigation to restore positioning state
+ */
 function handleVisibilityChange(): void {
 	// Only restore if page becomes visible and UI indicates positioning should be active
 	if (!document.hidden && uiHelper.isUIInconsistent()) {
 		// UI state is inconsistent - reset to stopped state
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
-		
-		// Ta bort spinner om den visas
-		if (spinnerTimeout !== null) {
-			clearTimeout(spinnerTimeout);
-			spinnerTimeout = null;
-		}
+		stopGeolocationWatch();
 		uiHelper.resetUI();
 		try {
 			if (watchID !== null) {
@@ -539,26 +663,83 @@ function handleVisibilityChange(): void {
 	}
 }
 
-// Listen for page visibility changes (including back/forward navigation)
-document.addEventListener("visibilitychange", handleVisibilityChange);
+// ============================================================================
+// EVENT LISTENERS AND INITIALIZATION
+// ============================================================================
 
-// Also listen for pageshow event to handle back/forward navigation in some browsers
-window.addEventListener("pageshow", (event) => {
-	// Only trigger for back/forward navigation (persisted pages)
-	if (event.persisted) {
-		handleVisibilityChange();
-	}
-});
+/**
+ * Initialize all event listeners and check geolocation availability
+ */
+function initializeEventListeners(): void {
+	// Keyboard shortcuts
+	document.addEventListener(
+		"keydown", 
+		(event: KeyboardEvent) => {
+			if (event.key === "F1") {
+				document.location = UI_TEXT.HELP_URL;
+			}
+		},
+		false
+	);
 
-// Registrera Service Worker för offline-funktionalitet
-if ('serviceWorker' in navigator) {
-	window.addEventListener('load', () => {
-		navigator.serviceWorker.register('/sw.js')
-			.then((registration) => {
-				console.log('ServiceWorker registrerad:', registration.scope);
-			})
-			.catch((error) => {
-				console.log('ServiceWorker-registrering misslyckades:', error);
-			});
+	// Position control buttons
+	document.addEventListener("dblclick", posInit, false);
+	posbtn?.addEventListener("click", posInit, false);
+	
+	// Stop button
+	stopbtn?.addEventListener("click", () => {
+		stopGeolocationWatch();
+		uiHelper.setButtonState('stopped');
+		if (speed) {
+			speed.innerHTML = "–&nbsp;m/s";
+			speed.classList.remove("outofrange");
+		}
 	});
+
+	// Share button
+	sharebtn?.addEventListener("click", async () => {
+		try {
+			const shareData = {
+				title: "Position",
+				text: uiHelper.getShareText()
+			};
+			await navigator.share(shareData);
+		} catch (err: any) {
+			console.log("Kunde inte dela: ", err.message);
+		}
+	});
+
+	// Page visibility changes (including back/forward navigation)
+	document.addEventListener("visibilitychange", handleVisibilityChange);
+	
+	// Pageshow event for back/forward navigation in some browsers
+	window.addEventListener("pageshow", (event) => {
+		// Only trigger for back/forward navigation (persisted pages)
+		if (event.persisted) {
+			handleVisibilityChange();
+		}
+	});
+
+	// ServiceWorker registration for offline functionality
+	if ('serviceWorker' in navigator) {
+		window.addEventListener('load', () => {
+			navigator.serviceWorker.register('/sw.js')
+				.then((registration) => {
+					console.log('ServiceWorker registrerad:', registration.scope);
+				})
+				.catch((error) => {
+					console.log('ServiceWorker-registrering misslyckades:', error);
+				});
+		});
+	}
+
+	// Check geolocation availability
+	if (!("geolocation" in navigator)) {
+		showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR);
+	} else {
+		posbtn?.removeAttribute("disabled");
+	}
 }
+
+// Initialize the application
+initializeEventListeners();
