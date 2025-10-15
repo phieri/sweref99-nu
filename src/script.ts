@@ -207,6 +207,164 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
 	hour12: false
 });
 
+/**
+ * UIHelper - centraliserar all DOM-manipulation och UI-state management
+ * 
+ * Design Pattern: Helper/Utility Class med Facade-pattern för DOM-manipulation
+ * 
+ * Denna klass följer etablerade mönster från:
+ * - **Facade Pattern**: Ger ett förenklat interface till DOM-manipulation och state management
+ *   (källa: "Design Patterns: Elements of Reusable Object-Oriented Software", Gang of Four)
+ * - **Helper/Utility Class Pattern**: Kapslar in återanvändbar logik för UI-operationer
+ *   (vanligt i moderna JavaScript/TypeScript applikationer)
+ * 
+ * Fördelar med detta mönster:
+ * - Separation of Concerns: Isolerar all UI-logik från affärslogik
+ * - Single Responsibility: Klassen har ett enda ansvar - hantera UI-uppdateringar
+ * - DRY (Don't Repeat Yourself): Eliminerar duplicerad DOM-manipuleringskod
+ * - Testbarhet: UI-logik kan testas isolerat från resten av applikationen
+ * - Null Safety: Konsekvent null-hantering för alla DOM-element
+ * 
+ * Liknande implementationer finns i:
+ * - React's rendering layer (abstraherar DOM-manipulation)
+ * - Angular's ViewChild/Renderer2 (kapslar DOM-åtkomst)
+ * - Vue's template bindings (centraliserad UI-uppdatering)
+ */
+class UIHelper {
+	private elements: {
+		uncert: HTMLElement | null;
+		speed: HTMLElement | null;
+		timestamp: HTMLElement | null;
+		swerefn: HTMLElement | null;
+		swerefe: HTMLElement | null;
+		wgs84n: HTMLElement | null;
+		wgs84e: HTMLElement | null;
+		posbtn: HTMLElement | null;
+		sharebtn: HTMLElement | null;
+		stopbtn: HTMLElement | null;
+	};
+
+	constructor() {
+		this.elements = {
+			uncert: document.getElementById("uncert"),
+			speed: document.getElementById("speed"),
+			timestamp: document.getElementById("timestamp"),
+			swerefn: document.getElementById("sweref-n"),
+			swerefe: document.getElementById("sweref-e"),
+			wgs84n: document.getElementById("wgs84-n"),
+			wgs84e: document.getElementById("wgs84-e"),
+			posbtn: document.getElementById("pos-btn"),
+			sharebtn: document.getElementById("share-btn"),
+			stopbtn: document.getElementById("stop-btn")
+		};
+	}
+
+	updateAccuracy(accuracy: number, threshold: number): void {
+		const { uncert } = this.elements;
+		if (!uncert) return;
+
+		uncert.innerHTML = `&pm;${Math.round(accuracy)}&nbsp;m`;
+		if (accuracy > threshold) {
+			uncert.classList.add("outofrange");
+		} else {
+			uncert.classList.remove("outofrange");
+		}
+	}
+
+	updateSpeed(speed: number | null, threshold: number): void {
+		const { speed: speedEl } = this.elements;
+		if (!speedEl) return;
+
+		const speedValue = speed !== null ? Math.round(speed) : "?";
+		speedEl.innerHTML = `${speedValue}&nbsp;m/s`;
+		
+		if (speed !== null && speed > threshold) {
+			speedEl.classList.add("outofrange");
+		} else {
+			speedEl.classList.remove("outofrange");
+		}
+	}
+
+	updateTimestamp(timestamp: number): void {
+		const { timestamp: timestampEl } = this.elements;
+		if (!timestampEl) return;
+
+		const date = new Date(timestamp);
+		timestampEl.innerHTML = timeFormatter.format(date);
+	}
+
+	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number, na_sv: string): void {
+		const { swerefn, swerefe, wgs84n, wgs84e } = this.elements;
+
+		if (sweref.northing === 0 && sweref.easting === 0) {
+			console.warn("SWEREF 99 coordinates unavailable for position:", { lat, lon });
+			if (swerefn) swerefn.innerHTML = na_sv;
+			if (swerefe) swerefe.innerHTML = na_sv;
+		} else {
+			if (swerefn) swerefn.innerHTML = `N&nbsp;${Math.round(sweref.northing).toString().replace(".", ",")}`;
+			if (swerefe) swerefe.innerHTML = `E&nbsp;${Math.round(sweref.easting).toString().replace(".", ",")}`;
+		}
+
+		if (wgs84n) wgs84n.innerHTML = `N&nbsp;${lat.toString().replace(".", ",")}&deg;`;
+		if (wgs84e) wgs84e.innerHTML = `E&nbsp;${lon.toString().replace(".", ",")}&deg;`;
+	}
+
+	setLoadingState(isLoading: boolean): void {
+		const { timestamp } = this.elements;
+		if (!timestamp) return;
+
+		if (isLoading) {
+			timestamp.classList.add("loading");
+		} else {
+			timestamp.classList.remove("loading");
+		}
+	}
+
+	setButtonState(state: 'active' | 'stopped'): void {
+		const { posbtn, stopbtn, sharebtn } = this.elements;
+
+		if (state === 'active') {
+			posbtn?.setAttribute("disabled", "disabled");
+			stopbtn?.removeAttribute("disabled");
+			sharebtn?.removeAttribute("disabled");
+		} else {
+			stopbtn?.setAttribute("disabled", "disabled");
+			posbtn?.removeAttribute("disabled");
+			sharebtn?.setAttribute("disabled", "disabled");
+		}
+	}
+
+	resetUI(): void {
+		const { speed, timestamp } = this.elements;
+		this.setLoadingState(false);
+		this.setButtonState('stopped');
+		if (speed) {
+			speed.innerHTML = "–&nbsp;m/s";
+			speed.classList.remove("outofrange");
+		}
+		if (timestamp) {
+			timestamp.innerHTML = "--:--:--";
+		}
+	}
+
+	getShareText(): string {
+		const { swerefn, swerefe } = this.elements;
+		return `${swerefn?.textContent ?? ''} ${swerefe?.textContent ?? ''} (SWEREF 99 TM)`;
+	}
+
+	isPositioningUIActive(): boolean {
+		const { posbtn, stopbtn } = this.elements;
+		return posbtn?.hasAttribute("disabled") === true && stopbtn?.hasAttribute("disabled") === false;
+	}
+
+	isUIInconsistent(): boolean {
+		const { posbtn, stopbtn } = this.elements;
+		return posbtn?.hasAttribute("disabled") === true && stopbtn?.hasAttribute("disabled") === true;
+	}
+}
+
+const uiHelper = new UIHelper();
+
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 
@@ -216,7 +374,7 @@ function posInit(event: Event): void {
 		clearTimeout(spinnerTimeout);
 		spinnerTimeout = null;
 	}
-	timestamp!.classList.remove("loading");
+	uiHelper.setLoadingState(false);
 	
 	function success(position: GeolocationPosition) {
 		if (watchID === null) {
@@ -228,44 +386,19 @@ function posInit(event: Event): void {
 			clearTimeout(spinnerTimeout);
 			spinnerTimeout = null;
 		}
-		timestamp!.classList.remove("loading");
+		uiHelper.setLoadingState(false);
 		
 		if (!isInSweden(position)) {
 			showNotification("Varning: SWEREF 99 är bara användbart i Sverige.");
 		}
-		uncert!.innerHTML = "&pm;" + Math.round(position.coords.accuracy) + "&nbsp;m";
-		if (position.coords.accuracy > ACCURACY_THRESHOLD_METERS) {
-			uncert!.classList.add("outofrange");
-		} else {
-			uncert!.classList.remove("outofrange");
-		}
-		speed!.innerHTML = (position.coords.speed !== null ? Math.round(position.coords.speed) : "?") + "&nbsp;m/s";
-		if (position.coords.speed !== null && position.coords.speed > SPEED_THRESHOLD_MS) {
-			speed!.classList.add("outofrange");
-		} else {
-			speed!.classList.remove("outofrange");
-		}
 		
-		// Formatera och visa tidsstämpel (hh:mm:ss)
-		const date = new Date(position.timestamp);
-		timestamp!.innerHTML = timeFormatter.format(date);
+		uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
+		uiHelper.updateSpeed(position.coords.speed, SPEED_THRESHOLD_MS);
+		uiHelper.updateTimestamp(position.timestamp);
 
 		const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
-
-		if (sweref.northing === 0 && sweref.easting === 0) {
-			console.warn("SWEREF 99 coordinates unavailable for position:", 
-				{ lat: position.coords.latitude, lon: position.coords.longitude });
-			swerefn!.innerHTML = na_sv;
-			swerefe!.innerHTML = na_sv;
-		} else {
-			swerefn!.innerHTML = "N&nbsp;" + Math.round(sweref.northing).toString().replace(".", ",");
-			swerefe!.innerHTML = "E&nbsp;" + Math.round(sweref.easting).toString().replace(".", ",");
-		}
-		wgs84n!.innerHTML = "N&nbsp;" + position.coords.latitude.toString().replace(".", ",") + "&deg;";
-		wgs84e!.innerHTML = "E&nbsp;" + position.coords.longitude.toString().replace(".", ",") + "&deg;";
-		posbtn!.setAttribute("disabled", "disabled");
-		stopbtn!.removeAttribute("disabled");
-		sharebtn!.removeAttribute("disabled");
+		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude, na_sv);
+		uiHelper.setButtonState('active');
 	}
 
 	function error() {
@@ -274,7 +407,7 @@ function posInit(event: Event): void {
 			clearTimeout(spinnerTimeout);
 			spinnerTimeout = null;
 		}
-		timestamp!.classList.remove("loading");
+		uiHelper.setLoadingState(false);
 		
 		sharebtn!.setAttribute("disabled", "disabled");
 		showNotification(errorMsg_sv, 7000);
@@ -289,13 +422,7 @@ function posInit(event: Event): void {
 			clearTimeout(spinnerTimeout);
 			spinnerTimeout = null;
 		}
-		timestamp!.classList.remove("loading");
-		
-		stopbtn!.setAttribute("disabled", "disabled");
-		posbtn!.removeAttribute("disabled");
-		speed!.innerHTML = "–&nbsp;m/s";
-		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		uiHelper.resetUI();
 		if (watchID !== null) {
 			navigator.geolocation.clearWatch(watchID);
 			watchID = null;
@@ -323,7 +450,7 @@ function posInit(event: Event): void {
 					
 					// Starta timer för spinner efter 5 sekunder (även för restore)
 					spinnerTimeout = window.setTimeout(() => {
-						timestamp!.classList.add("loading");
+						uiHelper.setLoadingState(true);
 						spinnerTimeout = null;
 					}, 5000);
 				}
@@ -338,7 +465,7 @@ function posInit(event: Event): void {
 			
 			// Starta timer för spinner efter 5 sekunder
 			spinnerTimeout = window.setTimeout(() => {
-				timestamp!.classList.add("loading");
+				uiHelper.setLoadingState(true);
 				spinnerTimeout = null;
 			}, 5000);
 		}
@@ -358,7 +485,7 @@ sharebtn!.addEventListener("click", async () => {
 	try {
 		const shareData = {
 			title: "Position",
-			text: swerefn?.textContent + " " + swerefe?.textContent + " (SWEREF 99 TM)",
+			text: uiHelper.getShareText()
 		};
 		await navigator.share(shareData);
 	} catch (err: any) {
@@ -377,10 +504,9 @@ stopbtn!.addEventListener("click", async () => {
 		clearTimeout(spinnerTimeout);
 		spinnerTimeout = null;
 	}
-	timestamp!.classList.remove("loading");
+	uiHelper.setLoadingState(false);
 	
-	stopbtn!.setAttribute("disabled", "disabled");
-	posbtn!.removeAttribute("disabled");
+	uiHelper.setButtonState('stopped');
 	speed!.innerHTML = "–&nbsp;m/s";
 	speed!.classList.remove("outofrange");
 });
@@ -388,7 +514,7 @@ stopbtn!.addEventListener("click", async () => {
 // Handle page visibility changes and back navigation to restore positioning state
 function handleVisibilityChange(): void {
 	// Only restore if page becomes visible and UI indicates positioning should be active
-	if (!document.hidden && posbtn!.hasAttribute("disabled") && stopbtn!.hasAttribute("disabled")) {
+	if (!document.hidden && uiHelper.isUIInconsistent()) {
 		// UI state is inconsistent - reset to stopped state
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
 		
@@ -397,20 +523,14 @@ function handleVisibilityChange(): void {
 			clearTimeout(spinnerTimeout);
 			spinnerTimeout = null;
 		}
-		timestamp!.classList.remove("loading");
-		
-		stopbtn!.setAttribute("disabled", "disabled");
-		posbtn!.removeAttribute("disabled");
-		speed!.innerHTML = "–&nbsp;m/s";
-		speed!.classList.remove("outofrange");
-		timestamp!.innerHTML = "--:--:--";
+		uiHelper.resetUI();
 		try {
 			if (watchID !== null) {
 				navigator.geolocation.clearWatch(watchID);
 				watchID = null;
 			}
 		} catch (e) {}
-	} else if (!document.hidden && posbtn!.hasAttribute("disabled") && !stopbtn!.hasAttribute("disabled")) {
+	} else if (!document.hidden && uiHelper.isPositioningUIActive()) {
 		// UI indicates positioning should be active, check if watchID is valid
 		if (watchID === null) {
 			console.log("Positioning was active but watch was lost, restarting...");
