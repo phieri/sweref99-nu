@@ -51,7 +51,7 @@ const ACCURACY_THRESHOLD_METERS: number = 5;
  * when stationary can show spurious movement due to signal noise. A threshold of 1.4 m/s
  * corresponds to the upper end of normal walking speed and effectively distinguishes
  * between pedestrian movement and faster travel (cycling, driving, etc.).
- * Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GPS accuracy studies
+ * Based on pedestrian speed research and GPS accuracy analysis.
  */
 const SPEED_THRESHOLD_MS: number = 1.4;
 
@@ -676,7 +676,7 @@ function initializeEventListeners(): void {
 		"keydown", 
 		(event: KeyboardEvent) => {
 			if (event.key === "F1") {
-				document.location = UI_TEXT.HELP_URL;
+				window.location.href = UI_TEXT.HELP_URL;
 			}
 		},
 		false
