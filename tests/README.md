@@ -100,11 +100,33 @@ The tests use a mocked version of the `proj4` library since it's loaded from CDN
 - Coordinate system definition registration
 - Sufficient accuracy for testing logic correctness
 
-### Test Isolation
-Tests are isolated from the source code through:
-- Separate TypeScript compilation (via Jest's ts-jest)
-- Redefined constants and functions within the test namespace
-- No direct imports from `src/script.ts` (as it contains top-level DOM code)
+### Test Isolation and Code Duplication
+
+**Current Approach:**
+The test suite contains copies of constants and functions from `src/script.ts` rather than importing them directly. This creates some duplication but is necessary because:
+
+1. **Top-level code**: `script.ts` executes DOM-dependent code at the module level (event listeners, DOM queries)
+2. **Browser-only design**: The file is designed as a single-file browser application, not a modular library
+3. **Minimal modifications**: Following the principle of minimal changes to existing working code
+
+**Advantages:**
+- Tests can run in isolation without DOM dependencies
+- No changes needed to the production code structure
+- Tests validate the expected behavior independent of implementation details
+
+**Trade-offs:**
+- Constants and function implementations must be kept in sync manually
+- Higher maintenance burden when source code changes
+- Cannot verify test code matches source code exactly
+
+**Future Improvements:**
+If the codebase evolves to support modular architecture:
+1. Refactor `script.ts` to export testable functions
+2. Separate DOM initialization from business logic
+3. Use ES modules to import actual functions in tests
+4. This would eliminate duplication and improve maintainability
+
+For now, the duplication is documented and acceptable given the constraints.
 
 ## CI/CD Integration
 

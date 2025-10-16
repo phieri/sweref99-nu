@@ -43,6 +43,11 @@ declare var proj4: any;
 /**
  * Constants from script.ts - redefined here for testing
  * These match the values in the source file
+ * 
+ * NOTE: These constants are duplicated from src/script.ts rather than imported.
+ * This is necessary because script.ts contains top-level DOM code that cannot
+ * be imported in a test environment. When modifying script.ts, ensure these
+ * values are kept in sync. See tests/README.md for more details.
  */
 namespace TestConstants {
 	export const SWEDEN_BOUNDS = {
@@ -75,6 +80,11 @@ interface SwerefCoordinates {
 /**
  * Test implementations of functions from script.ts
  * These are copies of the source functions for testing purposes
+ * 
+ * NOTE: These functions are duplicated from src/script.ts rather than imported.
+ * This is necessary because script.ts contains top-level DOM code that cannot
+ * be imported in a test environment. When modifying script.ts, ensure these
+ * implementations are kept in sync. See tests/README.md for more details.
  */
 
 /**
