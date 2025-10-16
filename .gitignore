@@ -26,3 +26,8 @@ _site/favicon.ico
 _site/apple-touch-icon.png
 _site/icon-192.png
 _site/icon-512.png
+
+# Node.js dependencies and build artifacts
+node_modules/
+coverage/
+package-lock.json
