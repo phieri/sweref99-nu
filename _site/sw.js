@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -82,7 +82,7 @@ self.addEventListener('fetch', (event) => {
 				return fetch(event.request)
 					.then((response) => {
 						// Kontrollera om vi fick ett giltigt svar
-						if (!response || response.status !== 200 || response.type === 'error') {
+						if (!response || !response.ok) {
 							return response;
 						}
 						
@@ -91,7 +91,7 @@ self.addEventListener('fetch', (event) => {
 							return response;
 						}
 						
-						// Cacha endast same-origin requests
+						// Cacha endast same-origin och CORS requests
 						if (response.type !== 'basic' && response.type !== 'cors') {
 							return response;
 						}
@@ -116,10 +116,23 @@ self.addEventListener('fetch', (event) => {
 						
 						// Returnera fallback för HTML-sidor
 						if (event.request.headers.get('accept')?.includes('text/html')) {
-							return caches.match('/index.html');
+							// Försök returnera index.html från cache
+							return caches.match('/index.html').then((fallbackResponse) => {
+								if (fallbackResponse) {
+									return fallbackResponse;
+								}
+								// Om inte ens index.html finns i cache, returnera ett felmeddelande
+								return new Response('Offline och resurs saknas i cache', {
+									status: 503,
+									statusText: 'Service Unavailable',
+									headers: new Headers({
+										'Content-Type': 'text/plain'
+									})
+								});
+							});
 						}
 						
-						// För andra resurser, returnera undefined (404)
+						// För andra resurser, returnera felmeddelande
 						return new Response('Offline och resurs saknas i cache', {
 							status: 503,
 							statusText: 'Service Unavailable',
