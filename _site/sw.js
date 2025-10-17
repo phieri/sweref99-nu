@@ -82,6 +82,7 @@ self.addEventListener('fetch', (event) => {
 				return fetch(event.request)
 					.then((response) => {
 						// Kontrollera om vi fick ett giltigt svar
+						// Om svaret är ogiltigt eller ett fel (4xx, 5xx), returnera det utan att cacha
 						if (!response || !response.ok) {
 							return response;
 						}
@@ -91,7 +92,7 @@ self.addEventListener('fetch', (event) => {
 							return response;
 						}
 						
-						// Cacha endast same-origin och CORS requests
+						// Cacha endast same-origin (basic) och CORS requests
 						if (response.type !== 'basic' && response.type !== 'cors') {
 							return response;
 						}
