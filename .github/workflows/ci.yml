@@ -40,13 +40,28 @@ jobs:
         run: npm install
       - name: Run tests
         run: npm test
+      - name: Cache rendered icons
+        id: icon-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            _site/favicon.ico
+            _site/apple-touch-icon.png
+            _site/icon-192.png
+            _site/icon-512.png
+          key: ${{ runner.os }}-icons-${{ hashFiles('src/icon.svg') }}
       - name: Install icon generation tools
+        if: steps.icon-cache.outputs.cache-hit != 'true'
         run: sudo apt-get -qq update && sudo apt-get install -q -y librsvg2-bin imagemagick
       - run: |
           echo "=== Building TypeScript ==="
           make script.js
-          echo "=== Generating icons ==="
-          make icons
+          if [ "${{ steps.icon-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "=== Generating icons ==="
+            make icons
+          else
+            echo "=== Icons restored from cache ==="
+          fi
           echo "=== Final _site contents ==="
           ls -la _site/
           echo "=== Adding additional files ==="
