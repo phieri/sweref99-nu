@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = 'v12';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -32,6 +32,10 @@ self.addEventListener('install', (event) => {
 				// Aktivera den nya service workern direkt
 				return self.skipWaiting();
 			})
+			.catch((error) => {
+				console.error('ServiceWorker: Install misslyckades:', error);
+				throw error;
+			})
 	);
 });
 
@@ -53,24 +57,43 @@ self.addEventListener('activate', (event) => {
 				// Ta över alla öppna sidor direkt
 				return self.clients.claim();
 			})
+			.catch((error) => {
+				console.error('ServiceWorker: Activate misslyckades:', error);
+			})
 	);
 });
 
 // Fetch event - svara från cache först, fallback till nätverk
 self.addEventListener('fetch', (event) => {
+	// Hoppa över icke-HTTP(S) requests
+	if (!event.request.url.startsWith('http')) {
+		return;
+	}
+
 	event.respondWith(
 		caches.match(event.request)
-			.then((response) => {
+			.then((cachedResponse) => {
 				// Returnera cachad resurs om den finns
-				if (response) {
-					return response;
+				if (cachedResponse) {
+					return cachedResponse;
 				}
 				
 				// Annars hämta från nätverket
 				return fetch(event.request)
 					.then((response) => {
 						// Kontrollera om vi fick ett giltigt svar
-						if (!response || response.status !== 200 || response.type !== 'basic') {
+						// Om svaret är ogiltigt eller ett fel (4xx, 5xx), returnera det utan att cacha
+						if (!response || !response.ok) {
+							return response;
+						}
+						
+						// Cacha endast GET-requests
+						if (event.request.method !== 'GET') {
+							return response;
+						}
+						
+						// Cacha endast same-origin (basic) och CORS requests
+						if (response.type !== 'basic' && response.type !== 'cors') {
 							return response;
 						}
 						
@@ -81,16 +104,54 @@ self.addEventListener('fetch', (event) => {
 						caches.open(CACHE_NAME)
 							.then((cache) => {
 								cache.put(event.request, responseToCache);
+							})
+							.catch((error) => {
+								console.warn('ServiceWorker: Kunde inte cacha resurs:', error);
 							});
 						
 						return response;
 					})
-					.catch(() => {
-						// Om både cache och nätverk misslyckas, returnera offline-sida
-						// För denna app finns ingen dedikerad offline-sida, 
-						// så vi returnerar bara ingenting
-						console.log('ServiceWorker: Offline och resurs saknas i cache');
+					.catch((error) => {
+						// Om både cache och nätverk misslyckas
+						console.error('ServiceWorker: Fetch misslyckades:', error);
+						
+						// Returnera fallback för HTML-sidor
+						if (event.request.headers.get('accept')?.includes('text/html')) {
+							// Försök returnera index.html från cache
+							return caches.match('/index.html').then((fallbackResponse) => {
+								if (fallbackResponse) {
+									return fallbackResponse;
+								}
+								// Om inte ens index.html finns i cache, returnera ett felmeddelande
+								return new Response('Offline och resurs saknas i cache', {
+									status: 503,
+									statusText: 'Service Unavailable',
+									headers: new Headers({
+										'Content-Type': 'text/plain'
+									})
+								});
+							});
+						}
+						
+						// För andra resurser, returnera felmeddelande
+						return new Response('Offline och resurs saknas i cache', {
+							status: 503,
+							statusText: 'Service Unavailable',
+							headers: new Headers({
+								'Content-Type': 'text/plain'
+							})
+						});
 					});
+			})
+			.catch((error) => {
+				console.error('ServiceWorker: Cache match misslyckades:', error);
+				return new Response('Cache-fel', {
+					status: 500,
+					statusText: 'Internal Server Error',
+					headers: new Headers({
+						'Content-Type': 'text/plain'
+					})
+				});
 			})
 	);
 });
