@@ -7,8 +7,12 @@ PWA for showing current position in SWEREF 99 TM. Works offline after first visi
 - Works offline with ServiceWorker caching
 - Compensates for ITRF/ETRS89 continental drift
 
+## Documentation
+- [SWEREF 99 Definition Verification](SWEREF99-DEFINITION.md) - Complete verification of coordinate system definition with traceable references
+
 ## References
 - https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API
 - https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
 - https://picocss.com/docs
 - https://github.com/proj4js/proj4js
+- https://epsg.io/3006 - SWEREF 99 TM official specification
