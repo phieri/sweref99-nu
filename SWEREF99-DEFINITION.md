@@ -55,7 +55,7 @@ Provides the canonical PROJ4 string:
 | Parameter | Value | Verification |
 |-----------|-------|--------------|
 | `+proj=utm` | Universal Transverse Mercator | ✅ Confirmed by EPSG:3006 specification |
-| `+zone=33` | UTM Zone 33 (9°E to 15°E central meridian at 15°E) | ✅ Covers Sweden, confirmed by EPSG registry |
+| `+zone=33` | UTM Zone 33 (12°E to 18°E, central meridian at 15°E) | ✅ Covers Sweden, confirmed by EPSG registry |
 | `+ellps=GRS80` | Geodetic Reference System 1980 ellipsoid | ✅ Standard for ETRS89-based systems, confirmed by Lantmäteriet |
 | `+units=m` | Units in meters | ✅ Standard for SWEREF 99 TM |
 | `+no_defs` | Don't use default values from proj_def.dat | ✅ Standard PROJ parameter |
@@ -89,7 +89,7 @@ The application implements time-dependent correction for continental drift:
   - EUREF Technical Notes
   - Lantmäteriet documentation on SWEREF 99
 
-**Code Reference:** See `calculateItrf2Etrs89Correction()` in `src/script.ts` (lines 145-169)
+**Code Reference:** See `calculateItrf2Etrs89Correction()` in `src/script.ts` (lines 157-181)
 
 ### Verification of Velocity Parameters
 
@@ -104,7 +104,7 @@ The application implements time-dependent correction for continental drift:
 
 The SWEREF 99 TM definition is validated through:
 
-1. **Unit Tests:** 67 automated tests covering coordinate transformation (see `tests/script.test.ts`)
+1. **Unit Tests:** 77 automated tests covering coordinate transformation (see `tests/script.test.ts`)
 2. **Boundary Validation:** Tests verify coordinates within Swedish territory (55-69°N, 10-24°E)
 3. **Transformation Consistency:** Tests ensure consistent results for identical inputs
 4. **Drift Correction:** Tests verify continental drift calculations are within expected ranges
