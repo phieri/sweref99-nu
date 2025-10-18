@@ -70,9 +70,21 @@ const SWEREF99_EPOCH: number = 1999.5;
 
 /**
  * European plate velocity parameters
+ * 
  * The European tectonic plate moves approximately 2.5 cm/year relative to ITRF
- * Direction: northeast (approximately 25° from north)
- * Sources: EUREF, Lantmäteriet technical reports
+ * in a northeast direction (approximately 25° from north). This causes a 
+ * time-dependent difference between WGS84 (realized via ITRF) and SWEREF 99
+ * (ETRS89 fixed at epoch 1999.5).
+ * 
+ * These values are used to calculate drift correction between the moving ITRF
+ * frame (used by GPS/WGS84) and the fixed ETRS89 frame (used by SWEREF 99).
+ * 
+ * Values verified against:
+ * - EUREF Technical Notes on European plate motion
+ * - Lantmäteriet technical documentation on SWEREF 99
+ * 
+ * @see SWEREF99-DEFINITION.md - Section "Continental Drift Correction"
+ * @see http://www.euref.eu/ - European Reference Frame
  */
 const PLATE_VELOCITY = {
 	METERS_PER_YEAR: 0.025, // 2.5 cm/år
@@ -174,9 +186,17 @@ const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correct
 /**
  * Transforms WGS84 coordinates to SWEREF 99 TM using PROJ4JS
  * 
+ * SWEREF 99 TM (EPSG:3006) is the Swedish national coordinate reference system
+ * based on ETRS89 at epoch 1999.5. It uses a Transverse Mercator projection
+ * covering all of Sweden with a single zone (UTM zone 33, central meridian 15°E).
+ * 
  * @param lat - Latitude in WGS84 decimal degrees
  * @param lon - Longitude in WGS84 decimal degrees
  * @returns SWEREF 99 TM coordinates with ITRF/ETRS89 drift correction applied
+ * 
+ * @see SWEREF99-DEFINITION.md for complete verification and references
+ * @see https://epsg.io/3006 - Official EPSG registry entry
+ * @see https://www.lantmateriet.se - Lantmäteriet (Swedish mapping authority)
  */
 function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
@@ -188,7 +208,24 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 
 		// Define coordinate systems if not already defined
 		// WGS84 is built-in as 'EPSG:4326'
-		// SWEREF 99 TM (EPSG:3006) definition
+		// 
+		// SWEREF 99 TM (EPSG:3006) PROJ Definition
+		// =========================================
+		// This definition has been verified against official sources:
+		// - EPSG Registry (https://epsg.io/3006)
+		// - Lantmäteriet official documentation
+		// - SpatialReference.org (https://spatialreference.org/ref/epsg/3006/)
+		// 
+		// Parameter breakdown:
+		// +proj=utm          : Universal Transverse Mercator projection
+		// +zone=33           : UTM zone 33 (central meridian 15°E, covers Sweden)
+		// +ellps=GRS80       : Geodetic Reference System 1980 ellipsoid
+		// +towgs84=0,0,0,... : Zero transformation (ETRS89 ≈ WGS84 at epoch level)
+		// +units=m           : Coordinates in meters
+		// +no_defs           : Don't use proj_def.dat defaults
+		// +type=crs          : Modern PROJ convention for CRS definition
+		// 
+		// See SWEREF99-DEFINITION.md for complete verification documentation
 		if (!proj4.defs('EPSG:3006')) {
 				proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
 		}

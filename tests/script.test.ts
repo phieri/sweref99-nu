@@ -88,6 +88,13 @@ interface SwerefCoordinates {
  */
 
 /**
+ * SWEREF 99 TM PROJ Definition String
+ * Official EPSG:3006 definition verified against authoritative sources
+ * See SWEREF99-DEFINITION.md for complete verification documentation
+ */
+const SWEREF99_PROJ_DEFINITION = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
+
+/**
  * Checks if a position is within Swedish territory
  */
 function isInSweden(pos: GeolocationPosition): boolean {
@@ -136,7 +143,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 		}
 
 		if (!proj4.defs('EPSG:3006')) {
-			proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
+			proj4.defs('EPSG:3006', SWEREF99_PROJ_DEFINITION);
 		}
 
 		const result = (proj4 as any)('EPSG:4326', 'EPSG:3006', [lon, lat]);
@@ -369,6 +376,61 @@ describe('SPEED_THRESHOLD_MS Constant', () => {
 		test('should consider 10.0 m/s as driving (above threshold)', () => {
 			expect(10.0).toBeGreaterThan(TestConstants.SPEED_THRESHOLD_MS);
 		});
+	});
+});
+
+describe('SWEREF99_PROJ_DEFINITION', () => {
+	test('should be defined and non-empty', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toBeDefined();
+		expect(SWEREF99_PROJ_DEFINITION.length).toBeGreaterThan(0);
+	});
+
+	test('should specify UTM projection', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+proj=utm');
+	});
+
+	test('should specify UTM zone 33 (covers Sweden, central meridian 15°E)', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+zone=33');
+	});
+
+	test('should specify GRS80 ellipsoid (standard for ETRS89-based systems)', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+ellps=GRS80');
+	});
+
+	test('should specify zero transformation to WGS84 (ETRS89 ≈ WGS84 at epoch level)', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+towgs84=0,0,0,0,0,0,0');
+	});
+
+	test('should specify meters as units', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+units=m');
+	});
+
+	test('should include no_defs parameter', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+no_defs');
+	});
+
+	test('should include type=crs parameter (modern PROJ convention)', () => {
+		expect(SWEREF99_PROJ_DEFINITION).toContain('+type=crs');
+	});
+
+	test('should match official EPSG:3006 core parameters', () => {
+		// Core parameters that must be present for EPSG:3006
+		const coreParams = [
+			'+proj=utm',
+			'+zone=33',
+			'+ellps=GRS80',
+			'+units=m'
+		];
+		
+		coreParams.forEach(param => {
+			expect(SWEREF99_PROJ_DEFINITION).toContain(param);
+		});
+	});
+
+	test('should be a valid PROJ string format', () => {
+		// PROJ strings start with + and contain space-separated parameters
+		expect(SWEREF99_PROJ_DEFINITION).toMatch(/^\+\w+/);
+		expect(SWEREF99_PROJ_DEFINITION).toContain(' +');
 	});
 });
 

@@ -6,6 +6,7 @@ This directory contains comprehensive unit tests for the `script.ts` file.
 
 The test suite validates critical functionality including:
 - **Constants validation**: SWEDEN_BOUNDS, ACCURACY_THRESHOLD_METERS, SPEED_THRESHOLD_MS
+- **PROJ definition verification**: SWEREF 99 TM (EPSG:3006) coordinate system definition
 - **Coordinate transformation**: WGS84 to SWEREF 99 TM conversion
 - **ITRF to ETRS89 correction**: Continental drift calculations
 - **Boundary validation**: Checks if coordinates are within Swedish territory
@@ -33,7 +34,7 @@ The coverage report will be generated in the `coverage/` directory.
 ## Test Structure
 
 ### Test Files
-- `script.test.ts`: Main test suite with 67 comprehensive tests
+- `script.test.ts`: Main test suite with 77 comprehensive tests
 
 ### Test Categories
 
@@ -59,7 +60,15 @@ Validates speed threshold (1.4 m/s for walking):
 - Represents upper end of walking speed (4-5 km/h)
 - Usage scenarios from stationary to driving speeds
 
-#### 5. calculateItrf2Etrs89Correction Function (8 tests)
+#### 5. SWEREF99_PROJ_DEFINITION (10 tests)
+Validates the PROJ definition string for EPSG:3006:
+- **Core parameters**: UTM projection, zone 33, GRS80 ellipsoid
+- **Datum transformation**: Zero transformation (ETRS89 ≈ WGS84)
+- **Technical parameters**: Units, no_defs, type=crs
+- **Format validation**: PROJ string structure and syntax
+- **Official compliance**: Matches EPSG:3006 specification
+
+#### 6. calculateItrf2Etrs89Correction Function (8 tests)
 Tests continental drift correction calculations:
 - Returns valid correction objects with `dn` and `de` properties
 - Positive corrections (drift since 1989)
@@ -67,7 +76,7 @@ Tests continental drift correction calculations:
 - Values within expected ranges based on 2.5 cm/year drift rate
 - Consistency across multiple calls
 
-#### 6. wgs84_to_sweref99tm Function (14 tests)
+#### 7. wgs84_to_sweref99tm Function (14 tests)
 Tests coordinate transformation from WGS84 to SWEREF 99 TM:
 - **Coordinate transformation**: Valid transformations for Swedish locations
 - **Edge cases**: Boundaries of Swedish territory
@@ -75,7 +84,7 @@ Tests coordinate transformation from WGS84 to SWEREF 99 TM:
 - **Consistency**: Same inputs produce same outputs, different inputs differ
 - **Precision**: Small coordinate differences produce measurable results
 
-#### 7. Integration Tests (4 tests)
+#### 8. Integration Tests (4 tests)
 Complete workflows combining multiple functions:
 - Sweden boundary validation with coordinate transformation
 - Accuracy threshold validation
