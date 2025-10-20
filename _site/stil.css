@@ -34,6 +34,11 @@
 	:root {
 		--pico-font-size: 87.5%;
 	}
+
+	body {
+		max-width: 768px;
+		margin: auto;
+	}
 	
 	body > header,
 	body > main,
