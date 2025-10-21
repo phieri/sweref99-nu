@@ -113,8 +113,10 @@ const GEOLOCATION_TEST_OPTIONS = {
  */
 const UI_TEXT = {
 	ERROR_NO_POSITION: "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!",
+	ERROR_NO_POSITION_TITLE: "Positioneringsfel",
 	NOT_AVAILABLE: "Ej&nbsp;tillgängligt",
 	WARNING_NOT_IN_SWEDEN: "Varning: SWEREF 99 är bara användbart i Sverige.",
+	WARNING_NOT_IN_SWEDEN_TITLE: "Position utanför Sverige",
 	HELP_URL: "https://sweref99.nu/om.html"
 } as const;
 
@@ -594,7 +596,7 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	uiHelper.setLoadingState(false);
 	
 	if (!isInSweden(position)) {
-		showNotification(UI_TEXT.WARNING_NOT_IN_SWEDEN);
+		showNotification(UI_TEXT.WARNING_NOT_IN_SWEDEN, NOTIFICATION_DURATION.DEFAULT, UI_TEXT.WARNING_NOT_IN_SWEDEN_TITLE);
 	}
 	
 	uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
@@ -614,7 +616,7 @@ function handlePositionError(): void {
 	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
 	sharebtn!.setAttribute("disabled", "disabled");
-	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR);
+	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 }
 
 /**
@@ -772,7 +774,7 @@ function initializeEventListeners(): void {
 
 	// Check geolocation availability
 	if (!("geolocation" in navigator)) {
-		showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR);
+		showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 	} else {
 		posbtn?.removeAttribute("disabled");
 	}
