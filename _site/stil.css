@@ -53,6 +53,15 @@ h1, h2, h3, h4, h5, h6 {
 	--pico-font-weight: 600;
 }
 
+header h1 {
+	font-weight: 700;
+	margin-bottom: 0.5rem;
+}
+
+header.container {
+	margin-bottom: 1rem;
+}
+
 article {
 	border: 1px solid var(--pico-muted-border-color);
 	border-radius: calc(var(--pico-border-radius) * 2);
