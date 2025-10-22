@@ -53,7 +53,7 @@
 		</dialog>
 		<header class="container"><h1>Se dina koordinater i SWEREF 99 TM</h1></header>
 		<main class="container">
-			<details open>
+			<details id="details-metadata" open>
 			<summary>Metadata</summary>
 				<div role="group">
 					<pre class="posmeta" id="uncert" aria-label="Positionsangivelsens noggrannhet" aria-live="polite">m</pre>
@@ -61,12 +61,12 @@
 					<pre class="posmeta" id="timestamp" aria-label="Tidpunkt för senaste uppdatering" aria-live="polite">--:--:--</pre>
 				</div>
 			</details>
-			<details open>
+			<details id="details-sweref" open>
 				<summary>SWEREF 99 TM</summary>
 				<pre class="coords" id="sweref-n" aria-live="polite">N</pre>
 				<pre class="coords" id="sweref-e" aria-live="polite">E</pre>
 			</details>
-			<details class="secondary">
+			<details id="details-wgs84" class="secondary">
 				<summary>WGS 84</summary>
 				<pre class="coords" id="wgs84-n" aria-live="polite">N</pre>
 				<pre class="coords" id="wgs84-e" aria-live="polite">E</pre>
