@@ -703,6 +703,118 @@ function handleVisibilityChange(): void {
 }
 
 // ============================================================================
+// DETAILS STATE PERSISTENCE
+// ============================================================================
+
+/**
+ * LocalStorage key for storing details state
+ */
+const DETAILS_STATE_STORAGE_KEY = 'sweref99-details-state';
+
+/**
+ * Maximum number of details elements to track (as per requirements)
+ */
+const MAX_DETAILS_TO_TRACK = 3;
+
+/**
+ * Interface for details state data
+ */
+interface DetailsState {
+	[id: string]: boolean;
+}
+
+/**
+ * Save the open state of all tracked details elements to localStorage
+ * 
+ * This function reads the current open state of up to three <details> elements
+ * and stores them in localStorage for persistence across page loads.
+ */
+function saveDetailsState(): void {
+	try {
+		// Check if localStorage is available
+		if (typeof localStorage === 'undefined') {
+			return;
+		}
+
+		// Find all details elements with IDs
+		const detailsElements = document.querySelectorAll('details[id]');
+		const state: DetailsState = {};
+		
+		// Track up to MAX_DETAILS_TO_TRACK elements
+		let count = 0;
+		detailsElements.forEach((element) => {
+			if (count >= MAX_DETAILS_TO_TRACK) {
+				return;
+			}
+			
+			const detailsElement = element as HTMLDetailsElement;
+			if (detailsElement.id) {
+				state[detailsElement.id] = detailsElement.open;
+				count++;
+			}
+		});
+
+		// Save to localStorage
+		localStorage.setItem(DETAILS_STATE_STORAGE_KEY, JSON.stringify(state));
+	} catch (error) {
+		// Silently fail if localStorage is not available or quota exceeded
+		console.warn('Failed to save details state:', error);
+	}
+}
+
+/**
+ * Restore the open state of all tracked details elements from localStorage
+ * 
+ * This function reads the saved state from localStorage and applies it to
+ * the <details> elements on the page. Called on page load.
+ */
+function restoreDetailsState(): void {
+	try {
+		// Check if localStorage is available
+		if (typeof localStorage === 'undefined') {
+			return;
+		}
+
+		// Retrieve saved state from localStorage
+		const savedStateJson = localStorage.getItem(DETAILS_STATE_STORAGE_KEY);
+		if (!savedStateJson) {
+			return;
+		}
+
+		const savedState: DetailsState = JSON.parse(savedStateJson);
+
+		// Apply saved state to details elements
+		Object.keys(savedState).forEach((id) => {
+			const element = document.getElementById(id);
+			if (element && element.tagName === 'DETAILS') {
+				const detailsElement = element as HTMLDetailsElement;
+				detailsElement.open = savedState[id];
+			}
+		});
+	} catch (error) {
+		// Silently fail if localStorage is not available or data is corrupted
+		console.warn('Failed to restore details state:', error);
+	}
+}
+
+/**
+ * Initialize details state persistence
+ * 
+ * Sets up event listeners on all <details> elements to save their state
+ * when they are opened or closed.
+ */
+function initializeDetailsStatePersistence(): void {
+	// Restore state on page load
+	restoreDetailsState();
+
+	// Add event listeners to all details elements
+	const detailsElements = document.querySelectorAll('details[id]');
+	detailsElements.forEach((element) => {
+		element.addEventListener('toggle', saveDetailsState);
+	});
+}
+
+// ============================================================================
 // EVENT LISTENERS AND INITIALIZATION
 // ============================================================================
 
@@ -782,3 +894,6 @@ function initializeEventListeners(): void {
 
 // Initialize the application
 initializeEventListeners();
+
+// Initialize details state persistence
+initializeDetailsStatePersistence();
