@@ -504,7 +504,7 @@ class UIHelper {
 	resetUI(): void {
 		const { speed } = this.elements;
 		this.setLoadingState(false);
-		this.setButtonState('stopped');
+		this.setButtonState('stopped', false);
 		if (speed) {
 			speed.innerHTML = "–&nbsp;m/s";
 			speed.classList.remove("outofrange");
@@ -622,8 +622,8 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 function handlePositionError(): void {
 	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
-	sharebtn!.setAttribute("disabled", "disabled");
 	hasReceivedPosition = false;
+	uiHelper.setButtonState('stopped', false);
 	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 }
 
