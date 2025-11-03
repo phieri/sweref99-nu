@@ -479,7 +479,7 @@ class UIHelper {
 	/**
 	 * Sets button states for active/stopped positioning
 	 */
-	setButtonState(state: 'active' | 'stopped'): void {
+	setButtonState(state: 'active' | 'stopped', hasPosition?: boolean): void {
 		const { posbtn, stopbtn, sharebtn } = this.elements;
 
 		if (state === 'active') {
@@ -489,7 +489,12 @@ class UIHelper {
 		} else {
 			stopbtn?.setAttribute("disabled", "disabled");
 			posbtn?.removeAttribute("disabled");
-			sharebtn?.setAttribute("disabled", "disabled");
+			// Keep share button enabled if we have received a position
+			if (hasPosition) {
+				sharebtn?.removeAttribute("disabled");
+			} else {
+				sharebtn?.setAttribute("disabled", "disabled");
+			}
 		}
 	}
 
@@ -499,7 +504,7 @@ class UIHelper {
 	resetUI(): void {
 		const { speed } = this.elements;
 		this.setLoadingState(false);
-		this.setButtonState('stopped');
+		this.setButtonState('stopped', false);
 		if (speed) {
 			speed.innerHTML = "–&nbsp;m/s";
 			speed.classList.remove("outofrange");
@@ -543,6 +548,7 @@ const uiHelper = new UIHelper();
 
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
+let hasReceivedPosition: boolean = false;
 
 /**
  * Clears the spinner timeout if it exists
@@ -605,6 +611,7 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 
 	const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
 	uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
+	hasReceivedPosition = true;
 	uiHelper.setButtonState('active');
 }
 
@@ -615,7 +622,8 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 function handlePositionError(): void {
 	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
-	sharebtn!.setAttribute("disabled", "disabled");
+	hasReceivedPosition = false;
+	uiHelper.setButtonState('stopped', false);
 	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 }
 
@@ -835,12 +843,15 @@ function initializeEventListeners(): void {
 
 	// Position control buttons
 	document.addEventListener("dblclick", posInit, false);
-	posbtn?.addEventListener("click", posInit, false);
+	posbtn?.addEventListener("click", () => {
+		hasReceivedPosition = false;
+		posInit(new Event("click"));
+	}, false);
 	
 	// Stop button
 	stopbtn?.addEventListener("click", () => {
 		stopGeolocationWatch();
-		uiHelper.setButtonState('stopped');
+		uiHelper.setButtonState('stopped', hasReceivedPosition);
 		if (speed) {
 			speed.innerHTML = "–&nbsp;m/s";
 			speed.classList.remove("outofrange");
