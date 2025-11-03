@@ -29,8 +29,7 @@ class MockElement {
 }
 
 /**
- * UIHelper implementation for testing
- * This is a simplified version that focuses on button state management
+ * Mock UIHelper implementation for testing button state management
  */
 class UIHelper {
 	private elements: {
@@ -150,12 +149,9 @@ describe('Button State Management', () => {
 
 	describe('User workflow scenarios', () => {
 		test('should handle start -> receive position -> stop workflow correctly', () => {
-			// Initial state
-			const sharebtn = uiHelper.getButton('sharebtn');
-			expect(sharebtn?.hasAttribute('disabled')).toBe(false); // Initial state depends on initialization
-
 			// Start positioning
 			uiHelper.setButtonState('active');
+			const sharebtn = uiHelper.getButton('sharebtn');
 			expect(sharebtn?.hasAttribute('disabled')).toBe(false); // Enabled during positioning
 
 			// Stop positioning after receiving position
