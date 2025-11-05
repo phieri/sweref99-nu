@@ -27,8 +27,11 @@ jobs:
           # Check all markdown and HTML files
           args: >-
             --verbose --no-progress --accept 200,204,429
+            --method head
             '**/*.md' '**/*.html'
           # Fail workflow on broken links
           fail: true
+          # Enable caching to reduce strain on target servers
+          cache: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
