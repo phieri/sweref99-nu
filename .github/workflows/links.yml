@@ -25,7 +25,9 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           # Check all markdown and HTML files
-          args: --verbose --no-progress --accept 200,204,429 '**.md' '**.html'
+          args: >-
+            --verbose --no-progress --accept 200,204,429
+            '**/*.md' '**/*.html'
           # Fail workflow on broken links
           fail: true
         env:
