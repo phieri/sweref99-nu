@@ -21,17 +21,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/lychee
+          key: lychee-cache-${{ github.run_id }}
+          restore-keys: |
+            lychee-cache-
+
       - name: Check links with lychee
         uses: lycheeverse/lychee-action@v2
         with:
           # Check all markdown and HTML files
           args: >-
             --verbose --no-progress --accept 200,204,429
-            --method head
+            --method head --cache
             '**/*.md' '**/*.html'
           # Fail workflow on broken links
           fail: true
-          # Enable caching to reduce strain on target servers
-          cache: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
