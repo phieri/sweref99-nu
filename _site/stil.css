@@ -85,6 +85,18 @@ article>footer {
 	font-size: var(--posmeta-font-size);
 }
 
+#speed {
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+}
+
+#speed:hover {
+	opacity: 0.8;
+}
+
 .coords {
 	font-size: var(--coords-font-size);
 }

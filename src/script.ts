@@ -20,6 +20,11 @@ interface Itrf2Etrs89Correction {
 	de: number; // East correction in meters
 }
 
+/**
+ * Speed unit types for display
+ */
+type SpeedUnit = 'm/s' | 'km/h' | 'mph';
+
 // ============================================================================
 // CONFIGURATION CONSTANTS
 // ============================================================================
@@ -128,6 +133,25 @@ const NOTIFICATION_DURATION = {
 	ERROR: 7000
 } as const;
 
+/**
+ * Speed unit conversion factors (from m/s)
+ */
+const SPEED_CONVERSION = {
+	'm/s': 1,
+	'km/h': 3.6,
+	'mph': 2.23694
+} as const;
+
+/**
+ * Speed unit order for cycling through units
+ */
+const SPEED_UNIT_ORDER: SpeedUnit[] = ['m/s', 'km/h', 'mph'];
+
+/**
+ * LocalStorage key for speed unit preference
+ */
+const SPEED_UNIT_STORAGE_KEY = 'sweref99-speed-unit';
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -145,6 +169,61 @@ function isInSweden(pos: GeolocationPosition): boolean {
 		longitude >= SWEDEN_BOUNDS.MIN_LONGITUDE &&
 		longitude <= SWEDEN_BOUNDS.MAX_LONGITUDE
 	);
+}
+
+/**
+ * Convert speed from m/s to the specified unit
+ * @param speedMs - Speed in meters per second
+ * @param unit - Target unit for conversion
+ * @returns Converted speed value
+ */
+function convertSpeed(speedMs: number, unit: SpeedUnit): number {
+	return speedMs * SPEED_CONVERSION[unit];
+}
+
+/**
+ * Get the next speed unit in the cycle
+ * @param currentUnit - Current speed unit
+ * @returns Next speed unit in the cycle
+ */
+function getNextSpeedUnit(currentUnit: SpeedUnit): SpeedUnit {
+	const currentIndex = SPEED_UNIT_ORDER.indexOf(currentUnit);
+	const nextIndex = (currentIndex + 1) % SPEED_UNIT_ORDER.length;
+	return SPEED_UNIT_ORDER[nextIndex];
+}
+
+/**
+ * Get the saved speed unit preference from localStorage
+ * @returns Saved speed unit or default 'm/s'
+ */
+function getSavedSpeedUnit(): SpeedUnit {
+	try {
+		if (typeof localStorage === 'undefined') {
+			return 'm/s';
+		}
+		const saved = localStorage.getItem(SPEED_UNIT_STORAGE_KEY);
+		if (saved && SPEED_UNIT_ORDER.includes(saved as SpeedUnit)) {
+			return saved as SpeedUnit;
+		}
+	} catch (error) {
+		console.warn('Failed to get saved speed unit:', error);
+	}
+	return 'm/s';
+}
+
+/**
+ * Save the speed unit preference to localStorage
+ * @param unit - Speed unit to save
+ */
+function saveSpeedUnit(unit: SpeedUnit): void {
+	try {
+		if (typeof localStorage === 'undefined') {
+			return;
+		}
+		localStorage.setItem(SPEED_UNIT_STORAGE_KEY, unit);
+	} catch (error) {
+		console.warn('Failed to save speed unit:', error);
+	}
 }
 
 /**
@@ -384,6 +463,7 @@ class UIHelper {
 		sharebtn: HTMLElement | null;
 		stopbtn: HTMLElement | null;
 	};
+	private currentSpeedUnit: SpeedUnit;
 
 	constructor() {
 		this.elements = {
@@ -398,6 +478,7 @@ class UIHelper {
 			sharebtn: document.getElementById("share-btn"),
 			stopbtn: document.getElementById("stop-btn")
 		};
+		this.currentSpeedUnit = getSavedSpeedUnit();
 	}
 
 	/**
@@ -422,14 +503,35 @@ class UIHelper {
 		const { speed: speedEl } = this.elements;
 		if (!speedEl) return;
 
-		const speedValue = speed !== null ? Math.round(speed) : "?";
-		speedEl.innerHTML = `${speedValue}&nbsp;m/s`;
+		if (speed !== null) {
+			const convertedSpeed = convertSpeed(speed, this.currentSpeedUnit);
+			const speedValue = Math.round(convertedSpeed);
+			speedEl.innerHTML = `${speedValue}&nbsp;${this.currentSpeedUnit}`;
+		} else {
+			speedEl.innerHTML = `?&nbsp;${this.currentSpeedUnit}`;
+		}
 		
 		if (speed !== null && speed > threshold) {
 			speedEl.classList.add("outofrange");
 		} else {
 			speedEl.classList.remove("outofrange");
 		}
+	}
+
+	/**
+	 * Cycle to the next speed unit and update display
+	 */
+	cycleSpeedUnit(speed: number | null, threshold: number): void {
+		this.currentSpeedUnit = getNextSpeedUnit(this.currentSpeedUnit);
+		saveSpeedUnit(this.currentSpeedUnit);
+		this.updateSpeed(speed, threshold);
+	}
+
+	/**
+	 * Get the current speed unit
+	 */
+	getCurrentSpeedUnit(): SpeedUnit {
+		return this.currentSpeedUnit;
 	}
 
 	/**
@@ -506,7 +608,7 @@ class UIHelper {
 		this.setLoadingState(false);
 		this.setButtonState('stopped', false);
 		if (speed) {
-			speed.innerHTML = "–&nbsp;m/s";
+			speed.innerHTML = `–&nbsp;${this.currentSpeedUnit}`;
 			speed.classList.remove("outofrange");
 		}
 		const { timestamp } = this.elements;
@@ -549,6 +651,7 @@ const uiHelper = new UIHelper();
 let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 let hasReceivedPosition: boolean = false;
+let currentSpeed: number | null = null;
 
 /**
  * Clears the spinner timeout if it exists
@@ -606,7 +709,8 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	}
 	
 	uiHelper.updateAccuracy(position.coords.accuracy, ACCURACY_THRESHOLD_METERS);
-	uiHelper.updateSpeed(position.coords.speed, SPEED_THRESHOLD_MS);
+	currentSpeed = position.coords.speed;
+	uiHelper.updateSpeed(currentSpeed, SPEED_THRESHOLD_MS);
 	uiHelper.updateTimestamp(position.timestamp);
 
 	const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
@@ -853,9 +957,14 @@ function initializeEventListeners(): void {
 		stopGeolocationWatch();
 		uiHelper.setButtonState('stopped', hasReceivedPosition);
 		if (speed) {
-			speed.innerHTML = "–&nbsp;m/s";
+			speed.innerHTML = `–&nbsp;${uiHelper.getCurrentSpeedUnit()}`;
 			speed.classList.remove("outofrange");
 		}
+	});
+
+	// Speed unit cycling
+	speed?.addEventListener("click", () => {
+		uiHelper.cycleSpeedUnit(currentSpeed, SPEED_THRESHOLD_MS);
 	});
 
 	// Share button
