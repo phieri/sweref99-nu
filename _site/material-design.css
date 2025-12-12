@@ -160,8 +160,10 @@ body {
 
 /**
  * Material surface components with elevation
+ * Note: header.container is excluded - it should not have the card effect
  */
-.container,
+main.container,
+footer.container,
 details,
 article,
 dialog article {
@@ -173,7 +175,8 @@ dialog article {
 	color: var(--md-on-surface);
 }
 
-.container:hover,
+main.container:hover,
+footer.container:hover,
 details:hover {
 	box-shadow: var(--md-elevation-3);
 }
@@ -390,6 +393,32 @@ h3 {
 	line-height: 1.75rem;
 	letter-spacing: 0.0125em;
 	color: var(--md-on-surface);
+}
+
+/**
+ * Header styling per Material Design guidelines
+ * Headers should not have surface backgrounds, just proper spacing
+ */
+header.container {
+	background-color: transparent !important;
+	box-shadow: none !important;
+	border: none !important;
+	padding: var(--md-spacing-md) var(--md-spacing-sm);
+	margin-bottom: var(--md-spacing-sm);
+}
+
+header h1 {
+	margin: 0;
+	font-size: 1.75rem;
+	font-weight: 500;
+	line-height: 2rem;
+}
+
+@media (min-width: 600px) {
+	header h1 {
+		font-size: 2.125rem;
+		line-height: 2.5rem;
+	}
 }
 
 /**

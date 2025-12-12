@@ -80,13 +80,32 @@ h1, h2, h3, h4, h5, h6 {
 	font-weight: 600;
 }
 
-header h1 {
-	font-weight: 700;
+/**
+ * Header styling per Apple HIG
+ * Large titles should be prominent without container backgrounds
+ */
+header.container {
+	background: transparent !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	border: none !important;
+	box-shadow: none !important;
+	padding: var(--spacing-md) var(--spacing-sm);
 	margin-bottom: var(--spacing-sm);
 }
 
-header.container {
-	margin-bottom: var(--spacing-sm);
+header h1 {
+	font-weight: 700;
+	font-size: 2rem;
+	margin: 0;
+	color: inherit;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+	header h1 {
+		text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+	}
 }
 
 /* ============================================================================
@@ -111,8 +130,10 @@ body {
 /**
  * Glass cards with backdrop filter
  * Fallback: Semi-transparent background for browsers without backdrop-filter support
+ * Note: header.container is excluded - it should not have the glass box effect
  */
-.container,
+main.container,
+footer.container,
 details,
 article,
 dialog article {
@@ -128,7 +149,8 @@ dialog article {
 }
 
 @media (prefers-color-scheme: dark) {
-	.container,
+	main.container,
+	footer.container,
 	details,
 	article,
 	dialog article {
@@ -145,7 +167,8 @@ dialog article {
  * Provides a solid semi-transparent background as alternative
  */
 @supports not (backdrop-filter: blur(20px)) {
-	.container,
+	main.container,
+	footer.container,
 	details,
 	article,
 	dialog article {
@@ -153,7 +176,8 @@ dialog article {
 	}
 	
 	@media (prefers-color-scheme: dark) {
-		.container,
+		main.container,
+		footer.container,
 		details,
 		article,
 		dialog article {

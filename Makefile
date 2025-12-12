@@ -1,6 +1,13 @@
 script.js:
 	tsc
 
+# Copy bowser library from node_modules
+_site/bowser.js: node_modules/bowser/bundled.js
+	cp node_modules/bowser/bundled.js _site/bowser.js
+
+# Build all dependencies
+build: script.js _site/bowser.js
+
 # Generate app icons from SVG source
 icons: _site/favicon.ico _site/apple-touch-icon.png _site/icon-192.png _site/icon-512.png
 
