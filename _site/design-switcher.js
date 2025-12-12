@@ -1,22 +1,34 @@
 "use strict";
+function getBowserParser() {
+    if (typeof window.Bowser !== 'undefined') {
+        const Bowser = window.Bowser;
+        return Bowser.getParser(window.navigator.userAgent);
+    }
+    return null;
+}
 function isAppleDevice() {
+    const bowser = getBowserParser();
+    if (bowser) {
+        const osName = bowser.getOSName(true);
+        return osName === 'ios' || osName === 'macos';
+    }
     const userAgent = navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(userAgent);
-    const isMac = /macintosh|mac os x/.test(userAgent);
-    return isIOS || isMac;
+    return /iphone|ipad|ipod|macintosh|mac os x/.test(userAgent);
 }
 function isAndroidDevice() {
+    const bowser = getBowserParser();
+    if (bowser) {
+        const osName = bowser.getOSName(true);
+        return osName === 'android';
+    }
     const userAgent = navigator.userAgent.toLowerCase();
     return /android/.test(userAgent);
 }
 function determineDesignSystem() {
-    if (isAndroidDevice()) {
-        return 'material-design';
-    }
     if (isAppleDevice()) {
         return 'liquid-glass';
     }
-    return 'liquid-glass';
+    return 'material-design';
 }
 function getPlatformInfo() {
     const isApple = isAppleDevice();
@@ -29,11 +41,15 @@ function getPlatformInfo() {
     else if (isAndroid) {
         platform = 'android';
     }
+    else {
+        platform = 'other';
+    }
     return {
         platform,
         designSystem,
         isApple,
-        isAndroid
+        isAndroid,
+        userAgent: navigator.userAgent
     };
 }
 function loadDesignSystemCSS(designSystem) {

@@ -3,10 +3,12 @@
  * 
  * Automatically detects the user's platform and loads the appropriate design system:
  * - Apple Liquid Glass for iOS, iPadOS, and macOS devices
- * - Android Material Design for Android devices
- * - Defaults to Liquid Glass for unsupported/unknown devices
+ * - Android Material Design for Android devices  
+ * - Defaults to Material Design for unsupported/unknown devices
  * 
- * Detection is performed using the User-Agent string at runtime.
+ * Detection is performed using bowser library for accurate browser and platform detection.
+ * 
+ * Note: This uses bowser via CDN (loaded before this script in HTML).
  */
 
 // ============================================================================
@@ -26,43 +28,64 @@ interface PlatformInfo {
 	designSystem: DesignSystem;
 	isApple: boolean;
 	isAndroid: boolean;
+	userAgent: string;
 }
 
 // ============================================================================
-// PLATFORM DETECTION
+// PLATFORM DETECTION USING BOWSER
 // ============================================================================
+
+/**
+ * Safely access Bowser library (loaded via CDN)
+ * Falls back to manual UA parsing if Bowser is unavailable
+ */
+function getBowserParser(): any {
+	// Check if Bowser is available (loaded from CDN)
+	if (typeof (window as any).Bowser !== 'undefined') {
+		const Bowser = (window as any).Bowser;
+		return Bowser.getParser(window.navigator.userAgent);
+	}
+	return null;
+}
 
 /**
  * Detects if the user is on an Apple device
  * 
  * Checks for:
- * - iPhone
- * - iPad
- * - iPod
- * - Mac (macOS/Mac OS X)
+ * - iOS (iPhone, iPad, iPod)
+ * - macOS
  * 
  * @returns true if device is Apple, false otherwise
  */
 function isAppleDevice(): boolean {
+	const bowser = getBowserParser();
+	
+	if (bowser) {
+		// Use bowser if available
+		const osName = bowser.getOSName(true);
+		return osName === 'ios' || osName === 'macos';
+	}
+	
+	// Fallback to manual User-Agent detection
 	const userAgent = navigator.userAgent.toLowerCase();
-	
-	// Check for iOS devices (iPhone, iPad, iPod)
-	const isIOS = /iphone|ipad|ipod/.test(userAgent);
-	
-	// Check for macOS/Mac OS X
-	const isMac = /macintosh|mac os x/.test(userAgent);
-	
-	return isIOS || isMac;
+	return /iphone|ipad|ipod|macintosh|mac os x/.test(userAgent);
 }
 
 /**
  * Detects if the user is on an Android device
  * 
- * Checks for Android in the User-Agent string
- * 
  * @returns true if device is Android, false otherwise
  */
 function isAndroidDevice(): boolean {
+	const bowser = getBowserParser();
+	
+	if (bowser) {
+		// Use bowser if available
+		const osName = bowser.getOSName(true);
+		return osName === 'android';
+	}
+	
+	// Fallback to manual User-Agent detection
 	const userAgent = navigator.userAgent.toLowerCase();
 	return /android/.test(userAgent);
 }
@@ -71,25 +94,20 @@ function isAndroidDevice(): boolean {
  * Determines the appropriate design system based on platform
  * 
  * Priority:
- * 1. Android devices -> Material Design
- * 2. Apple devices -> Liquid Glass
- * 3. Unknown/Other devices -> Liquid Glass (default)
+ * 1. Apple devices (iOS, macOS) -> Liquid Glass
+ * 2. All other devices (Android, Windows, Linux, etc.) -> Material Design (default)
  * 
  * @returns DesignSystem to use
  */
 function determineDesignSystem(): DesignSystem {
-	// Check Android first (Android devices might have iOS simulators running)
-	if (isAndroidDevice()) {
-		return 'material-design';
-	}
-	
 	// Apple devices get Liquid Glass
 	if (isAppleDevice()) {
 		return 'liquid-glass';
 	}
 	
-	// Default to Liquid Glass for all other devices
-	return 'liquid-glass';
+	// Android and all other devices get Material Design as default
+	// This includes Windows, Linux, ChromeOS, etc.
+	return 'material-design';
 }
 
 /**
@@ -107,13 +125,16 @@ function getPlatformInfo(): PlatformInfo {
 		platform = 'apple';
 	} else if (isAndroid) {
 		platform = 'android';
+	} else {
+		platform = 'other';
 	}
 	
 	return {
 		platform,
 		designSystem,
 		isApple,
-		isAndroid
+		isAndroid,
+		userAgent: navigator.userAgent
 	};
 }
 

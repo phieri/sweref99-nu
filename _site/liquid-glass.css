@@ -6,10 +6,88 @@
  * - Depth using box shadows
  * - Rounded corners and soft glows
  * - Smooth animations and transitions
+ * - Follows Apple Human Interface Guidelines for layout
  * 
- * This design system is applied for Apple devices (iPhone, iPad, Mac)
- * and serves as the default for unsupported devices.
+ * This design system is applied for Apple devices (iPhone, iPad, Mac).
+ * 
+ * References:
+ * - https://developer.apple.com/design/human-interface-guidelines/layout
  */
+
+/* ============================================================================
+   LAYOUT FOUNDATIONS (Apple HIG)
+   ============================================================================ */
+
+:root {
+	/* Apple HIG recommends maintaining consistent spacing */
+	--spacing-unit: 8px;
+	--spacing-xs: calc(var(--spacing-unit) * 1); /* 8px */
+	--spacing-sm: calc(var(--spacing-unit) * 2); /* 16px */
+	--spacing-md: calc(var(--spacing-unit) * 3); /* 24px */
+	--spacing-lg: calc(var(--spacing-unit) * 4); /* 32px */
+	--spacing-xl: calc(var(--spacing-unit) * 6); /* 48px */
+	
+	/* Typography scale */
+	--font-size-base: 100%;
+	--font-size-large: 120%;
+	--font-size-xlarge: 150%;
+	
+	/* Layout constraints */
+	--container-max-width: 768px;
+	
+	/* Component sizing */
+	--coords-font-size: 1.5rem;
+	--posmeta-font-size: 1.25rem;
+	--spinner-size: 1rem;
+	--spinner-border-width: 2px;
+	
+	/* Border radius (Apple uses generous corner radii) */
+	--border-radius: 12px;
+	--border-radius-lg: 16px;
+	
+	/* San Francisco font stack (system font) */
+	font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Responsive font sizing following Apple HIG */
+@media (min-width: 576px) {
+	:root {
+		--font-size-base: 100%;
+	}
+}
+
+@media (min-width: 768px) {
+	:root {
+		--font-size-base: 87.5%;
+	}
+	
+	body {
+		max-width: var(--container-max-width);
+		margin: auto;
+	}
+	
+	body > header,
+	body > main,
+	body > footer {
+		max-width: var(--container-max-width);
+		margin-left: auto;
+		margin-right: auto;
+	}
+}
+
+/* Typography hierarchy */
+h1, h2, h3, h4, h5, h6 {
+	font-weight: 600;
+}
+
+header h1 {
+	font-weight: 700;
+	margin-bottom: var(--spacing-sm);
+}
+
+header.container {
+	margin-bottom: var(--spacing-sm);
+}
 
 /* ============================================================================
    GLASS MORPHISM EFFECTS
@@ -339,4 +417,63 @@ summary:focus-visible {
 	outline: 2px solid rgba(255, 255, 255, 0.5);
 	outline-offset: 2px;
 	animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   UTILITY CLASSES (from stil.css)
+   ============================================================================ */
+
+/**
+ * Out of range indicator (for accuracy/speed warnings)
+ */
+.outofrange {
+	color: #DC143C; /* crimson for better visibility on glass background */
+	font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+	.outofrange {
+		color: #FFCCCB;
+	}
+}
+
+/**
+ * Coordinate and metadata font sizing
+ */
+.posmeta {
+	font-size: var(--posmeta-font-size);
+}
+
+.coords {
+	font-size: var(--coords-font-size);
+}
+
+/**
+ * Spinner animation for delayed position updates
+ */
+#timestamp::after {
+	content: "";
+	display: none;
+	position: relative;
+	width: var(--spinner-size);
+	height: var(--spinner-size);
+	margin-left: 0.5rem;
+	border: var(--spinner-border-width) solid rgba(255, 255, 255, 0.6);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spinner-rotate 0.8s linear infinite;
+	vertical-align: middle;
+}
+
+#timestamp.loading::after {
+	display: inline-block;
+}
+
+@keyframes spinner-rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }

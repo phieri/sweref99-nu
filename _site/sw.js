@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '21';
+const CACHE_VERSION = '22';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -9,7 +9,6 @@ const ASSETS_TO_CACHE = [
 	'/',
 	'/index.html',
 	'/om.html',
-	'/stil.css',
 	'/pico.min.css',
 	'/script.js',
 	'/proj4.js',
@@ -20,7 +19,9 @@ const ASSETS_TO_CACHE = [
 	'/favicon.ico',
 	'/icon-192.png',
 	'/icon-512.png',
-	'/apple-touch-icon.png'
+	'/apple-touch-icon.png',
+	// External dependencies from CDN
+	'https://cdn.jsdelivr.net/npm/bowser@2.13.1/bundled.min.js'
 ];
 
 // Install event - cacha alla resurser

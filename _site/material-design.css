@@ -6,8 +6,13 @@
  * - Roboto font family (Material Design standard)
  * - Responsive animations (ripples, hover transitions)
  * - Material Design 3 (Material You) principles
+ * - Follows Android Material Design layout guidelines
  * 
- * This design system is applied for Android devices.
+ * This design system is applied for Android devices and serves as default.
+ * 
+ * References:
+ * - https://developer.android.com/design/ui/mobile/guides/layout-and-content/layout-basics
+ * - https://m3.material.io/
  */
 
 /* ============================================================================
@@ -20,8 +25,64 @@
  */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
+/* ============================================================================
+   LAYOUT FOUNDATIONS (Material Design)
+   ============================================================================ */
+
 :root {
+	/* Material Design spacing grid (8dp base unit) */
+	--md-spacing-unit: 8px;
+	--md-spacing-xs: calc(var(--md-spacing-unit) * 1); /* 8dp */
+	--md-spacing-sm: calc(var(--md-spacing-unit) * 2); /* 16dp */
+	--md-spacing-md: calc(var(--md-spacing-unit) * 3); /* 24dp */
+	--md-spacing-lg: calc(var(--md-spacing-unit) * 4); /* 32dp */
+	--md-spacing-xl: calc(var(--md-spacing-unit) * 6); /* 48dp */
+	
+	/* Typography scale */
+	--md-font-size-base: 100%;
+	
+	/* Layout constraints */
+	--container-max-width: 768px;
+	
+	/* Component sizing */
+	--coords-font-size: 1.5rem;
+	--posmeta-font-size: 1.25rem;
+	--spinner-size: 1rem;
+	--spinner-border-width: 2px;
+	
+	/* Material Design corner radii */
+	--md-corner-radius-sm: 4px;
+	--md-corner-radius-md: 8px;
+	--md-corner-radius-lg: 12px;
+	
+	/* Roboto font family */
 	font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Responsive font sizing following Material Design */
+@media (min-width: 600px) {
+	:root {
+		--md-font-size-base: 100%;
+	}
+}
+
+@media (min-width: 768px) {
+	:root {
+		--md-font-size-base: 87.5%;
+	}
+	
+	body {
+		max-width: var(--container-max-width);
+		margin: auto;
+	}
+	
+	body > header,
+	body > main,
+	body > footer {
+		max-width: var(--container-max-width);
+		margin-left: auto;
+		margin-right: auto;
+	}
 }
 
 /* ============================================================================
@@ -573,5 +634,50 @@ summary:focus-visible {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
+	}
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+/**
+ * Coordinate and metadata font sizing
+ */
+.posmeta {
+	font-size: var(--posmeta-font-size);
+}
+
+.coords {
+	font-size: var(--coords-font-size);
+}
+
+/**
+ * Spinner animation for delayed position updates
+ */
+#timestamp::after {
+	content: "";
+	display: none;
+	position: relative;
+	width: var(--spinner-size);
+	height: var(--spinner-size);
+	margin-left: 0.5rem;
+	border: var(--spinner-border-width) solid var(--md-primary);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: spinner-rotate 0.8s linear infinite;
+	vertical-align: middle;
+}
+
+#timestamp.loading::after {
+	display: inline-block;
+}
+
+@keyframes spinner-rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
 	}
 }

@@ -23,11 +23,12 @@
 		
 		<!-- Stylesheets -->
 		<link rel="stylesheet" href="/pico.min.css">
-		<link rel="stylesheet" href="/stil.css">
 		<!-- Design system CSS is loaded dynamically by design-switcher.js -->
 		
 		<!-- Scripts -->
-		<!-- Design switcher must load first and synchronously to prevent FOUC -->
+		<!-- Bowser library for platform detection from CDN -->
+		<script src="https://cdn.jsdelivr.net/npm/bowser@2.13.1/bundled.min.js"></script>
+		<!-- Design switcher must load synchronously to prevent FOUC -->
 		<script src="design-switcher.js"></script>
 	</head>
 	<body>
