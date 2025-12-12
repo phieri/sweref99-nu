@@ -37,8 +37,11 @@
 		<!-- Stylesheets -->
 		<link rel="stylesheet" href="/pico.min.css">
 		<link rel="stylesheet" href="/stil.css">
+		<!-- Design system CSS is loaded dynamically by design-switcher.js -->
 		
 		<!-- Scripts -->
+		<!-- Design switcher must load first and synchronously to prevent FOUC -->
+		<script src="design-switcher.js"></script>
 		<script src="proj4.js" defer></script>
 		<script src="script.js" defer></script>
 	</head>

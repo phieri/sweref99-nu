@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '20';
+const CACHE_VERSION = '21';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -13,6 +13,9 @@ const ASSETS_TO_CACHE = [
 	'/pico.min.css',
 	'/script.js',
 	'/proj4.js',
+	'/design-switcher.js',
+	'/liquid-glass.css',
+	'/material-design.css',
 	'/app.webmanifest',
 	'/favicon.ico',
 	'/icon-192.png',
