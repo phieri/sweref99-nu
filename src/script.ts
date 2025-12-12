@@ -618,6 +618,22 @@ class UIHelper {
 	}
 
 	/**
+	 * Update speed display to show current unit preference
+	 * Should be called on page load to apply saved preference
+	 */
+	updateSpeedDisplayUnit(): void {
+		const { speed } = this.elements;
+		if (speed) {
+			// Update the unit suffix while preserving the speed value
+			// Match any of: "- m/s", "– m/s", "? m/s" (with nbsp)
+			const currentHTML = speed.innerHTML;
+			if (currentHTML.includes("&nbsp;m/s")) {
+				speed.innerHTML = currentHTML.replace("m/s", this.currentSpeedUnit);
+			}
+		}
+	}
+
+	/**
 	 * Gets formatted text for sharing coordinates
 	 */
 	getShareText(): string {
@@ -1017,3 +1033,6 @@ initializeEventListeners();
 
 // Initialize details state persistence
 initializeDetailsStatePersistence();
+
+// Update speed display to show saved unit preference
+uiHelper.updateSpeedDisplayUnit();
