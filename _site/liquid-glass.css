@@ -468,6 +468,21 @@ summary:focus-visible {
 	font-size: var(--posmeta-font-size);
 }
 
+/**
+ * Speed element with click interaction for unit cycling
+ */
+#speed {
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+}
+
+#speed:hover {
+	opacity: 0.8;
+}
+
 .coords {
 	font-size: var(--coords-font-size);
 }
