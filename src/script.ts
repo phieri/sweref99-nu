@@ -642,7 +642,7 @@ class UIHelper {
 		const nText = swerefn?.textContent ?? '';
 		const eText = swerefe?.textContent ?? '';
 		// Remove the extra space after "E" that's used for alignment
-		const eTextNormalized = eText.replace(/^E\s\s/, 'E ');
+		const eTextNormalized = eText.replace(/^E\s{2}/, 'E ');
 		return `${nText} ${eTextNormalized} (SWEREF 99 TM)`;
 	}
 
