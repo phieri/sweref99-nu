@@ -557,7 +557,7 @@ class UIHelper {
 			if (swerefe) swerefe.innerHTML = UI_TEXT.NOT_AVAILABLE;
 		} else {
 			if (swerefn) swerefn.innerHTML = `N&nbsp;${Math.round(sweref.northing).toString().replace(".", ",")}`;
-			if (swerefe) swerefe.innerHTML = `E&nbsp;${Math.round(sweref.easting).toString().replace(".", ",")}`;
+			if (swerefe) swerefe.innerHTML = `E&nbsp;&nbsp;${Math.round(sweref.easting).toString().replace(".", ",")}`;
 		}
 
 		if (wgs84n) wgs84n.innerHTML = `N&nbsp;${lat.toString().replace(".", ",")}&deg;`;
@@ -635,10 +635,15 @@ class UIHelper {
 
 	/**
 	 * Gets formatted text for sharing coordinates
+	 * Removes the extra space after "E" that's used for alignment in the UI
 	 */
 	getShareText(): string {
 		const { swerefn, swerefe } = this.elements;
-		return `${swerefn?.textContent ?? ''} ${swerefe?.textContent ?? ''} (SWEREF 99 TM)`;
+		const nText = swerefn?.textContent ?? '';
+		const eText = swerefe?.textContent ?? '';
+		// Remove the extra space after "E" that's used for alignment
+		const eTextNormalized = eText.replace(/^E\s\s/, 'E ');
+		return `${nText} ${eTextNormalized} (SWEREF 99 TM)`;
 	}
 
 	/**
