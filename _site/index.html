@@ -46,7 +46,7 @@
 		<dialog id="notification-dialog">
 			<article>
 				<header id="notification-header" style="display: none;">
-					<h3 id="notification-title"></h3>
+					<h3 id="notification-title" hidden></h3>
 				</header>
 				<p id="notification-content"></p>
 			</article>
@@ -56,9 +56,9 @@
 			<details id="details-metadata" open>
 			<summary>Metadata</summary>
 				<div role="group">
-					<pre class="posmeta" id="uncert" aria-label="Positionsangivelsens noggrannhet" aria-live="polite">m</pre>
-					<pre class="posmeta" id="speed" aria-label="Nuvarande fart" aria-live="polite">-&nbsp;m/s</pre>
-					<pre class="posmeta" id="timestamp" aria-label="Tidpunkt för senaste uppdatering" aria-live="polite">--:--:--</pre>
+					<pre class="posmeta" id="uncert" role="status" aria-label="Positionsangivelsens noggrannhet" aria-live="polite">m</pre>
+					<pre class="posmeta" id="speed" role="status" aria-label="Nuvarande fart" aria-live="polite">-&nbsp;m/s</pre>
+					<pre class="posmeta" id="timestamp" role="status" aria-label="Tidpunkt för senaste uppdatering" aria-live="polite">--:--:--</pre>
 				</div>
 			</details>
 			<details id="details-sweref" open>
