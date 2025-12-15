@@ -4,9 +4,6 @@ function isTestModeEnabled() {
     return urlParams.has('test');
 }
 const testModeEnabled = isTestModeEnabled();
-if (!testModeEnabled) {
-    console.log('Design system feature flag not enabled. Use ?test to activate.');
-}
 function getBowserParser() {
     if (typeof window.Bowser !== 'undefined') {
         const Bowser = window.Bowser;

@@ -29,10 +29,6 @@ function isTestModeEnabled(): boolean {
 // Check if test mode is enabled - if not, exit immediately
 const testModeEnabled = isTestModeEnabled();
 
-if (!testModeEnabled) {
-	console.log('Design system feature flag not enabled. Use ?test to activate.');
-}
-
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
