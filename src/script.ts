@@ -394,7 +394,7 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 		notificationTitle.textContent = title;
 		notificationTitle.removeAttribute('hidden');
 		notificationHeader.style.display = '';
-	} else if (notificationHeader && notificationTitle) {
+	} else if (!title && notificationHeader && notificationTitle) {
 		notificationHeader.style.display = 'none';
 		notificationTitle.setAttribute('hidden', '');
 	}
