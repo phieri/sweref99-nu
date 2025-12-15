@@ -1,6 +1,8 @@
 /**
  * Design Switcher Module
  * 
+ * FEATURE FLAG: This design system is only activated when ?test is in the URL
+ * 
  * Automatically detects the user's platform and loads the appropriate design system:
  * - Apple Liquid Glass for iOS, iPadOS, and macOS devices
  * - Android Material Design for Android devices  
@@ -8,8 +10,28 @@
  * 
  * Detection is performed using bowser library for accurate browser and platform detection.
  * 
- * Note: This uses bowser via CDN (loaded before this script in HTML).
+ * Note: This uses bowser locally (loaded before this script in HTML).
  */
+
+// ============================================================================
+// FEATURE FLAG CHECK
+// ============================================================================
+
+/**
+ * Check if the test feature flag is enabled via URL parameter
+ * @returns true if ?test is present in the URL
+ */
+function isTestModeEnabled(): boolean {
+	const urlParams = new URLSearchParams(window.location.search);
+	return urlParams.has('test');
+}
+
+// Check if test mode is enabled - if not, exit immediately
+const testModeEnabled = isTestModeEnabled();
+
+if (!testModeEnabled) {
+	console.log('Design system feature flag not enabled. Use ?test to activate.');
+}
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -292,4 +314,7 @@ if (typeof window !== 'undefined') {
 
 // Auto-initialize when the script loads
 // This ensures the design system is applied as early as possible
-initializeDesignSwitcher();
+// Only run if test mode is enabled
+if (testModeEnabled) {
+	initializeDesignSwitcher();
+}

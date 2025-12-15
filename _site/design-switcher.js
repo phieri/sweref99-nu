@@ -1,4 +1,12 @@
 "use strict";
+function isTestModeEnabled() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.has('test');
+}
+const testModeEnabled = isTestModeEnabled();
+if (!testModeEnabled) {
+    console.log('Design system feature flag not enabled. Use ?test to activate.');
+}
 function getBowserParser() {
     if (typeof window.Bowser !== 'undefined') {
         const Bowser = window.Bowser;
@@ -124,5 +132,7 @@ if (typeof window !== 'undefined') {
         isAndroidDevice
     };
 }
-initializeDesignSwitcher();
+if (testModeEnabled) {
+    initializeDesignSwitcher();
+}
 //# sourceMappingURL=design-switcher.js.map
