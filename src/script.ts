@@ -392,11 +392,9 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 	// Sätt rubrik om angiven
 	if (title && notificationHeader && notificationTitle) {
 		notificationTitle.textContent = title;
-		notificationTitle.removeAttribute('hidden');
 		notificationHeader.style.display = '';
-	} else if (!title && notificationHeader && notificationTitle) {
+	} else if (notificationHeader) {
 		notificationHeader.style.display = 'none';
-		notificationTitle.setAttribute('hidden', '');
 	}
 
 	// Sätt meddelande och visa dialog
