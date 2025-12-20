@@ -21,9 +21,6 @@ _site/script.js.map
 _site/proj4.js
 _site/pico.min.css
 
-# Bundled dependencies (copied from node_modules during build)
-_site/bowser.js
-
 # Generated icon files (built from src/icon.svg)
 _site/favicon.ico
 _site/apple-touch-icon.png

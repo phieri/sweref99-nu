@@ -56,8 +56,6 @@ jobs:
       - run: |
           echo "=== Building TypeScript ==="
           make script.js
-          echo "=== Copying bowser library ==="
-          make _site/bowser.js
           if [ "${{ steps.icon-cache.outputs.cache-hit }}" != "true" ]; then
             echo "=== Generating icons ==="
             make icons
