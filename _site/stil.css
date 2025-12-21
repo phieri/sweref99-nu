@@ -106,7 +106,8 @@ header.container {
  * Uses a 1dp border with subtle elevation for emphasis
  * Reference: https://m3.material.io/components/cards/specs
  */
-article {
+article,
+details {
 	/* Material outlined card: 1dp border with visible outline */
 	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--md-corner-lg);
@@ -119,7 +120,8 @@ article {
 		border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-article:hover {
+article:hover,
+details:hover {
 	/* Enhanced border and subtle elevation on hover */
 	border-color: var(--pico-primary);
 	box-shadow: 
@@ -132,7 +134,8 @@ article>footer {
 }
 
 @media (prefers-color-scheme: dark) {
-	article {
+	article,
+	details {
 		/* Adjusted border and shadow for dark theme */
 		border-color: rgba(255, 255, 255, 0.12);
 		box-shadow: 
@@ -140,7 +143,8 @@ article>footer {
 			0 1px 2px 0 rgba(0, 0, 0, 0.24);
 	}
 	
-	article:hover {
+	article:hover,
+	details:hover {
 		box-shadow: 
 			0 2px 6px 0 rgba(0, 0, 0, 0.26),
 			0 3px 8px 0 rgba(0, 0, 0, 0.28);
