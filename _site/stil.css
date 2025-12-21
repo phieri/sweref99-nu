@@ -107,9 +107,8 @@ header.container {
  * Reference: https://m3.material.io/components/cards/specs
  */
 article {
-	/* Material outlined card: 1dp border using outline color */
-	border: 1px solid;
-	border-color: var(--pico-muted-border-color);
+	/* Material outlined card: 1dp border with visible outline */
+	border: 1px solid var(--pico-contrast);
 	border-radius: var(--md-corner-lg);
 	/* Subtle elevation for depth (elevation level 0-1) */
 	box-shadow: 
@@ -122,7 +121,7 @@ article {
 
 article:hover {
 	/* Enhanced border and subtle elevation on hover */
-	border-color: var(--pico-primary-border);
+	border-color: var(--pico-primary);
 	box-shadow: 
 		0 2px 4px 0 rgba(0, 0, 0, 0.08),
 		0 3px 6px 0 rgba(0, 0, 0, 0.12);
