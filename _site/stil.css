@@ -102,8 +102,20 @@ header.container {
 	margin-bottom: var(--md-spacing-lg);
 }
 
+/* Material Design 3 spacing between cards - 16dp */
+main > article,
+main > details {
+	margin-bottom: var(--md-spacing-md);
+}
+
+main > article:last-child,
+main > details:last-child {
+	margin-bottom: 0;
+}
+
 /* Material Design 3 surfaces - Outlined Card variant
  * Uses a 1dp border with subtle elevation for emphasis
+ * Material Design 3 specifies 16dp padding for card content
  * Reference: https://m3.material.io/components/cards/specs
  */
 article,
@@ -111,6 +123,8 @@ details {
 	/* Material outlined card: 1dp border with visible outline */
 	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--md-corner-lg);
+	/* Material Design 3: 16dp padding for card content */
+	padding: var(--md-spacing-md);
 	/* Subtle elevation for depth (elevation level 0-1) */
 	box-shadow: 
 		0 1px 2px 0 rgba(0, 0, 0, 0.05),
