@@ -108,7 +108,7 @@ header.container {
  */
 article {
 	/* Material outlined card: 1dp border with visible outline */
-	border: 1px solid var(--pico-contrast);
+	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--md-corner-lg);
 	/* Subtle elevation for depth (elevation level 0-1) */
 	box-shadow: 
@@ -133,7 +133,8 @@ article>footer {
 
 @media (prefers-color-scheme: dark) {
 	article {
-		/* Adjusted shadow for dark theme */
+		/* Adjusted border and shadow for dark theme */
+		border-color: rgba(255, 255, 255, 0.12);
 		box-shadow: 
 			0 1px 3px 0 rgba(0, 0, 0, 0.2),
 			0 1px 2px 0 rgba(0, 0, 0, 0.24);
