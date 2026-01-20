@@ -67,7 +67,7 @@ jobs:
           echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl -o _site/pico.min.css https://raw.githubusercontent.com/picocss/pico/v2.1.1/css/pico.min.css
-          curl -o _site/proj4.js https://raw.githubusercontent.com/proj4js/proj4js/v2.19.10/dist/proj4.js
+          curl -o _site/proj4.js https://raw.githubusercontent.com/proj4js/proj4js/v2.20.1/dist/proj4.js
           echo "=== Final _site contents ==="
           ls -la _site/
       - uses: actions/upload-pages-artifact@v4

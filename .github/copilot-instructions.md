@@ -52,8 +52,8 @@ tsc
 
 ## Dependencies Management
 - **Runtime dependencies** (loaded from CDN during CI/CD):
-  - `proj4.js` (v2.19.10) - Coordinate transformation library
-  - `pico.min.css` (v2.0.0) - CSS framework
+  - `proj4.js` (v2.20.1) - Coordinate transformation library
+  - `pico.min.css` (v2.1.1) - CSS framework
 - **Build dependencies**:
   - TypeScript (v5.9.2) - Installed globally via npm
 - Dependencies are downloaded during CI/CD pipeline, not committed to repo
