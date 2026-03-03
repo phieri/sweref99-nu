@@ -39,9 +39,9 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "proj4js-2.19.10",
+      "bom-ref": "proj4js-2.20.3",
       "name": "PROJ4JS",
-      "version": "2.19.10",
+      "version": "2.20.3",
       "description": "JavaScript library to transform coordinates from one coordinate system to another",
       "scope": "required",
       "licenses": [
@@ -63,7 +63,7 @@
         },
         {
           "type": "distribution",
-          "url": "https://cdn.jsdelivr.net/npm/proj4@2.19.10/dist/proj4.js"
+          "url": "https://cdn.jsdelivr.net/npm/proj4@2.20.3/dist/proj4.js"
         }
       ]
     },
@@ -124,7 +124,7 @@
     {
       "ref": "sweref99-nu",
       "dependsOn": [
-        "proj4js-2.19.10",
+        "proj4js-2.20.3",
         "picocss-2.0.0"
       ]
     }
