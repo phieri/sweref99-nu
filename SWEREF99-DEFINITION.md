@@ -129,7 +129,7 @@ The SWEREF 99 TM definition is validated through:
    - Technical notes on ETRS89 and plate motion
    - http://www.euref.eu/
 
-5. **PROJ** - https://proj.org/
+5. **PROJ** - https://proj.org/en/stable/
    - Open-source projection library documentation
    - Cartographic projections and coordinate transformations
 
