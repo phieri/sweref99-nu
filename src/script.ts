@@ -358,6 +358,7 @@ const notificationDialog = document.getElementById("notification-dialog") as HTM
 const notificationContent = document.getElementById("notification-content") as HTMLElement;
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
+const notificationCountdown = document.getElementById("notification-countdown") as SVGCircleElement | null;
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
 const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
@@ -399,6 +400,12 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 
 	// Sätt meddelande och visa dialog
 	notificationContent.textContent = message;
+	// Starta om countdown-animationen
+	if (notificationCountdown) {
+		notificationCountdown.style.animation = 'none';
+		void notificationCountdown.getBoundingClientRect(); // Tvinga reflow för att återställa animationen
+		notificationCountdown.style.animation = `countdown-shrink ${duration / 1000}s linear forwards`;
+	}
 	notificationDialog.showModal();
 	
 	// Dölj automatiskt efter angiven tid
