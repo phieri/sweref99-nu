@@ -101,6 +101,28 @@ article>footer {
 	font-size: var(--coords-font-size);
 }
 
+/* Countdown-cirkel för notifikationer */
+#notification-dialog article {
+	position: relative;
+}
+
+.countdown-svg {
+	position: absolute;
+	bottom: 0.5rem;
+	right: 0.5rem;
+	transform: rotate(-90deg);
+}
+
+#notification-countdown {
+	stroke: var(--pico-muted-color);
+	stroke-dasharray: 56.55; /* 2 * π * 9 ≈ 56.55 (avrundad) */
+}
+
+@keyframes countdown-shrink {
+	from { stroke-dashoffset: 0; }
+	to { stroke-dashoffset: 56.55; }
+}
+
 /* Spinner animation för fördröjd positionsuppdatering */
 #timestamp::after {
 	content: "";
