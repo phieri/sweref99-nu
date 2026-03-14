@@ -92,7 +92,7 @@ background: var(--md-surface);
 
 @media (min-width: 768px) {
 :root {
---pico-font-size: 87.5%;
+	--pico-font-size: 100%;
 }
 
 body {
