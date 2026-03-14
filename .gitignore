@@ -30,4 +30,3 @@ _site/icon-512.png
 # Node.js dependencies and build artifacts
 node_modules/
 coverage/
-package-lock.json
