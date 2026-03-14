@@ -59,6 +59,21 @@ tsc
 - Dependencies are downloaded during CI/CD pipeline, not committed to repo
 - See `SBOM-README.md` for complete Software Bill of Materials
 
+## SBOM Maintenance
+**IMPORTANT**: Update the SBOM files and related dependency documentation whenever the dependency set or versions change.
+
+### When to Update SBOM Files
+Update `SBOM.spdx`, `sbom.json`, and `SBOM-README.md` whenever you change:
+- Runtime dependencies or the versions fetched during CI/CD
+- Build or test dependencies in `package.json` / `package-lock.json`
+- Dependency-related documentation that describes the current project state
+
+### How to Keep SBOM Data Accurate
+1. Verify runtime dependency versions against `.github/workflows/ci.yml`
+2. Verify build and test dependency versions against `package-lock.json`
+3. Keep SPDX and CycloneDX entries aligned with the current dependency roles (runtime, build, test)
+4. Update `SBOM-README.md` if dependency versions or categories change
+
 ## File Structure
 ```
 ├── .github/
