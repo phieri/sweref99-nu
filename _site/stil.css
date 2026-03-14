@@ -24,10 +24,13 @@
 --md-surface: #f8f5ff;
 --md-surface-container: rgba(255, 255, 255, 0.92);
 --md-surface-container-high: rgba(255, 255, 255, 0.98);
---md-state-hover: rgba(103, 80, 164, 0.08);
---md-state-pressed: rgba(103, 80, 164, 0.12);
---md-error-light: #ba1a1a;
---md-error-dark: #ffb4ab;
+	--md-state-hover: rgba(103, 80, 164, 0.08);
+	--md-state-pressed: rgba(103, 80, 164, 0.12);
+	--md-tonal-button: rgba(103, 80, 164, 0.14);
+	--md-disabled-container: rgba(29, 27, 32, 0.12);
+	--md-disabled-label: rgba(29, 27, 32, 0.38);
+	--md-error-light: #ba1a1a;
+	--md-error-dark: #ffb4ab;
 
 --md-elevation-1:
 0 1px 2px rgba(0, 0, 0, 0.10),
@@ -73,11 +76,14 @@ sans-serif,
 --md-outline: rgba(255, 255, 255, 0.16);
 --md-outline-variant: rgba(255, 255, 255, 0.10);
 --md-surface: #141218;
---md-surface-container: rgba(30, 27, 37, 0.96);
---md-surface-container-high: rgba(39, 35, 46, 0.98);
---md-state-hover: rgba(208, 188, 255, 0.10);
---md-state-pressed: rgba(208, 188, 255, 0.14);
-}
+		--md-surface-container: rgba(30, 27, 37, 0.96);
+		--md-surface-container-high: rgba(39, 35, 46, 0.98);
+		--md-state-hover: rgba(208, 188, 255, 0.10);
+		--md-state-pressed: rgba(208, 188, 255, 0.14);
+		--md-tonal-button: rgba(208, 188, 255, 0.18);
+		--md-disabled-container: rgba(230, 225, 229, 0.12);
+		--md-disabled-label: rgba(230, 225, 229, 0.38);
+	}
 }
 
 body {
@@ -249,7 +255,77 @@ background-color: var(--md-state-hover);
 }
 
 #speed:active {
-background-color: var(--md-state-pressed);
+	background-color: var(--md-state-pressed);
+}
+
+/* Material 3 buttons */
+main > .grid {
+	gap: var(--md-space-3);
+	margin-top: var(--md-space-2);
+}
+
+main > .grid > button {
+	min-height: 2.5rem;
+	padding: 0 var(--md-space-5);
+	border-radius: 999px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	border-width: 1px;
+	border-style: solid;
+	box-shadow: none;
+	transition:
+		background-color var(--md-duration) var(--md-easing),
+		border-color var(--md-duration) var(--md-easing),
+		box-shadow var(--md-duration) var(--md-easing),
+		color var(--md-duration) var(--md-easing);
+}
+
+/* Filled button */
+#pos-btn {
+	border-color: transparent;
+	box-shadow: var(--md-elevation-1);
+}
+
+#pos-btn:hover:not(:disabled) {
+	box-shadow: var(--md-elevation-2);
+}
+
+/* Outlined button */
+#stop-btn {
+	background: transparent;
+	color: var(--pico-primary);
+	border-color: var(--md-outline);
+}
+
+#stop-btn:hover:not(:disabled) {
+	background: var(--md-state-hover);
+	border-color: var(--pico-primary);
+}
+
+#stop-btn:active:not(:disabled) {
+	background: var(--md-state-pressed);
+}
+
+/* Filled tonal button */
+#share-btn,
+button.secondary#share-btn {
+	background: var(--md-tonal-button);
+	color: var(--pico-primary);
+	border-color: transparent;
+}
+
+#share-btn:hover:not(:disabled) {
+	box-shadow: var(--md-elevation-1);
+}
+
+/* Material disabled buttons */
+main > .grid > button:disabled {
+	background: var(--md-disabled-container);
+	color: var(--md-disabled-label);
+	border-color: transparent;
+	box-shadow: none;
+	opacity: 1;
 }
 
 /* Countdown circle for notifications */
