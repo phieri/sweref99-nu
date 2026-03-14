@@ -103,8 +103,8 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/ts-jest@29.4.6
 # Relationships
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ4JS
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-TypeScript
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-types-jest
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-jest
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-jest-environment-jsdom
-Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-ts-jest
+Relationship: SPDXRef-Package-TypeScript BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-types-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-jest-environment-jsdom TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-ts-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
