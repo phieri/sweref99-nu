@@ -1,6 +1,6 @@
 # Test Suite Documentation
 
-This directory contains comprehensive unit tests for the `script.ts` file.
+This directory contains unit tests for `script.ts` and related UI/state behaviour.
 
 ## Overview
 
@@ -11,6 +11,10 @@ The test suite validates critical functionality including:
 - **ITRF to ETRS89 correction**: Continental drift calculations
 - **Boundary validation**: Checks if coordinates are within Swedish territory
 - **Integration scenarios**: Complete workflows combining multiple functions
+- **Button state handling**: Share/start/stop button behaviour
+- **Details state persistence**: Saving and restoring expanded help sections
+- **Coordinate formatting**: UI alignment and share text formatting
+- **Speed units**: m/s, km/h, and mph conversion and cycling
 
 ## Running Tests
 
@@ -34,9 +38,13 @@ The coverage report will be generated in the `coverage/` directory.
 ## Test Structure
 
 ### Test Files
-- `script.test.ts`: Main test suite with 77 comprehensive tests
+- `script.test.ts`: Core coordinate logic, bounds, thresholds, and integration coverage
+- `button-state.test.ts`: Button enable/disable state transitions
+- `details-state.test.ts`: Details element persistence with localStorage
+- `coordinate-formatting.test.ts`: Coordinate display and share text formatting
+- `speed-units.test.ts`: Speed unit conversion and cycling behaviour
 
-### Test Categories
+### Core Coordinate Test Categories (`script.test.ts`)
 
 #### 1. SWEDEN_BOUNDS Constants (4 tests)
 Validates that the geographic bounds for Sweden are correctly defined:
@@ -100,6 +108,7 @@ The test suite achieves comprehensive coverage of:
 - ✅ Continental drift correction calculations
 - ✅ Edge cases and error handling
 - ✅ Integration scenarios
+- ✅ UI state, persistence, and formatting helpers
 
 ## Implementation Notes
 
@@ -140,7 +149,7 @@ For now, the duplication is documented and acceptable given the constraints.
 ## CI/CD Integration
 
 Tests are automatically run in the GitHub Actions workflow:
-1. Dependencies are installed via `npm install`
+1. Dependencies are installed via `npm ci`
 2. Tests run via `npm test`
 3. Build only proceeds if all tests pass
 
@@ -155,8 +164,8 @@ When modifying `src/script.ts`:
 
 ## Test Framework
 
-- **Framework**: Jest 29.7.0
-- **TypeScript Support**: ts-jest 29.2.5
+- **Framework**: Jest 30.3.0
+- **TypeScript Support**: ts-jest 29.4.6
 - **Environment**: jsdom (simulates browser DOM)
 - **Assertion Library**: Jest's built-in expect
 

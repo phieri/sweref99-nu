@@ -9,6 +9,8 @@ PWA for showing current position in SWEREF 99 TM. Works offline after first visi
 
 ## Documentation
 - [SWEREF 99 Definition Verification](SWEREF99-DEFINITION.md) - Complete verification of coordinate system definition with traceable references
+- [Software Bill of Materials](SBOM-README.md) - Direct runtime, build, and test dependencies with license references
+- [Test Suite Documentation](tests/README.md) - Overview of the current Jest-based unit test coverage
 
 ## References
 - https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API
