@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
-  "serialNumber": "urn:uuid:sweref99-nu-sbom-2024",
-  "version": 1,
+  "serialNumber": "urn:uuid:8c9c56cd-2316-4126-a435-509ccd4699ed",
+  "version": 2,
   "metadata": {
-    "timestamp": "2024-09-08T16:00:00Z",
+    "timestamp": "2026-03-14T10:49:27Z",
     "tools": [
       {
         "name": "manual",
@@ -39,9 +39,9 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "proj4js-2.19.10",
+      "bom-ref": "proj4js-2.20.3",
       "name": "PROJ4JS",
-      "version": "2.19.10",
+      "version": "2.20.3",
       "description": "JavaScript library to transform coordinates from one coordinate system to another",
       "scope": "required",
       "licenses": [
@@ -63,15 +63,15 @@
         },
         {
           "type": "distribution",
-          "url": "https://cdn.jsdelivr.net/npm/proj4@2.19.10/dist/proj4.js"
+          "url": "https://cdn.jsdelivr.net/npm/proj4@2.20.3/dist/proj4.js"
         }
       ]
     },
     {
       "type": "library",
-      "bom-ref": "picocss-2.0.0",
+      "bom-ref": "picocss-2.1.1",
       "name": "Pico.css",
-      "version": "2.0.0",
+      "version": "2.1.1",
       "description": "Minimal CSS Framework for semantic HTML",
       "scope": "required",
       "licenses": [
@@ -118,14 +118,103 @@
           "url": "https://github.com/microsoft/TypeScript"
         }
       ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "types-jest-30.0.0",
+      "name": "@types/jest",
+      "version": "30.0.0",
+      "description": "TypeScript type definitions for Jest",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.npmjs.com/package/@types/jest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "jest-30.3.0",
+      "name": "jest",
+      "version": "30.3.0",
+      "description": "JavaScript testing framework",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.npmjs.com/package/jest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "jest-environment-jsdom-30.3.0",
+      "name": "jest-environment-jsdom",
+      "version": "30.3.0",
+      "description": "Browser-like jsdom environment for Jest",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.npmjs.com/package/jest-environment-jsdom"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "ts-jest-29.4.6",
+      "name": "ts-jest",
+      "version": "29.4.6",
+      "description": "TypeScript preprocessor for Jest",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.npmjs.com/package/ts-jest"
+        }
+      ]
     }
   ],
   "dependencies": [
     {
       "ref": "sweref99-nu",
       "dependsOn": [
-        "proj4js-2.19.10",
-        "picocss-2.0.0"
+        "proj4js-2.20.3",
+        "picocss-2.1.1",
+        "typescript-5.9.2",
+        "types-jest-30.0.0",
+        "jest-30.3.0",
+        "jest-environment-jsdom-30.3.0",
+        "ts-jest-29.4.6"
       ]
     }
   ]

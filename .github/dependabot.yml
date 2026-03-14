@@ -5,10 +5,18 @@ updates:
     schedule:
       interval: monthly
     groups:
-      github-actions:
+      actions-group:
         patterns:
           - '*'
   - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
       interval: monthly
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      npm-group:
+        patterns:
+          - '*'

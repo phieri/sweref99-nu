@@ -129,12 +129,12 @@ The SWEREF 99 TM definition is validated through:
    - Technical notes on ETRS89 and plate motion
    - http://www.euref.eu/
 
-5. **PROJ** - https://proj.org/
+5. **PROJ** - https://proj.org/en/stable/
    - Open-source projection library documentation
    - Cartographic projections and coordinate transformations
 
 ### Implementation Libraries
-6. **Proj4js** (v2.19.10) - https://github.com/proj4js/proj4js
+6. **Proj4js** (v2.20.3) - https://github.com/proj4js/proj4js
    - JavaScript library used by this application
    - Implements PROJ coordinate transformations in browser
 

@@ -1,263 +1,309 @@
 /**
- * Material Design 3 inspired styling for SWEREF 99 TM
- * Based on Material Design 3 guidelines
- * Reference: https://m3.material.io/
+ * Material Design 3 styling for SWEREF 99 TM
+ * Based on Material Design 3 guidelines: https://m3.material.io/
  */
 
 :root {
-	/* Material Design 3 spacing (8dp base unit = 8px) */
-	--md-spacing-xs: 0.25rem;  /* 4px - half unit */
-	--md-spacing-sm: 0.5rem;   /* 8px - base unit */
-	--md-spacing-md: 1rem;     /* 16px - 2x base */
-	--md-spacing-lg: 1.5rem;   /* 24px - 3x base */
-	--md-spacing-xl: 2rem;     /* 32px - 4x base */
-	
-	/* Material Design 3 color system */
-	--md-error-light: #B3261E;
-	--md-error-dark: #F2B8B5;
-	
-	/* Typography scale based on Material Design 3 */
-	--pico-font-size: 100%;
-	--pico-line-height: 1.5;
-	
-	/* Component sizing */
-	--coords-font-size: 1.5rem;
-	--posmeta-font-size: 1.125rem;
-	--spinner-size: 1rem;
-	--spinner-border-width: 2px;
-	--container-max-width: 768px;
-	
-	/* Material Design 3 shape system */
-	--md-corner-none: 0;
-	--md-corner-xs: 0.25rem;   /* 4px */
-	--md-corner-sm: 0.5rem;    /* 8px */
-	--md-corner-md: 0.75rem;   /* 12px */
-	--md-corner-lg: 1rem;      /* 16px */
-	--md-corner-xl: 1.75rem;   /* 28px */
-	
-	--pico-border-radius: var(--md-corner-md);
-	--pico-form-element-spacing-vertical: var(--md-spacing-sm);
-	--pico-form-element-spacing-horizontal: var(--md-spacing-md);
-	
-	/* Material Design 3 font family */
-	font-family: 
-		Roboto,
-		"Segoe UI",
-		-apple-system,
-		BlinkMacSystemFont,
-		"Helvetica Neue",
-		Arial,
-		"Noto Sans",
-		sans-serif,
-		"Apple Color Emoji",
-		"Segoe UI Emoji",
-		"Segoe UI Symbol",
-		"Noto Color Emoji";
+/* Material Design 3 design tokens */
+--md-space-1: 0.25rem;  /* 4dp */
+--md-space-2: 0.5rem;   /* 8dp */
+--md-space-3: 0.75rem;  /* 12dp */
+--md-space-4: 1rem;     /* 16dp */
+--md-space-5: 1.25rem;  /* 20dp */
+--md-space-6: 1.5rem;   /* 24dp */
+--md-space-8: 2rem;     /* 32dp */
+
+--md-radius-xs: 0.25rem;
+--md-radius-sm: 0.5rem;
+--md-radius-md: 0.75rem;
+--md-radius-lg: 1rem;
+--md-radius-xl: 1.75rem;
+
+--md-outline: rgba(0, 0, 0, 0.14);
+--md-outline-variant: rgba(0, 0, 0, 0.08);
+--md-surface: #f8f5ff;
+--md-surface-container: rgba(255, 255, 255, 0.92);
+--md-surface-container-high: rgba(255, 255, 255, 0.98);
+--md-state-hover: rgba(103, 80, 164, 0.08);
+--md-state-pressed: rgba(103, 80, 164, 0.12);
+--md-error-light: #ba1a1a;
+--md-error-dark: #ffb4ab;
+
+--md-elevation-1:
+0 1px 2px rgba(0, 0, 0, 0.10),
+0 1px 3px 1px rgba(0, 0, 0, 0.08);
+--md-elevation-2:
+0 2px 6px rgba(0, 0, 0, 0.12),
+0 1px 2px rgba(0, 0, 0, 0.10);
+
+--md-easing: cubic-bezier(0.2, 0, 0, 1);
+--md-duration: 200ms;
+
+/* Existing app tokens */
+--coords-font-size: 1.5rem;
+--posmeta-font-size: 1.125rem;
+--spinner-size: 1rem;
+--spinner-border-width: 2px;
+--container-max-width: 768px;
+
+/* Pico overrides */
+--pico-font-size: 100%;
+--pico-line-height: 1.5;
+--pico-border-radius: var(--md-radius-md);
+--pico-form-element-spacing-vertical: var(--md-space-2);
+--pico-form-element-spacing-horizontal: var(--md-space-4);
+
+font-family:
+Roboto,
+-apple-system,
+BlinkMacSystemFont,
+"Segoe UI",
+"Helvetica Neue",
+Arial,
+"Noto Sans",
+sans-serif,
+"Apple Color Emoji",
+"Segoe UI Emoji",
+"Segoe UI Symbol",
+"Noto Color Emoji";
 }
 
-/* Responsive typography following Material Design breakpoints */
-@media (min-width: 600px) {
-	:root {
-		--pico-font-size: 100%;
-	}
+@media (prefers-color-scheme: dark) {
+:root {
+--md-outline: rgba(255, 255, 255, 0.16);
+--md-outline-variant: rgba(255, 255, 255, 0.10);
+--md-surface: #141218;
+--md-surface-container: rgba(30, 27, 37, 0.96);
+--md-surface-container-high: rgba(39, 35, 46, 0.98);
+--md-state-hover: rgba(208, 188, 255, 0.10);
+--md-state-pressed: rgba(208, 188, 255, 0.14);
+}
 }
 
-@media (min-width: 840px) {
-	:root {
-		--pico-font-size: 100%;
-	}
-	
-	body {
-		max-width: var(--container-max-width);
-		margin: auto;
-	}
-	
-	body > header,
-	body > main,
-	body > footer {
-		max-width: var(--container-max-width);
-		margin-left: auto;
-		margin-right: auto;
-	}
+body {
+background: var(--md-surface);
 }
 
-/* Material Design 3 typography - emphasis and hierarchy */
+@media (min-width: 576px) {
+:root {
+--pico-font-size: 100%;
+}
+}
+
+@media (min-width: 768px) {
+:root {
+--pico-font-size: 87.5%;
+}
+
+body {
+max-width: var(--container-max-width);
+margin: auto;
+}
+
+body > header,
+body > main,
+body > footer {
+max-width: var(--container-max-width);
+margin-left: auto;
+margin-right: auto;
+}
+}
+
 h1, h2, h3, h4, h5, h6 {
-	--pico-font-weight: 500;
-	letter-spacing: 0;
-}
-
-h1 {
-	font-size: 2rem;
-	line-height: 2.5rem;
-	font-weight: 400;
+--pico-font-weight: 500;
+letter-spacing: 0;
 }
 
 header h1 {
-	font-weight: 500;
-	margin-bottom: var(--md-spacing-md);
+font-weight: 600;
+margin-bottom: var(--md-space-2);
+letter-spacing: -0.01em;
 }
 
 header.container {
-	margin-bottom: var(--md-spacing-lg);
+margin-bottom: var(--md-space-4);
 }
 
-/* Material Design 3 spacing between cards - 16dp */
-main > article,
-main > details {
-	margin-bottom: var(--md-spacing-md);
+main {
+display: flex;
+flex-direction: column;
+gap: var(--md-space-4);
 }
 
-main > article:last-child,
-main > details:last-child {
-	margin-bottom: 0;
-}
-
-/* Material Design 3 surfaces - Outlined Card variant
- * Uses a 1dp border with subtle elevation for emphasis
- * Material Design 3 specifies 16dp padding for card content
- * Reference: https://m3.material.io/components/cards/specs
- */
+/* Material outlined cards */
 article,
 details {
-	/* Material outlined card: 1dp border with visible outline */
-	border: 1px solid rgba(0, 0, 0, 0.12);
-	border-radius: var(--md-corner-lg);
-	/* Material Design 3: 16dp padding for card content */
-	padding: var(--md-spacing-md);
-	/* Subtle elevation for depth (elevation level 0-1) */
-	box-shadow: 
-		0 1px 2px 0 rgba(0, 0, 0, 0.05),
-		0 1px 3px 0 rgba(0, 0, 0, 0.1);
-	transition: 
-		box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-		border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+background: var(--md-surface-container);
+border: 1px solid var(--md-outline);
+border-radius: var(--md-radius-lg);
+box-shadow: var(--md-elevation-1);
+transition:
+border-color var(--md-duration) var(--md-easing),
+box-shadow var(--md-duration) var(--md-easing),
+background-color var(--md-duration) var(--md-easing);
 }
 
 article:hover,
 details:hover {
-	/* Enhanced border and subtle elevation on hover */
-	border-color: var(--pico-primary);
-	box-shadow: 
-		0 2px 4px 0 rgba(0, 0, 0, 0.08),
-		0 3px 6px 0 rgba(0, 0, 0, 0.12);
+border-color: var(--pico-primary);
+box-shadow: var(--md-elevation-2);
 }
 
-article>footer {
-	border-radius: 0 0 var(--md-corner-lg) var(--md-corner-lg);
+/* Dialog card keeps internal padding */
+article {
+padding: var(--md-space-4);
 }
 
-@media (prefers-color-scheme: dark) {
-	article,
-	details {
-		/* Adjusted border and shadow for dark theme */
-		border-color: rgba(255, 255, 255, 0.12);
-		box-shadow: 
-			0 1px 3px 0 rgba(0, 0, 0, 0.2),
-			0 1px 2px 0 rgba(0, 0, 0, 0.24);
-	}
-	
-	article:hover,
-	details:hover {
-		box-shadow: 
-			0 2px 6px 0 rgba(0, 0, 0, 0.26),
-			0 3px 8px 0 rgba(0, 0, 0, 0.28);
-	}
+article > footer {
+border-radius: var(--md-radius-lg);
 }
 
-/* Material Design 3 color system */
+/* Details cards are structured like Material sections */
+details {
+overflow: clip;
+}
+
+details > summary {
+padding: var(--md-space-4);
+margin: 0;
+font-weight: 600;
+border-radius: var(--md-radius-lg);
+transition: background-color var(--md-duration) var(--md-easing);
+}
+
+details > summary:hover {
+background: var(--md-state-hover);
+}
+
+details > summary:active {
+background: var(--md-state-pressed);
+}
+
+details[open] > summary {
+border-bottom: 1px solid var(--md-outline-variant);
+border-bottom-left-radius: 0;
+border-bottom-right-radius: 0;
+}
+
+/* Metadata group */
+details > div[role="group"] {
+display: grid;
+gap: var(--md-space-3);
+padding: var(--md-space-4);
+}
+
+/* Coordinate and metadata surfaces inside expanded sections */
+details > div[role="group"] > pre,
+details > pre {
+margin: 0;
+padding: var(--md-space-4);
+background: var(--md-surface-container-high);
+border: 1px solid var(--md-outline-variant);
+border-radius: var(--md-radius-md);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Direct pre children need spacing around them */
+details > pre {
+margin: var(--md-space-4);
+}
+
+details > pre + pre {
+margin-top: 0;
+}
+
 .outofrange {
-	color: var(--md-error-light);
+color: var(--md-error-light);
 }
 
 @media (prefers-color-scheme: dark) {
-	.outofrange {
-		color: var(--md-error-dark);
-	}
+.outofrange {
+color: var(--md-error-dark);
+}
 }
 
-/* Typography utilities */
 .posmeta {
-	font-size: var(--posmeta-font-size);
-	line-height: 1.5;
+font-size: var(--posmeta-font-size);
+line-height: 1.5;
 }
 
 .coords {
-	font-size: var(--coords-font-size);
-	font-weight: 400;
-	line-height: 1.25;
+font-size: var(--coords-font-size);
+font-weight: 400;
+line-height: 1.25;
+letter-spacing: 0.01em;
 }
 
-/* Interactive elements - Material Design state layers */
 #speed {
-	cursor: pointer;
-	user-select: none;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-	border-radius: var(--md-corner-sm);
-	padding: var(--md-spacing-xs) var(--md-spacing-sm);
-	margin: calc(-1 * var(--md-spacing-xs)) calc(-1 * var(--md-spacing-sm));
+cursor: pointer;
+user-select: none;
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+border-radius: var(--md-radius-sm);
+transition: background-color var(--md-duration) var(--md-easing);
 }
 
 #speed:hover {
-	opacity: 0.85;
-	background-color: rgba(0, 0, 0, 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
-	#speed:hover {
-		background-color: rgba(255, 255, 255, 0.08);
-	}
+background-color: var(--md-state-hover);
 }
 
 #speed:active {
-	opacity: 0.7;
-	background-color: rgba(0, 0, 0, 0.08);
+background-color: var(--md-state-pressed);
 }
 
-@media (prefers-color-scheme: dark) {
-	#speed:active {
-		background-color: rgba(255, 255, 255, 0.12);
-	}
+/* Countdown circle for notifications */
+#notification-dialog article {
+position: relative;
 }
 
-/* Material Design spinner with smooth animation */
+.countdown-svg {
+position: absolute;
+bottom: var(--md-space-2);
+right: var(--md-space-2);
+transform: rotate(-90deg);
+}
+
+#notification-countdown {
+stroke: var(--pico-muted-color);
+stroke-dasharray: 56.55;
+}
+
+@keyframes countdown-shrink {
+from { stroke-dashoffset: 0; }
+to { stroke-dashoffset: 56.55; }
+}
+
+/* Material spinner */
 #timestamp::after {
-	content: "";
-	display: none;
-	position: relative;
-	width: var(--spinner-size);
-	height: var(--spinner-size);
-	margin-left: var(--md-spacing-sm);
-	border: var(--spinner-border-width) solid var(--pico-secondary);
-	border-top-color: transparent;
-	border-radius: 50%;
-	animation: spinner-rotate 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-	vertical-align: middle;
+content: "";
+display: none;
+position: relative;
+width: var(--spinner-size);
+height: var(--spinner-size);
+margin-left: var(--md-space-2);
+border: var(--spinner-border-width) solid var(--pico-primary);
+border-top-color: transparent;
+border-radius: 50%;
+animation: spinner-rotate 0.8s linear infinite;
+vertical-align: middle;
 }
 
 #timestamp.loading::after {
-	display: inline-block;
+display: inline-block;
 }
 
 @keyframes spinner-rotate {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
-	}
+from { transform: rotate(0deg); }
+to { transform: rotate(360deg); }
 }
 
-/* Material Design motion - reduce for accessibility */
 @media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-	}
+*,
+*::before,
+*::after {
+animation-duration: 0.01ms !important;
+animation-iteration-count: 1 !important;
+transition-duration: 0.01ms !important;
+}
 }

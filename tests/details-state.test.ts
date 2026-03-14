@@ -31,7 +31,10 @@ class LocalStorageMock {
 
 // Setup localStorage mock
 const localStorageMock = new LocalStorageMock();
-(global as any).localStorage = localStorageMock;
+Object.defineProperty(global, 'localStorage', {
+	value: localStorageMock,
+	writable: true,
+});
 
 // Mock console methods to avoid cluttering test output
 const originalConsoleWarn = console.warn;
