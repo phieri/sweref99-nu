@@ -1,6 +1,6 @@
 # Software Bill of Materials (SBOM)
 
-This directory contains Software Bill of Materials (SBOM) files for the sweref99-nu project. These files provide transparency about the project's dependencies and their licenses.
+This repository contains Software Bill of Materials (SBOM) files for the sweref99-nu project. These files provide transparency about the project's direct dependencies, their roles, and their licenses.
 
 ## Files
 
@@ -9,14 +9,20 @@ This directory contains Software Bill of Materials (SBOM) files for the sweref99
 
 ## Dependencies
 
-The project uses the following external components:
+The project currently uses the following direct external components:
 
 ### Runtime Dependencies
 - **PROJ4JS** (v2.20.3) - MIT License - Lightweight JavaScript coordinate transformation library
-- **Pico.css** (v2.0.0) - MIT License - Minimal CSS framework
+- **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies
 - **TypeScript** (v5.9.2) - Apache License 2.0 - TypeScript compiler
+
+### Test Dependencies
+- **Jest** (v30.3.0) - MIT License - Test runner and assertion framework
+- **@types/jest** (v30.0.0) - MIT License - TypeScript type definitions for Jest
+- **jest-environment-jsdom** (v30.3.0) - MIT License - Browser-like test environment for Jest
+- **ts-jest** (v29.4.6) - MIT License - TypeScript transformer for Jest
 
 ## License Information
 
