@@ -36,6 +36,7 @@ jobs:
           args: >-
             --verbose --no-progress --accept 200,204,403,429
             --method head --cache --base https://sweref99.nu/
+            --exclude '\.md$'
             '**/*.md' '**/*.html'
           # Fail workflow on broken links
           fail: true
