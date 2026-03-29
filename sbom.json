@@ -95,9 +95,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "typescript-5.9.2",
+      "bom-ref": "typescript-5.9.3",
       "name": "TypeScript",
-      "version": "5.9.2",
+      "version": "5.9.3",
       "description": "TypeScript compiler",
       "scope": "optional",
       "licenses": [
@@ -210,7 +210,7 @@
       "dependsOn": [
         "proj4js-2.20.3",
         "picocss-2.1.1",
-        "typescript-5.9.2",
+        "typescript-5.9.3",
         "types-jest-30.0.0",
         "jest-30.3.0",
         "jest-environment-jsdom-30.3.0",

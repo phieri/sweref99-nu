@@ -43,14 +43,14 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40picocss/pico@2.1.1
 # TypeScript
 PackageName: TypeScript
 SPDXID: SPDXRef-Package-TypeScript
-PackageVersion: 5.9.2
+PackageVersion: 5.9.3
 PackageSupplier: Organization: Microsoft Corporation
 PackageDownloadLocation: https://github.com/microsoft/TypeScript
 FilesAnalyzed: false
 PackageLicenseConcluded: Apache-2.0
 PackageLicenseDeclared: Apache-2.0
 PackageCopyrightText: Copyright Microsoft Corporation
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.2
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.3
 
 # @types/jest
 PackageName: @types/jest

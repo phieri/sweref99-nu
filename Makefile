@@ -1,5 +1,5 @@
 script.js:
-	tsc
+	./node_modules/.bin/tsc
 
 # Generate app icons from SVG source
 icons: _site/favicon.ico _site/apple-touch-icon.png _site/icon-192.png _site/icon-512.png

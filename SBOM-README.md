@@ -16,7 +16,7 @@ The project currently uses the following direct external components:
 - **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies
-- **TypeScript** (v5.9.2) - Apache License 2.0 - TypeScript compiler
+- **TypeScript** (v5.9.3) - Apache License 2.0 - TypeScript compiler
 
 ### Test Dependencies
 - **Jest** (v30.3.0) - MIT License - Test runner and assertion framework
