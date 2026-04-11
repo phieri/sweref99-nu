@@ -19,12 +19,19 @@ class MockElement {
 
 	set innerHTML(value: string) {
 		this._innerHTML = value;
-		// Convert HTML to text content (strip HTML entities and tags)
+		// Convert HTML entities first
 		let text = value
 			.replace(/&deg;/g, '°')
 			.replace(/&nbsp;/g, ' ')
-			.replace(/&pm;/g, '±')
-			.replace(/<[^>]*>/g, '');
+			.replace(/&pm;/g, '±');
+
+		// Strip tags repeatedly until stable to avoid incomplete multi-character sanitization
+		let previous: string;
+		do {
+			previous = text;
+			text = text.replace(/<[^>]*>/g, '');
+		} while (text !== previous);
+
 		// Ensure no angle brackets remain to avoid HTML element injection in textContent
 		text = text.replace(/</g, '').replace(/>/g, '');
 		this._textContent = text;
