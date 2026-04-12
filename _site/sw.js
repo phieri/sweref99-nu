@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '25';
+const CACHE_VERSION = '26';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -17,7 +17,8 @@ const ASSETS_TO_CACHE = [
 	'/favicon.ico',
 	'/icon-192.png',
 	'/icon-512.png',
-	'/apple-touch-icon.png'
+	'/apple-touch-icon.png',
+	'/llms.txt'
 ];
 
 // Install event - cacha alla resurser

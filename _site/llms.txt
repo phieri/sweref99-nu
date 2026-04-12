@@ -1,0 +1,28 @@
+# SWEREF 99 Nu
+
+> SWEREF 99 Nu is a Swedish progressive web app that shows the user's current GPS position in SWEREF 99 TM, works offline after the first visit, and compensates for ITRF/ETRS89 continental drift.
+
+Important notes:
+
+- The app is fully client-side; there is no backend or server-side coordinate conversion.
+- User-facing text and most implementation comments are in Swedish.
+- The main TypeScript source is `src/script.ts`, while the deployed site is served from the `_site/` directory.
+- Coordinates are validated against Swedish latitude and longitude bounds before they are presented as Swedish map coordinates.
+
+## Project
+
+- [README](https://raw.githubusercontent.com/phieri/sweref99-nu/main/README.md): Repository overview, features, and primary documentation links.
+- [SWEREF 99 Definition Verification](https://raw.githubusercontent.com/phieri/sweref99-nu/main/SWEREF99-DEFINITION.md): Verification of the SWEREF 99 TM definition and the app's transformation references.
+- [Software Bill of Materials](https://raw.githubusercontent.com/phieri/sweref99-nu/main/SBOM-README.md): Runtime, build, and test dependencies with license references.
+- [Test Suite Documentation](https://raw.githubusercontent.com/phieri/sweref99-nu/main/tests/README.md): Overview of the Jest-based unit test coverage.
+
+## Site
+
+- [Main application](https://sweref99.nu/): Live PWA that requests geolocation and shows the current SWEREF 99 TM coordinates.
+- [About page](https://sweref99.nu/om.html): User-facing explanation of the app, privacy model, and usage notes.
+
+## Optional
+
+- [TypeScript application source](https://raw.githubusercontent.com/phieri/sweref99-nu/main/src/script.ts): Main geolocation, coordinate conversion, and UI state logic.
+- [Service worker](https://raw.githubusercontent.com/phieri/sweref99-nu/main/_site/sw.js): Offline caching strategy and cached asset list.
+- [Build workflow](https://raw.githubusercontent.com/phieri/sweref99-nu/main/.github/workflows/ci.yml): CI steps for tests, TypeScript build, asset downloads, and deployment.

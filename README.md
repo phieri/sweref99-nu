@@ -8,6 +8,7 @@ PWA for showing current position in SWEREF 99 TM. Works offline after first visi
 - Compensates for ITRF/ETRS89 continental drift
 
 ## Documentation
+- [LLMs file](_site/llms.txt) - Curated overview and documentation links for LLM and agent use
 - [SWEREF 99 Definition Verification](SWEREF99-DEFINITION.md) - Complete verification of coordinate system definition with traceable references
 - [Software Bill of Materials](SBOM-README.md) - Direct runtime, build, and test dependencies with license references
 - [Test Suite Documentation](tests/README.md) - Overview of the current Jest-based unit test coverage
