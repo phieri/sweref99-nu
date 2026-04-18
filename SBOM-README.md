@@ -12,7 +12,7 @@ This repository contains Software Bill of Materials (SBOM) files for the sweref9
 The project currently uses the following direct external components:
 
 ### Runtime Dependencies
-- **PROJ4JS** (v2.20.3) - MIT License - Lightweight JavaScript coordinate transformation library
+- **PROJ4JS** (v2.20.6) - MIT License - Lightweight JavaScript coordinate transformation library
 - **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies
