@@ -60,7 +60,7 @@ jobs:
           curl --fail --show-error --location -o _site/proj4.js https://raw.githubusercontent.com/proj4js/proj4js/v2.20.6/dist/proj4.js
           echo "=== Final _site contents ==="
           ls -la _site/
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
   deploy:
     name: Deploy
     needs: build
