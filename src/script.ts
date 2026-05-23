@@ -119,7 +119,7 @@ const GEOLOCATION_TEST_OPTIONS = {
 const UI_TEXT = {
 	ERROR_NO_POSITION: "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!",
 	ERROR_NO_POSITION_TITLE: "Positioneringsfel",
-	NOT_AVAILABLE: "Ej&nbsp;tillgängligt",
+	NOT_AVAILABLE: 'Ej\u00A0tillgängligt',
 	WARNING_NOT_IN_SWEDEN: "Varning: SWEREF 99 är bara användbart i Sverige.",
 	WARNING_NOT_IN_SWEDEN_TITLE: "Position utanför Sverige",
 	HELP_URL: "https://sweref99.nu/om.html"
@@ -151,6 +151,12 @@ const SPEED_UNIT_ORDER: SpeedUnit[] = ['m/s', 'km/h', 'mph'];
  * LocalStorage key for speed unit preference
  */
 const SPEED_UNIT_STORAGE_KEY = 'sweref99-speed-unit';
+const NON_BREAKING_SPACE = '\u00A0';
+const DECIMAL_SEPARATOR_PATTERN = /\./g;
+const SPEED_UNIT_PATTERN = /(m\/s|km\/h|mph)$/u;
+const WGS84_PROJECTION = 'EPSG:4326';
+const SWEREF99_PROJECTION = 'EPSG:3006';
+const SWEREF99_TM_PROJ_DEFINITION = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -179,6 +185,28 @@ function isInSweden(pos: GeolocationPosition): boolean {
  */
 function convertSpeed(speedMs: number, unit: SpeedUnit): number {
 	return speedMs * SPEED_CONVERSION[unit];
+}
+
+function setElementText(element: HTMLElement | null, text: string): void {
+	if (element) {
+		element.textContent = text;
+	}
+}
+
+function formatValueWithUnit(value: number | string, unit: SpeedUnit): string {
+	return `${value}${NON_BREAKING_SPACE}${unit}`;
+}
+
+function formatProjectedCoordinate(prefix: 'N' | 'E', value: number, spacing: 1 | 2): string {
+	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value)}`;
+}
+
+function formatWgs84Coordinate(prefix: 'N' | 'E', value: number): string {
+	return `${prefix}${NON_BREAKING_SPACE}${value.toString().replace(DECIMAL_SEPARATOR_PATTERN, ",")}°`;
+}
+
+function isShareSupported(): boolean {
+	return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 }
 
 /**
@@ -263,6 +291,27 @@ function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 
 // Beräkna korrigeringen en gång vid appstart
 const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
+let isSwerefProjectionDefined = false;
+
+/**
+ * Ensures the SWEREF 99 projection definition is registered before transforms run.
+ * @returns true when proj4 is ready to transform coordinates
+ */
+function ensureSwerefProjection(): boolean {
+	if (typeof proj4 === 'undefined') {
+		console.warn("SWEREF 99 transformation not available - ensure proj4.js loads before script.js");
+		return false;
+	}
+
+	if (!isSwerefProjectionDefined) {
+		if (!proj4.defs(SWEREF99_PROJECTION)) {
+			proj4.defs(SWEREF99_PROJECTION, SWEREF99_TM_PROJ_DEFINITION);
+		}
+		isSwerefProjectionDefined = true;
+	}
+
+	return true;
+}
 
 /**
  * Transforms WGS84 coordinates to SWEREF 99 TM using PROJ4JS
@@ -281,13 +330,10 @@ const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correct
  */
 function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
-		// Check if proj4 library is available
-		if (typeof proj4 === 'undefined') {
-			console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
+		if (!ensureSwerefProjection()) {
 			return { northing: 0, easting: 0 };
 		}
 
-		// Define coordinate systems if not already defined
 		// WGS84 is built-in as 'EPSG:4326'
 		// 
 		// SWEREF 99 TM (EPSG:3006) PROJ Definition
@@ -307,14 +353,10 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 		// +type=crs          : Modern PROJ convention for CRS definition
 		// 
 		// See SWEREF99-DEFINITION.md for complete verification documentation
-		if (!proj4.defs('EPSG:3006')) {
-				proj4.defs('EPSG:3006', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
-		}
-
 		// Transform coordinates using proj4
 		// Input: [longitude, latitude] in WGS84 (EPSG:4326)
 		// Output: [easting, northing] in SWEREF 99 TM (EPSG:3006)
-		const result = proj4('EPSG:4326', 'EPSG:3006', [lon, lat]);
+		const result = proj4(WGS84_PROJECTION, SWEREF99_PROJECTION, [lon, lat]);
 
 		let easting: number = result[0];
 		let northing: number = result[1];
@@ -326,7 +368,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 		easting += itrf2Etrs89Correction.de;
 
 		// Validate the result
-		if (isNaN(northing) || isNaN(easting)) {
+		if (!Number.isFinite(northing) || !Number.isFinite(easting)) {
 			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
 			return { northing: 0, easting: 0 };
 		}
@@ -342,23 +384,17 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 // DOM ELEMENTS AND UI REFERENCES
 // ============================================================================
 
-const uncert: HTMLElement | null    = document.getElementById("uncert");
-const speed: HTMLElement | null     = document.getElementById("speed");
-const timestamp: HTMLElement | null = document.getElementById("timestamp");
-const swerefn: HTMLElement | null   = document.getElementById("sweref-n");
-const swerefe: HTMLElement | null   = document.getElementById("sweref-e");
-const wgs84n: HTMLElement | null    = document.getElementById("wgs84-n");
-const wgs84e: HTMLElement | null    = document.getElementById("wgs84-e");
-const posbtn: HTMLElement | null    = document.getElementById("pos-btn");
-const sharebtn: HTMLElement | null  = document.getElementById("share-btn");
-const stopbtn: HTMLElement | null   = document.getElementById("stop-btn");
-
-// Hämta dialog-elementet
+const speed = document.getElementById("speed");
+const posbtn = document.getElementById("pos-btn");
+const sharebtn = document.getElementById("share-btn");
+const stopbtn = document.getElementById("stop-btn");
 const notificationDialog = document.getElementById("notification-dialog") as HTMLDialogElement;
 const notificationContent = document.getElementById("notification-content") as HTMLElement;
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 const notificationCountdown = document.getElementById("notification-countdown") as SVGCircleElement | null;
+// Only one notification timer should be active at a time.
+let notificationTimeout: number | null = null;
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
 const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
@@ -393,9 +429,9 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 	// Sätt rubrik om angiven
 	if (title && notificationHeader && notificationTitle) {
 		notificationTitle.textContent = title;
-		notificationHeader.style.display = '';
+		notificationHeader.hidden = false;
 	} else if (notificationHeader) {
-		notificationHeader.style.display = 'none';
+		notificationHeader.hidden = true;
 	}
 
 	// Sätt meddelande och visa dialog
@@ -409,25 +445,33 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 	notificationDialog.showModal();
 	
 	// Dölj automatiskt efter angiven tid
-	setTimeout(() => {
+	if (notificationTimeout !== null) {
+		clearTimeout(notificationTimeout);
+	}
+	notificationTimeout = window.setTimeout(() => {
 		if (notificationDialog.open) {
 			notificationDialog.close();
 		}
+		notificationTimeout = null;
 	}, duration);
-	
-	// Stäng dialog vid klick utanför (backdrop)
-	notificationDialog.addEventListener('click', function(event) {
-		const rect = notificationDialog.getBoundingClientRect();
-		const isInDialog = (
-			rect.top <= event.clientY &&
-			event.clientY <= rect.top + rect.height &&
-			rect.left <= event.clientX &&
-			event.clientX <= rect.left + rect.width
-		);
-		if (!isInDialog) {
-			notificationDialog.close();
-		}
-	});
+}
+
+function handleNotificationBackdropClick(event: MouseEvent): void {
+	if (!notificationDialog?.open) {
+		return;
+	}
+
+	const rect = notificationDialog.getBoundingClientRect();
+	const isInDialog = (
+		rect.top <= event.clientY &&
+		event.clientY <= rect.top + rect.height &&
+		rect.left <= event.clientX &&
+		event.clientX <= rect.left + rect.width
+	);
+
+	if (!isInDialog) {
+		notificationDialog.close();
+	}
 }
 
 // ============================================================================
@@ -495,7 +539,7 @@ class UIHelper {
 		const { uncert } = this.elements;
 		if (!uncert) return;
 
-		uncert.innerHTML = `&pm;${Math.round(accuracy)}&nbsp;m`;
+		setElementText(uncert, `±${Math.round(accuracy)}${NON_BREAKING_SPACE}m`);
 		if (accuracy > threshold) {
 			uncert.classList.add("outofrange");
 		} else {
@@ -513,9 +557,9 @@ class UIHelper {
 		if (speed !== null) {
 			const convertedSpeed = convertSpeed(speed, this.currentSpeedUnit);
 			const speedValue = Math.round(convertedSpeed);
-			speedEl.innerHTML = `${speedValue}&nbsp;${this.currentSpeedUnit}`;
+			setElementText(speedEl, formatValueWithUnit(speedValue, this.currentSpeedUnit));
 		} else {
-			speedEl.innerHTML = `?&nbsp;${this.currentSpeedUnit}`;
+			setElementText(speedEl, formatValueWithUnit('?', this.currentSpeedUnit));
 		}
 		
 		if (speed !== null && speed > threshold) {
@@ -549,7 +593,7 @@ class UIHelper {
 		if (!timestampEl) return;
 
 		const date = new Date(timestamp);
-		timestampEl.innerHTML = timeFormatter.format(date);
+		setElementText(timestampEl, timeFormatter.format(date));
 	}
 
 	/**
@@ -560,15 +604,15 @@ class UIHelper {
 
 		if (sweref.northing === 0 && sweref.easting === 0) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", { lat, lon });
-			if (swerefn) swerefn.innerHTML = UI_TEXT.NOT_AVAILABLE;
-			if (swerefe) swerefe.innerHTML = UI_TEXT.NOT_AVAILABLE;
+			setElementText(swerefn, UI_TEXT.NOT_AVAILABLE);
+			setElementText(swerefe, UI_TEXT.NOT_AVAILABLE);
 		} else {
-			if (swerefn) swerefn.innerHTML = `N&nbsp;${Math.round(sweref.northing).toString().replace(".", ",")}`;
-			if (swerefe) swerefe.innerHTML = `E&nbsp;&nbsp;${Math.round(sweref.easting).toString().replace(".", ",")}`;
+			setElementText(swerefn, formatProjectedCoordinate('N', sweref.northing, 1));
+			setElementText(swerefe, formatProjectedCoordinate('E', sweref.easting, 2));
 		}
 
-		if (wgs84n) wgs84n.innerHTML = `N&nbsp;${lat.toString().replace(".", ",")}&deg;`;
-		if (wgs84e) wgs84e.innerHTML = `E&nbsp;${lon.toString().replace(".", ",")}&deg;`;
+		setElementText(wgs84n, formatWgs84Coordinate('N', lat));
+		setElementText(wgs84e, formatWgs84Coordinate('E', lon));
 	}
 
 	/**
@@ -590,16 +634,21 @@ class UIHelper {
 	 */
 	setButtonState(state: 'active' | 'stopped', hasPosition?: boolean): void {
 		const { posbtn, stopbtn, sharebtn } = this.elements;
+		const canShare = isShareSupported();
 
 		if (state === 'active') {
 			posbtn?.setAttribute("disabled", "disabled");
 			stopbtn?.removeAttribute("disabled");
-			sharebtn?.removeAttribute("disabled");
+			if (canShare) {
+				sharebtn?.removeAttribute("disabled");
+			} else {
+				sharebtn?.setAttribute("disabled", "disabled");
+			}
 		} else {
 			stopbtn?.setAttribute("disabled", "disabled");
 			posbtn?.removeAttribute("disabled");
 			// Keep share button enabled if we have received a position
-			if (hasPosition) {
+			if (canShare && hasPosition) {
 				sharebtn?.removeAttribute("disabled");
 			} else {
 				sharebtn?.setAttribute("disabled", "disabled");
@@ -611,17 +660,19 @@ class UIHelper {
 	 * Resets UI to stopped state
 	 */
 	resetUI(): void {
-		const { speed } = this.elements;
 		this.setLoadingState(false);
 		this.setButtonState('stopped', false);
-		if (speed) {
-			speed.innerHTML = `–&nbsp;${this.currentSpeedUnit}`;
-			speed.classList.remove("outofrange");
-		}
+		this.resetSpeedDisplay();
 		const { timestamp } = this.elements;
-		if (timestamp) {
-			timestamp.innerHTML = "--:--:--";
-		}
+		setElementText(timestamp, "--:--:--");
+	}
+
+	resetSpeedDisplay(): void {
+		const { speed } = this.elements;
+		if (!speed) return;
+
+		setElementText(speed, formatValueWithUnit('–', this.currentSpeedUnit));
+		speed.classList.remove("outofrange");
 	}
 
 	/**
@@ -631,11 +682,9 @@ class UIHelper {
 	updateSpeedDisplayUnit(): void {
 		const { speed } = this.elements;
 		if (speed) {
-			// Update the unit suffix while preserving the speed value
-			// Match any of: "- m/s", "– m/s", "? m/s" (with nbsp)
-			const currentHTML = speed.innerHTML;
-			if (currentHTML.includes("&nbsp;m/s")) {
-				speed.innerHTML = currentHTML.replace("m/s", this.currentSpeedUnit);
+			const currentText = speed.textContent ?? '';
+			if (SPEED_UNIT_PATTERN.test(currentText)) {
+				setElementText(speed, currentText.replace(SPEED_UNIT_PATTERN, this.currentSpeedUnit));
 			}
 		}
 	}
@@ -649,7 +698,7 @@ class UIHelper {
 		const nText = swerefn?.textContent ?? '';
 		const eText = swerefe?.textContent ?? '';
 		// Remove the extra space after "E" that's used for alignment
-		const eTextNormalized = eText.replace(/^E\s{2}/, 'E ');
+		const eTextNormalized = eText.replace(/^E[\s\u00A0]{2}/u, 'E ');
 		return `${nText} ${eTextNormalized} (SWEREF 99 TM)`;
 	}
 
@@ -702,6 +751,19 @@ function startSpinnerTimeout(): void {
 		uiHelper.setLoadingState(true);
 		spinnerTimeout = null;
 	}, SPINNER_DELAY_MS);
+}
+
+function startGeolocationWatch(onError: PositionErrorCallback): void {
+	if (watchID !== null) {
+		return;
+	}
+
+	watchID = navigator.geolocation.watchPosition(
+		handlePositionSuccess,
+		onError,
+		GEOLOCATION_OPTIONS
+	);
+	startSpinnerTimeout();
 }
 
 /**
@@ -788,28 +850,14 @@ function posInit(event: Event): void {
 		navigator.geolocation.getCurrentPosition(
 			() => {
 				// Geolocation is available, proceed with watch
-				if (watchID === null) {
-					watchID = navigator.geolocation.watchPosition(
-						handlePositionSuccess, 
-						handlePositionRestoreError, 
-						GEOLOCATION_OPTIONS
-					);
-					startSpinnerTimeout();
-				}
+				startGeolocationWatch(handlePositionRestoreError);
 			},
 			handlePositionRestoreError,
 			GEOLOCATION_TEST_OPTIONS
 		);
 	} else {
 		// Regular positioning start
-		if (watchID === null) {
-			watchID = navigator.geolocation.watchPosition(
-				handlePositionSuccess, 
-				handlePositionError, 
-				GEOLOCATION_OPTIONS
-			);
-			startSpinnerTimeout();
-		}
+		startGeolocationWatch(handlePositionError);
 	}
 }
 
@@ -827,12 +875,6 @@ function handleVisibilityChange(): void {
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
 		stopGeolocationWatch();
 		uiHelper.resetUI();
-		try {
-			if (watchID !== null) {
-				navigator.geolocation.clearWatch(watchID);
-				watchID = null;
-			}
-		} catch (e) {}
 	} else if (!document.hidden && uiHelper.isPositioningUIActive()) {
 		// UI indicates positioning should be active, check if watchID is valid
 		if (watchID === null) {
@@ -984,10 +1026,7 @@ function initializeEventListeners(): void {
 	stopbtn?.addEventListener("click", () => {
 		stopGeolocationWatch();
 		uiHelper.setButtonState('stopped', hasReceivedPosition);
-		if (speed) {
-			speed.innerHTML = `–&nbsp;${uiHelper.getCurrentSpeedUnit()}`;
-			speed.classList.remove("outofrange");
-		}
+		uiHelper.resetSpeedDisplay();
 	});
 
 	// Speed unit cycling
@@ -997,14 +1036,27 @@ function initializeEventListeners(): void {
 
 	// Share button
 	sharebtn?.addEventListener("click", async () => {
+		if (!isShareSupported()) {
+			return;
+		}
+
 		try {
 			const shareData = {
 				title: "Position",
 				text: uiHelper.getShareText()
 			};
+
+			if (typeof navigator.canShare === 'function' && !navigator.canShare(shareData)) {
+				console.warn("Delning stöds inte för dessa data");
+				return;
+			}
+
 			await navigator.share(shareData);
-		} catch (err: any) {
-			console.log("Kunde inte dela: ", err.message);
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') {
+				return;
+			}
+			console.warn("Kunde inte dela:", error);
 		}
 	});
 
@@ -1031,6 +1083,8 @@ function initializeEventListeners(): void {
 				});
 		});
 	}
+
+	notificationDialog?.addEventListener('click', handleNotificationBackdropClick);
 
 	// Check geolocation availability
 	if (!("geolocation" in navigator)) {
