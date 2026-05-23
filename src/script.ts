@@ -154,6 +154,8 @@ const SPEED_UNIT_ORDER: SpeedUnit[] = ['m/s', 'km/h', 'mph'];
  */
 const SPEED_UNIT_STORAGE_KEY = 'sweref99-speed-unit';
 const NON_BREAKING_SPACE = '\u00A0';
+const DECIMAL_SEPARATOR_PATTERN = /\./g;
+const SPEED_UNIT_PATTERN = /(m\/s|km\/h|mph)$/u;
 const WGS84_PROJECTION = 'EPSG:4326';
 const SWEREF99_PROJECTION = 'EPSG:3006';
 const SWEREF99_TM_PROJ_DEFINITION = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
@@ -198,11 +200,11 @@ function formatValueWithUnit(value: number | string, unit: SpeedUnit): string {
 }
 
 function formatProjectedCoordinate(prefix: 'N' | 'E', value: number, spacing: 1 | 2): string {
-	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value).toString().replace(".", ",")}`;
+	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value).toString().replace(DECIMAL_SEPARATOR_PATTERN, ",")}`;
 }
 
 function formatWgs84Coordinate(prefix: 'N' | 'E', value: number): string {
-	return `${prefix}${NON_BREAKING_SPACE}${value.toString().replace(".", ",")}°`;
+	return `${prefix}${NON_BREAKING_SPACE}${value.toString().replace(DECIMAL_SEPARATOR_PATTERN, ",")}°`;
 }
 
 function isShareSupported(): boolean {
@@ -295,7 +297,7 @@ let isSwerefProjectionDefined = false;
 
 function ensureSwerefProjection(): boolean {
 	if (typeof proj4 === 'undefined') {
-		console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
+		console.warn("SWEREF 99 transformation not available - ensure proj4.js loads before script.js");
 		return false;
 	}
 
@@ -389,6 +391,7 @@ const notificationContent = document.getElementById("notification-content") as H
 const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
 const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
 const notificationCountdown = document.getElementById("notification-countdown") as SVGCircleElement | null;
+// Only one notification timer should be active at a time.
 let notificationTimeout: number | null = null;
 
 // Skapa tidsstämpelformatterare en gång för återanvändning
@@ -678,8 +681,8 @@ class UIHelper {
 		const { speed } = this.elements;
 		if (speed) {
 			const currentText = speed.textContent ?? '';
-			if (/(m\/s|km\/h|mph)$/u.test(currentText)) {
-				setElementText(speed, currentText.replace(/(m\/s|km\/h|mph)$/u, this.currentSpeedUnit));
+			if (SPEED_UNIT_PATTERN.test(currentText)) {
+				setElementText(speed, currentText.replace(SPEED_UNIT_PATTERN, this.currentSpeedUnit));
 			}
 		}
 	}
