@@ -25,8 +25,6 @@ interface Itrf2Etrs89Correction {
  */
 type SpeedUnit = 'm/s' | 'km/h' | 'mph';
 
-type GeolocationErrorHandler = PositionErrorCallback;
-
 // ============================================================================
 // CONFIGURATION CONSTANTS
 // ============================================================================
@@ -200,7 +198,7 @@ function formatValueWithUnit(value: number | string, unit: SpeedUnit): string {
 }
 
 function formatProjectedCoordinate(prefix: 'N' | 'E', value: number, spacing: 1 | 2): string {
-	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value).toString().replace(DECIMAL_SEPARATOR_PATTERN, ",")}`;
+	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value)}`;
 }
 
 function formatWgs84Coordinate(prefix: 'N' | 'E', value: number): string {
@@ -295,6 +293,10 @@ function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 const itrf2Etrs89Correction: Itrf2Etrs89Correction = calculateItrf2Etrs89Correction();
 let isSwerefProjectionDefined = false;
 
+/**
+ * Ensures the SWEREF 99 projection definition is registered before transforms run.
+ * @returns true when proj4 is ready to transform coordinates
+ */
 function ensureSwerefProjection(): boolean {
 	if (typeof proj4 === 'undefined') {
 		console.warn("SWEREF 99 transformation not available - ensure proj4.js loads before script.js");
@@ -751,7 +753,7 @@ function startSpinnerTimeout(): void {
 	}, SPINNER_DELAY_MS);
 }
 
-function startGeolocationWatch(onError: GeolocationErrorHandler): void {
+function startGeolocationWatch(onError: PositionErrorCallback): void {
 	if (watchID !== null) {
 		return;
 	}
@@ -1045,7 +1047,7 @@ function initializeEventListeners(): void {
 			};
 
 			if (typeof navigator.canShare === 'function' && !navigator.canShare(shareData)) {
-				console.warn("Kunde inte dela: delning stöds inte för dessa data");
+				console.warn("Delning stöds inte för dessa data");
 				return;
 			}
 
