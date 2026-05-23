@@ -121,7 +121,7 @@ const GEOLOCATION_TEST_OPTIONS = {
 const UI_TEXT = {
 	ERROR_NO_POSITION: "Fel: Ingen position tillgänglig. Kontrollera inställningarna för platstjänster i operativsystem och webbläsare!",
 	ERROR_NO_POSITION_TITLE: "Positioneringsfel",
-	NOT_AVAILABLE: `Ej${NON_BREAKING_SPACE}tillgängligt`,
+	NOT_AVAILABLE: 'Ej\u00A0tillgängligt',
 	WARNING_NOT_IN_SWEDEN: "Varning: SWEREF 99 är bara användbart i Sverige.",
 	WARNING_NOT_IN_SWEDEN_TITLE: "Position utanför Sverige",
 	HELP_URL: "https://sweref99.nu/om.html"
@@ -380,6 +380,7 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 // DOM ELEMENTS AND UI REFERENCES
 // ============================================================================
 
+const speed = document.getElementById("speed");
 const posbtn = document.getElementById("pos-btn");
 const sharebtn = document.getElementById("share-btn");
 const stopbtn = document.getElementById("stop-btn");
