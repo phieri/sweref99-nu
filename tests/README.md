@@ -8,6 +8,7 @@ The test suite validates critical functionality including:
 - **Constants validation**: SWEDEN_BOUNDS, ACCURACY_THRESHOLD_METERS, SPEED_THRESHOLD_MS
 - **PROJ definition verification**: SWEREF 99 TM (EPSG:3006) coordinate system definition
 - **Coordinate transformation**: WGS84 to SWEREF 99 TM conversion
+- **Input validation**: Rejects invalid coordinates before projection attempts
 - **ITRF to ETRS89 correction**: Continental drift calculations
 - **Boundary validation**: Checks if coordinates are within Swedish territory
 - **Integration scenarios**: Complete workflows combining multiple functions

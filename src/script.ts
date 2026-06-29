@@ -167,8 +167,24 @@ const SWEREF99_TM_PROJ_DEFINITION = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,
  * @param pos - GeolocationPosition to check
  * @returns true if position is within Sweden's approximate bounds
  */
+function isValidLatitude(latitude: number): boolean {
+	return Number.isFinite(latitude) && latitude >= -90 && latitude <= 90;
+}
+
+function isValidLongitude(longitude: number): boolean {
+	return Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+}
+
+function formatCoordinateValue(value: number): number | string {
+	return Number.isFinite(value) ? value : 'ogiltigt';
+}
+
 function isInSweden(pos: GeolocationPosition): boolean {
 	const { latitude, longitude } = pos.coords;
+	if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) {
+		return false;
+	}
+
 	return (
 		latitude >= SWEDEN_BOUNDS.MIN_LATITUDE &&
 		latitude <= SWEDEN_BOUNDS.MAX_LATITUDE &&
@@ -224,17 +240,33 @@ function getNextSpeedUnit(currentUnit: SpeedUnit): SpeedUnit {
  * Get the saved speed unit preference from localStorage
  * @returns Saved speed unit or default 'm/s'
  */
-function getSavedSpeedUnit(): SpeedUnit {
+function getStoredItem(key: string): string | null {
 	try {
 		if (typeof localStorage === 'undefined') {
-			return 'm/s';
+			return null;
 		}
-		const saved = localStorage.getItem(SPEED_UNIT_STORAGE_KEY);
-		if (saved && SPEED_UNIT_ORDER.includes(saved as SpeedUnit)) {
-			return saved as SpeedUnit;
-		}
+		return localStorage.getItem(key);
 	} catch (error) {
-		console.warn('Failed to get saved speed unit:', error);
+		console.warn(`Failed to read storage item ${key}:`, error);
+		return null;
+	}
+}
+
+function setStoredItem(key: string, value: string): void {
+	try {
+		if (typeof localStorage === 'undefined') {
+			return;
+		}
+		localStorage.setItem(key, value);
+	} catch (error) {
+		console.warn(`Failed to write storage item ${key}:`, error);
+	}
+}
+
+function getSavedSpeedUnit(): SpeedUnit {
+	const saved = getStoredItem(SPEED_UNIT_STORAGE_KEY);
+	if (saved && SPEED_UNIT_ORDER.includes(saved as SpeedUnit)) {
+		return saved as SpeedUnit;
 	}
 	return 'm/s';
 }
@@ -244,14 +276,7 @@ function getSavedSpeedUnit(): SpeedUnit {
  * @param unit - Speed unit to save
  */
 function saveSpeedUnit(unit: SpeedUnit): void {
-	try {
-		if (typeof localStorage === 'undefined') {
-			return;
-		}
-		localStorage.setItem(SPEED_UNIT_STORAGE_KEY, unit);
-	} catch (error) {
-		console.warn('Failed to save speed unit:', error);
-	}
+	setStoredItem(SPEED_UNIT_STORAGE_KEY, unit);
 }
 
 /**
@@ -303,14 +328,22 @@ function ensureSwerefProjection(): boolean {
 		return false;
 	}
 
-	if (!isSwerefProjectionDefined) {
-		if (!proj4.defs(SWEREF99_PROJECTION)) {
-			proj4.defs(SWEREF99_PROJECTION, SWEREF99_TM_PROJ_DEFINITION);
-		}
-		isSwerefProjectionDefined = true;
+	if (isSwerefProjectionDefined) {
+		return true;
 	}
 
-	return true;
+	try {
+		const definitionExists = proj4.defs(SWEREF99_PROJECTION);
+		if (!definitionExists) {
+			proj4.defs(SWEREF99_PROJECTION, SWEREF99_TM_PROJ_DEFINITION);
+		}
+
+		isSwerefProjectionDefined = true;
+		return true;
+	} catch (error) {
+		console.warn('SWEREF 99-projektion kunde inte registreras:', error);
+		return false;
+	}
 }
 
 /**
@@ -330,8 +363,15 @@ function ensureSwerefProjection(): boolean {
  */
 function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
+		if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
+			const displayLatitude = formatCoordinateValue(lat);
+			const displayLongitude = formatCoordinateValue(lon);
+			console.warn(`Avböjer ogiltig koordinattransformation för lat=${displayLatitude}, lon=${displayLongitude}`);
+			return { northing: Number.NaN, easting: Number.NaN };
+		}
+
 		if (!ensureSwerefProjection()) {
-			return { northing: 0, easting: 0 };
+			return { northing: Number.NaN, easting: Number.NaN };
 		}
 
 		// WGS84 is built-in as 'EPSG:4326'
@@ -602,7 +642,7 @@ class UIHelper {
 	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number): void {
 		const { swerefn, swerefe, wgs84n, wgs84e } = this.elements;
 
-		if (sweref.northing === 0 && sweref.easting === 0) {
+		if (!Number.isFinite(sweref.northing) || !Number.isFinite(sweref.easting)) {
 			console.warn("SWEREF 99 coordinates unavailable for position:", { lat, lon });
 			setElementText(swerefn, UI_TEXT.NOT_AVAILABLE);
 			setElementText(swerefe, UI_TEXT.NOT_AVAILABLE);
@@ -913,11 +953,6 @@ interface DetailsState {
  */
 function saveDetailsState(): void {
 	try {
-		// Check if localStorage is available
-		if (typeof localStorage === 'undefined') {
-			return;
-		}
-
 		// Find all details elements with IDs
 		const detailsElements = document.querySelectorAll('details[id]');
 		const state: DetailsState = {};
@@ -936,8 +971,7 @@ function saveDetailsState(): void {
 			}
 		});
 
-		// Save to localStorage
-		localStorage.setItem(DETAILS_STATE_STORAGE_KEY, JSON.stringify(state));
+		setStoredItem(DETAILS_STATE_STORAGE_KEY, JSON.stringify(state));
 	} catch (error) {
 		// Silently fail if localStorage is not available or quota exceeded
 		console.warn('Failed to save details state:', error);
@@ -952,13 +986,7 @@ function saveDetailsState(): void {
  */
 function restoreDetailsState(): void {
 	try {
-		// Check if localStorage is available
-		if (typeof localStorage === 'undefined') {
-			return;
-		}
-
-		// Retrieve saved state from localStorage
-		const savedStateJson = localStorage.getItem(DETAILS_STATE_STORAGE_KEY);
+		const savedStateJson = getStoredItem(DETAILS_STATE_STORAGE_KEY);
 		if (!savedStateJson) {
 			return;
 		}
