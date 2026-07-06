@@ -40,6 +40,9 @@ jobs:
             _site/icon-192.png
             _site/icon-512.png
             _site/images/splash-iphone.png
+            _site/images/splash-iphone-plus.png
+            _site/images/splash-iphone-se.png
+            _site/images/splash-iphone-landscape.png
           key: ${{ runner.os }}-icons-${{ hashFiles('src/icon.svg') }}
       - name: Install icon generation tools
         if: steps.icon-cache.outputs.cache-hit != 'true'

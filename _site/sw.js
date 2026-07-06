@@ -18,7 +18,10 @@ const ASSETS_TO_CACHE = [
 	'/icon-192.png',
 	'/icon-512.png',
 	'/apple-touch-icon.png',
-	'/images/splash-iphone.png'
+	'/images/splash-iphone.png',
+	'/images/splash-iphone-plus.png',
+	'/images/splash-iphone-se.png',
+	'/images/splash-iphone-landscape.png'
 ];
 const PRECACHED_ASSET_PATHS = new Set(ASSETS_TO_CACHE);
 
