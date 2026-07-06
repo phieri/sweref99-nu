@@ -2,7 +2,7 @@ script.js:
 	./node_modules/.bin/tsc
 
 # Generate app icons from SVG source
-icons: _site/favicon.ico _site/apple-touch-icon.png _site/icon-192.png _site/icon-512.png
+icons: _site/favicon.ico _site/apple-touch-icon.png _site/icon-192.png _site/icon-512.png _site/images/splash-iphone.png
 
 _site/favicon.ico: src/icon.svg
 	rsvg-convert -w 32 -h 32 src/icon.svg -o /tmp/icon-32.png
@@ -19,3 +19,9 @@ _site/icon-192.png: src/icon.svg
 
 _site/icon-512.png: src/icon.svg
 	rsvg-convert -w 512 -h 512 src/icon.svg -o _site/icon-512.png
+
+_site/images/splash-iphone.png: src/icon.svg
+	mkdir -p _site/images
+	rsvg-convert -w 240 -h 240 src/icon.svg -o /tmp/splash-icon.png
+	convert -size 390x844 xc:'#006AA7' /tmp/splash-icon.png -gravity center -geometry +0-24 -composite _site/images/splash-iphone.png
+	rm /tmp/splash-icon.png

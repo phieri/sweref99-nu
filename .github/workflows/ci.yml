@@ -39,6 +39,7 @@ jobs:
             _site/apple-touch-icon.png
             _site/icon-192.png
             _site/icon-512.png
+            _site/images/splash-iphone.png
           key: ${{ runner.os }}-icons-${{ hashFiles('src/icon.svg') }}
       - name: Install icon generation tools
         if: steps.icon-cache.outputs.cache-hit != 'true'
