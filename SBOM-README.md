@@ -16,13 +16,16 @@ The project currently uses the following direct external components:
 - **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies
-- **TypeScript** (v5.9.3) - Apache License 2.0 - TypeScript compiler
+- **TypeScript** (v7.0.2) - Apache License 2.0 - TypeScript compiler
+- **@babel/core** (v8.0.1) - MIT License - Babel compiler core
+- **@babel/preset-env** (v8.0.2) - MIT License - Babel preset for environment-specific transpilation
+- **@babel/preset-typescript** (v8.0.1) - MIT License - Babel preset for TypeScript syntax
 
 ### Test Dependencies
-- **Jest** (v30.3.0) - MIT License - Test runner and assertion framework
+- **Jest** (v30.4.2) - MIT License - Test runner and assertion framework
 - **@types/jest** (v30.0.0) - MIT License - TypeScript type definitions for Jest
-- **jest-environment-jsdom** (v30.3.0) - MIT License - Browser-like test environment for Jest
-- **ts-jest** (v29.4.6) - MIT License - TypeScript transformer for Jest
+- **jest-environment-jsdom** (v30.4.1) - MIT License - Browser-like test environment for Jest
+- **babel-jest** (v30.4.1) - MIT License - Jest transformer for Babel
 
 ## License Information
 

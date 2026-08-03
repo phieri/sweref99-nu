@@ -1,5 +1,4 @@
 module.exports = {
-	preset: 'ts-jest',
 	testEnvironment: 'jsdom',
 	roots: ['<rootDir>/tests'],
 	testMatch: ['**/*.test.ts'],
@@ -11,18 +10,7 @@ module.exports = {
 	coverageReporters: ['text', 'lcov', 'html'],
 	moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 	transform: {
-		'^.+\\.ts$': ['ts-jest', {
-			tsconfig: {
-				target: 'ES2020',
-				module: 'commonjs',
-				lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-				strict: true,
-				esModuleInterop: true,
-				skipLibCheck: true,
-				isolatedModules: true,
-				ignoreDeprecations: '6.0'
-			}
-		}]
+		'^.+\\.(ts|tsx)$': 'babel-jest'
 	},
 	// Exclude src directory from test compilation
 	testPathIgnorePatterns: ['/node_modules/', '/src/']

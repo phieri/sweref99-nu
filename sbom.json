@@ -95,9 +95,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "typescript-5.9.3",
+      "bom-ref": "typescript-7.0.2",
       "name": "TypeScript",
-      "version": "5.9.3",
+      "version": "7.0.2",
       "description": "TypeScript compiler",
       "scope": "optional",
       "licenses": [
@@ -116,6 +116,69 @@
         {
           "type": "vcs",
           "url": "https://github.com/microsoft/TypeScript"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "babel-core-8.0.1",
+      "name": "@babel/core",
+      "version": "8.0.1",
+      "description": "Babel compiler core",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://babeljs.io/"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "babel-preset-env-8.0.2",
+      "name": "@babel/preset-env",
+      "version": "8.0.2",
+      "description": "Babel preset for environment-targeted transpilation",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://babeljs.io/docs/babel-preset-env"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "babel-preset-typescript-8.0.1",
+      "name": "@babel/preset-typescript",
+      "version": "8.0.1",
+      "description": "Babel preset for TypeScript syntax",
+      "scope": "optional",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://babeljs.io/docs/babel-preset-typescript"
         }
       ]
     },
@@ -142,9 +205,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "jest-30.3.0",
+      "bom-ref": "jest-30.4.2",
       "name": "jest",
-      "version": "30.3.0",
+      "version": "30.4.2",
       "description": "JavaScript testing framework",
       "scope": "optional",
       "licenses": [
@@ -163,9 +226,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "jest-environment-jsdom-30.3.0",
+      "bom-ref": "jest-environment-jsdom-30.4.1",
       "name": "jest-environment-jsdom",
-      "version": "30.3.0",
+      "version": "30.4.1",
       "description": "Browser-like jsdom environment for Jest",
       "scope": "optional",
       "licenses": [
@@ -184,10 +247,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "ts-jest-29.4.6",
-      "name": "ts-jest",
-      "version": "29.4.6",
-      "description": "TypeScript preprocessor for Jest",
+      "bom-ref": "babel-jest-30.4.1",
+      "name": "babel-jest",
+      "version": "30.4.1",
+      "description": "Jest transformer for Babel",
       "scope": "optional",
       "licenses": [
         {
@@ -199,7 +262,7 @@
       "externalReferences": [
         {
           "type": "website",
-          "url": "https://www.npmjs.com/package/ts-jest"
+          "url": "https://www.npmjs.com/package/babel-jest"
         }
       ]
     }
@@ -210,11 +273,14 @@
       "dependsOn": [
         "proj4js-2.20.6",
         "picocss-2.1.1",
-        "typescript-5.9.3",
+        "typescript-7.0.2",
+        "babel-core-8.0.1",
+        "babel-preset-env-8.0.2",
+        "babel-preset-typescript-8.0.1",
         "types-jest-30.0.0",
-        "jest-30.3.0",
-        "jest-environment-jsdom-30.3.0",
-        "ts-jest-29.4.6"
+        "jest-30.4.2",
+        "jest-environment-jsdom-30.4.1",
+        "babel-jest-30.4.1"
       ]
     }
   ]
