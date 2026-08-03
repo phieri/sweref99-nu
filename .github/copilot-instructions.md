@@ -55,7 +55,7 @@ tsc
   - `proj4.js` (v2.20.6) - Coordinate transformation library
   - `pico.min.css` (v2.1.1) - CSS framework
 - **Build dependencies**:
-  - TypeScript (v5.9.2) - Installed globally via npm
+  - TypeScript (v7.0.2) - Managed by npm via the project devDependencies
 - Dependencies are downloaded during CI/CD pipeline, not committed to repo
 - See `SBOM-README.md` for complete Software Bill of Materials
 

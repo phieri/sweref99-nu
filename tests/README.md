@@ -165,8 +165,8 @@ When modifying `src/script.ts`:
 
 ## Test Framework
 
-- **Framework**: Jest 30.3.0
-- **TypeScript Support**: ts-jest 29.4.6
+- **Framework**: Jest 30.4.2
+- **TypeScript Support**: Babel + TypeScript preset (no ts-jest)
 - **Environment**: jsdom (simulates browser DOM)
 - **Assertion Library**: Jest's built-in expect
 

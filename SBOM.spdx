@@ -43,14 +43,50 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40picocss/pico@2.1.1
 # TypeScript
 PackageName: TypeScript
 SPDXID: SPDXRef-Package-TypeScript
-PackageVersion: 5.9.3
+PackageVersion: 7.0.2
 PackageSupplier: Organization: Microsoft Corporation
 PackageDownloadLocation: https://github.com/microsoft/TypeScript
 FilesAnalyzed: false
 PackageLicenseConcluded: Apache-2.0
 PackageLicenseDeclared: Apache-2.0
 PackageCopyrightText: Copyright Microsoft Corporation
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@5.9.3
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@7.0.2
+
+# @babel/core
+PackageName: @babel/core
+SPDXID: SPDXRef-Package-babel-core
+PackageVersion: 8.0.1
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: https://www.npmjs.com/package/@babel/core
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40babel/core@8.0.1
+
+# @babel/preset-env
+PackageName: @babel/preset-env
+SPDXID: SPDXRef-Package-babel-preset-env
+PackageVersion: 8.0.2
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: https://www.npmjs.com/package/@babel/preset-env
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40babel/preset-env@8.0.2
+
+# @babel/preset-typescript
+PackageName: @babel/preset-typescript
+SPDXID: SPDXRef-Package-babel-preset-typescript
+PackageVersion: 8.0.1
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: https://www.npmjs.com/package/@babel/preset-typescript
+FilesAnalyzed: false
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: NOASSERTION
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40babel/preset-typescript@8.0.1
 
 # @types/jest
 PackageName: @types/jest
@@ -67,44 +103,47 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40types/jest@30.0.0
 # Jest
 PackageName: jest
 SPDXID: SPDXRef-Package-jest
-PackageVersion: 30.3.0
+PackageVersion: 30.4.2
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/jest
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest@30.3.0
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest@30.4.2
 
 # jest-environment-jsdom
 PackageName: jest-environment-jsdom
 SPDXID: SPDXRef-Package-jest-environment-jsdom
-PackageVersion: 30.3.0
+PackageVersion: 30.4.1
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/jest-environment-jsdom
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest-environment-jsdom@30.3.0
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest-environment-jsdom@30.4.1
 
-# ts-jest
-PackageName: ts-jest
-SPDXID: SPDXRef-Package-ts-jest
-PackageVersion: 29.4.6
+# babel-jest
+PackageName: babel-jest
+SPDXID: SPDXRef-Package-babel-jest
+PackageVersion: 30.4.1
 PackageSupplier: NOASSERTION
-PackageDownloadLocation: https://www.npmjs.com/package/ts-jest
+PackageDownloadLocation: https://www.npmjs.com/package/babel-jest
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/ts-jest@29.4.6
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/babel-jest@30.4.1
 
 # Relationships
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ4JS
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
 Relationship: SPDXRef-Package-TypeScript BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-babel-core BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-babel-preset-env BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-babel-preset-typescript BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
 Relationship: SPDXRef-Package-types-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
 Relationship: SPDXRef-Package-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
 Relationship: SPDXRef-Package-jest-environment-jsdom TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
-Relationship: SPDXRef-Package-ts-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
+Relationship: SPDXRef-Package-babel-jest TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
