@@ -19,14 +19,14 @@ PackageCopyrightText: NOASSERTION
 # PROJ4JS Library
 PackageName: PROJ4JS
 SPDXID: SPDXRef-Package-PROJ4JS
-PackageVersion: 2.20.6
+PackageVersion: 2.21.0
 PackageSupplier: Person: Mike Adair et al.
-PackageDownloadLocation: https://github.com/proj4js/proj4js
+PackageDownloadLocation: https://github.com/proj4js/proj4js/releases/download/v2.21.0/dist.zip
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: Copyright (c) 2014, Mike Adair et al.
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/proj4@2.20.6
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/proj4@2.21.0
 
 # Pico.css
 PackageName: Pico.css
