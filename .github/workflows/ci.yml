@@ -61,7 +61,39 @@ jobs:
           echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl --fail --show-error --location -o _site/pico.min.css https://raw.githubusercontent.com/picocss/pico/v2.1.1/css/pico.min.css
-          curl --fail --show-error --location -o _site/proj4.js https://raw.githubusercontent.com/proj4js/proj4js/v2.20.6/dist/proj4.js
+          release_tag='v2.21.0'
+          release_asset_url="https://github.com/proj4js/proj4js/releases/download/${release_tag}/dist.zip"
+          echo "Downloading PROJ4JS release $release_tag"
+          curl --fail --show-error --location -o /tmp/proj4-dist.zip "$release_asset_url"
+          env release_tag="$release_tag" python - <<'PY'
+          import os
+          import shutil
+          import zipfile
+
+          with zipfile.ZipFile("/tmp/proj4-dist.zip") as archive:
+              matches = [
+                  name
+                  for name in archive.namelist()
+                  if name in {"proj4.js", "dist/proj4.js"} or name.endswith("/proj4.js")
+              ]
+              if not matches:
+                  raise SystemExit("Could not locate proj4.js inside the dist.zip archive")
+
+              preferred = next((name for name in matches if name == "dist/proj4.js"), None)
+              if preferred is None:
+                  preferred = next((name for name in matches if name == "proj4.js"), None)
+              if preferred is None and len(matches) == 1:
+                  preferred = matches[0]
+              if preferred is None:
+                  raise SystemExit("Found multiple proj4.js entries but none matched a known path")
+
+              archive.extract(preferred, "/tmp/proj4-release")
+              extracted_path = os.path.join("/tmp/proj4-release", preferred)
+
+          os.makedirs("_site", exist_ok=True)
+          shutil.copyfile(extracted_path, "_site/proj4.js")
+          print(f"Downloaded PROJ4JS release asset ({os.environ['release_tag']})")
+          PY
           echo "=== Final _site contents ==="
           ls -la _site/
       - uses: actions/upload-pages-artifact@v5
