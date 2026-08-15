@@ -1,6 +1,6 @@
 # SWEREF 99 Nu
 
-> SWEREF 99 Nu is a Swedish progressive web app that shows the user's current GPS position in SWEREF 99 TM, works offline after the first visit, and compensates for ITRF/ETRS89 continental drift.
+> SWEREF 99 Nu is a Swedish progressive web app that shows the user's current GNSS position in SWEREF 99 TM, works offline after the first visit, and compensates for ITRF/ETRS89 continental drift.
 
 Important notes:
 

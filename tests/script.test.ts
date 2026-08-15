@@ -316,8 +316,8 @@ describe('ACCURACY_THRESHOLD_METERS Constant', () => {
 		expect(TestConstants.ACCURACY_THRESHOLD_METERS).toBeGreaterThan(0);
 	});
 
-	test('should be appropriate for smartphone GPS accuracy', () => {
-		// Smartphone GPS typically achieves 3-5m in optimal conditions
+	test('should be appropriate for smartphone GNSS accuracy', () => {
+		// Smartphone GNSS typically achieves 3-5m in optimal conditions
 		expect(TestConstants.ACCURACY_THRESHOLD_METERS).toBeGreaterThanOrEqual(3);
 		expect(TestConstants.ACCURACY_THRESHOLD_METERS).toBeLessThanOrEqual(10);
 	});

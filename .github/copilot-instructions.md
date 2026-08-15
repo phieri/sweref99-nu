@@ -1,7 +1,7 @@
 # Copilot Instructions for sweref99-nu
 
 ## Repository Overview
-This is a Swedish Progressive Web App (PWA) that shows GPS coordinates in SWEREF 99 TM format. It's a lightweight web application for Swedish coordinate system conversion.
+This is a Swedish Progressive Web App (PWA) that shows GNSS-derived coordinates in SWEREF 99 TM format. It's a lightweight web application for Swedish coordinate system conversion.
 
 ## Technology Stack
 - **Frontend**: TypeScript, HTML, CSS with Pico.css framework

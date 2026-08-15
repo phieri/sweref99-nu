@@ -3,7 +3,7 @@
 PWA for showing current position in SWEREF 99 TM. Works offline after first visit.
 
 ## Features
-- Shows GPS coordinates in SWEREF 99 TM format
+- Shows GNSS-derived coordinates in SWEREF 99 TM format
 - Works offline with ServiceWorker caching
 - Compensates for ITRF/ETRS89 continental drift
 

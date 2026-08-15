@@ -1,7 +1,7 @@
 {
   "name": "sweref99-nu",
   "version": "1.0.0",
-  "description": "Swedish Progressive Web App for GPS coordinates in SWEREF 99 TM format",
+  "description": "Swedish Progressive Web App for GNSS coordinates in SWEREF 99 TM format",
   "private": true,
   "scripts": {
     "test": "jest",
