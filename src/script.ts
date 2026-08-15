@@ -42,21 +42,21 @@ const SWEDEN_BOUNDS = {
 
 /**
  * Position accuracy threshold (meters)
- * Smartphone GPS typically achieves 3-5m accuracy in optimal conditions and 10-20m in real-world
+ * Smartphone GNSS typically achieves 3-5m accuracy in optimal conditions and 10-20m in real-world
  * scenarios with signal obstructions. SWEREF 99 transformation accuracy is within 1m.
- * A 5m threshold represents typical optimal smartphone GPS accuracy and is appropriate for
+ * A 5m threshold represents typical optimal smartphone GNSS accuracy and is appropriate for
  * general navigation and coordinate display purposes.
- * Sources: Smartphone GNSS research (Link et al., 2025; DXOMark GPS testing)
+ * Sources: Smartphone GNSS research (Link et al., 2025; DXOMark GNSS testing)
  */
 const ACCURACY_THRESHOLD_METERS: number = 5;
 
 /**
  * Speed threshold (m/s) for distinguishing stationary/walking from faster movement
- * Typical pedestrian walking speed ranges from 1.1-1.4 m/s (4-5 km/h). GPS positioning
+ * Typical pedestrian walking speed ranges from 1.1-1.4 m/s (4-5 km/h). GNSS positioning
  * when stationary can show spurious movement due to signal noise. A threshold of 1.4 m/s
  * corresponds to the upper end of normal walking speed and effectively distinguishes
  * between pedestrian movement and faster travel (cycling, driving, etc.).
- * Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GPS accuracy studies
+ * Sources: Pedestrian speed analysis (MDPI Sustainability, 2024); GNSS accuracy studies
  */
 const SPEED_THRESHOLD_MS: number = 1.4;
 
@@ -82,7 +82,7 @@ const SWEREF99_EPOCH: number = 1999.5;
  * (ETRS89 fixed at epoch 1999.5).
  * 
  * These values are used to calculate drift correction between the moving ITRF
- * frame (used by GPS/WGS84) and the fixed ETRS89 frame (used by SWEREF 99).
+ * frame (used by GNSS/WGS84) and the fixed ETRS89 frame (used by SWEREF 99).
  * 
  * Values verified against:
  * - EUREF Technical Notes on European plate motion
@@ -953,23 +953,12 @@ interface DetailsState {
  */
 function saveDetailsState(): void {
 	try {
-		// Find all details elements with IDs
-		const detailsElements = document.querySelectorAll('details[id]');
-		const state: DetailsState = {};
-		
-		// Track up to MAX_DETAILS_TO_TRACK elements
-		let count = 0;
-		detailsElements.forEach((element) => {
-			if (count >= MAX_DETAILS_TO_TRACK) {
-				return;
-			}
-			
-			const detailsElement = element as HTMLDetailsElement;
-			if (detailsElement.id) {
-				state[detailsElement.id] = detailsElement.open;
-				count++;
-			}
-		});
+		const detailsElements = [...document.querySelectorAll<HTMLDetailsElement>('details[id]')]
+			.filter(({ id }) => id.length > 0)
+			.slice(0, MAX_DETAILS_TO_TRACK);
+		const state: DetailsState = Object.fromEntries(
+			detailsElements.map(({ id, open }) => [id, open])
+		);
 
 		setStoredItem(DETAILS_STATE_STORAGE_KEY, JSON.stringify(state));
 	} catch (error) {
@@ -991,16 +980,13 @@ function restoreDetailsState(): void {
 			return;
 		}
 
-		const savedState: DetailsState = JSON.parse(savedStateJson);
-
-		// Apply saved state to details elements
-		Object.keys(savedState).forEach((id) => {
+		const savedState = JSON.parse(savedStateJson) as Partial<DetailsState>;
+		for (const [id, isOpen] of Object.entries(savedState)) {
 			const element = document.getElementById(id);
-			if (element && element.tagName === 'DETAILS') {
-				const detailsElement = element as HTMLDetailsElement;
-				detailsElement.open = savedState[id];
+			if (element instanceof HTMLDetailsElement) {
+				element.open = Boolean(isOpen);
 			}
-		});
+		}
 	} catch (error) {
 		// Silently fail if localStorage is not available or data is corrupted
 		console.warn('Failed to restore details state:', error);
@@ -1115,7 +1101,8 @@ function initializeEventListeners(): void {
 	notificationDialog?.addEventListener('click', handleNotificationBackdropClick);
 
 	// Check geolocation availability
-	if (!("geolocation" in navigator)) {
+	const geolocationAvailable = 'geolocation' in navigator;
+	if (!geolocationAvailable) {
 		showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 	} else {
 		posbtn?.removeAttribute("disabled");

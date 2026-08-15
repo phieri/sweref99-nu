@@ -60,8 +60,8 @@ Tests boundary validation for Swedish territory:
 - **Outside Sweden**: Non-Swedish locations (Berlin, London, New York)
 
 #### 3. ACCURACY_THRESHOLD_METERS Constant (8 tests)
-Validates GPS accuracy threshold (5 meters):
-- Appropriate for smartphone GPS accuracy (3-5m optimal)
+Validates GNSS accuracy threshold (5 meters):
+- Appropriate for smartphone GNSS accuracy (3-5m optimal)
 - Usage scenarios from good (3m) to poor (20m) accuracy
 
 #### 4. SPEED_THRESHOLD_MS Constant (8 tests)

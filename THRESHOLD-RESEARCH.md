@@ -1,4 +1,4 @@
-# GPS Threshold Research and Documentation
+# GNSS Threshold Research and Documentation
 
 This document explains the scientifically sound values chosen for the position accuracy and speed thresholds used in the sweref99-nu application.
 
@@ -8,25 +8,25 @@ This document explains the scientifically sound values chosen for the position a
 
 ### Scientific Basis
 
-Smartphone GPS accuracy varies significantly based on environmental conditions and hardware quality. Research shows:
+Smartphone GNSS accuracy varies significantly based on environmental conditions and hardware quality. Research shows:
 
 1. **Optimal Conditions**: Modern smartphones typically achieve 3-5 meters positional accuracy when they have clear view of the sky and good satellite geometry.
 
 2. **Real-world Conditions**: In typical urban environments with buildings, trees, or other obstructions, accuracy degrades to 10-20 meters.
 
-3. **SWEREF 99 Transformation**: The transformation between WGS 84 (used by GPS) and SWEREF 99 TM maintains accuracy within 1 meter, as specified by Lantmäteriet.
+3. **SWEREF 99 Transformation**: The transformation between WGS 84 (used by GNSS) and SWEREF 99 TM maintains accuracy within 1 meter, as specified by Lantmäteriet.
 
 4. **Measurement Standard Deviation**: Studies show positional standard deviation ranging from 1.8 to 2.2 meters depending on observation mode.
 
 ### Rationale
 
-The 5-meter threshold represents typical **optimal** smartphone GPS accuracy. This value:
+The 5-meter threshold represents typical **optimal** smartphone GNSS accuracy. This value:
 - Is appropriate for general navigation and coordinate display purposes
 - Provides a reasonable indication of positioning quality to users
 - Marks the boundary between good and degraded signal conditions
 - Aligns with the app's use case for fieldwork, navigation, and casual coordinate determination
 
-Values below 5m indicate good GPS signal quality, while values above suggest the user should seek better conditions (e.g., moving away from obstructions) for more reliable coordinates.
+Values below 5m indicate good GNSS signal quality, while values above suggest the user should seek better conditions (e.g., moving away from obstructions) for more reliable coordinates.
 
 ### Sources
 
@@ -45,9 +45,9 @@ The speed threshold needs to distinguish between stationary or slowly moving use
 
 1. **Pedestrian Walking Speeds**: Research shows typical pedestrian walking speeds range from 1.1 to 1.4 m/s (4-5 km/h).
 
-2. **GPS Noise When Stationary**: When a device is stationary, GPS positioning errors cause apparent movement. The position "drifts" due to signal noise, creating spurious velocity readings typically on the order of 0.5-1.0 m/s.
+2. **GNSS Noise When Stationary**: When a device is stationary, GNSS positioning errors cause apparent movement. The position "drifts" due to signal noise, creating spurious velocity readings typically on the order of 0.5-1.0 m/s.
 
-3. **Speed Measurement Accuracy**: GPS speed accuracy degrades at low velocities. The error is relatively higher for pedestrian speeds compared to vehicular speeds.
+3. **Speed Measurement Accuracy**: GNSS speed accuracy degrades at low velocities. The error is relatively higher for pedestrian speeds compared to vehicular speeds.
 
 4. **Use Cases**: The application needs to indicate when position updates might be unreliable due to movement. Fast movement (>1.4 m/s) can indicate:
    - User is cycling or in a vehicle
@@ -59,7 +59,7 @@ The speed threshold needs to distinguish between stationary or slowly moving use
 The 1.4 m/s threshold:
 - Represents the upper bound of normal walking speed
 - Effectively distinguishes walking from faster movement modes
-- Reduces false positives from GPS noise when stationary
+- Reduces false positives from GNSS noise when stationary
 - Provides useful feedback when the user is moving too fast for reliable coordinate work
 
 The "outofrange" indicator helps users understand when their movement speed may affect the usefulness of the displayed coordinates.
@@ -83,9 +83,9 @@ When either threshold is exceeded, the corresponding display element receives th
 
 ## Future Considerations
 
-These thresholds were chosen based on current (2025) smartphone GPS technology and typical use cases. They may need adjustment if:
+These thresholds were chosen based on current (2025) smartphone GNSS technology and typical use cases. They may need adjustment if:
 
-1. Smartphone GPS technology improves significantly (e.g., widespread adoption of multi-frequency GNSS)
+1. Smartphone GNSS technology improves significantly (e.g., widespread adoption of multi-frequency GNSS)
 2. User feedback indicates the thresholds are not optimal for real-world usage
 3. The application's use cases change (e.g., requiring higher precision)
 4. New research provides better insights into optimal threshold values

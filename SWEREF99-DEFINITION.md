@@ -77,7 +77,7 @@ Provides the canonical PROJ4 string:
 ## Continental Drift Correction
 
 ### Issue
-WGS84 coordinates from GPS are realized through the International Terrestrial Reference Frame (ITRF), which tracks current tectonic plate positions. SWEREF 99 is based on ETRS89 fixed at epoch 1999.5, meaning European plate movement is "frozen" at that date.
+WGS84 coordinates from GNSS are realized through the International Terrestrial Reference Frame (ITRF), which tracks current tectonic plate positions. SWEREF 99 is based on ETRS89 fixed at epoch 1999.5, meaning European plate movement is "frozen" at that date.
 
 ### Solution
 The application implements time-dependent correction for continental drift:
