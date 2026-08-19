@@ -29,13 +29,19 @@ jobs:
           restore-keys: |
             lychee-cache-
 
+      - name: Generate static assets used by the site
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -q -y librsvg2-bin imagemagick
+          make icons
+
       - name: Check links with lychee
         uses: lycheeverse/lychee-action@v2
         with:
-          # Check all markdown and HTML files
+          # Check all markdown and HTML files against the generated site root.
           args: >-
             --verbose --no-progress --accept 200,204,403,429
-            --cache --base https://sweref99.nu/
+            --cache --base-url https://sweref99.nu/ --root-dir "$GITHUB_WORKSPACE/_site"
             --exclude '\.md$'
             '**/*.md' '**/*.html'
           # Fail workflow on broken links
