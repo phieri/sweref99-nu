@@ -32,11 +32,12 @@ jobs:
       - name: Check links with lychee
         uses: lycheeverse/lychee-action@v2
         with:
-          # Check all markdown and HTML files
+          # Check repo markdown and HTML files, while excluding generated-only site assets.
           args: >-
             --verbose --no-progress --accept 200,204,403,429
-            --cache --base https://sweref99.nu/
+            --cache --base-url https://sweref99.nu/ --root-dir "$GITHUB_WORKSPACE/_site"
             --exclude '\.md$'
+            --exclude '^(https://sweref99.nu/)?(app\.webmanifest|favicon\.ico|icon-192\.png|icon-512\.png|apple-touch-icon\.png|pico\.min\.css|stil\.css|images/splash-iphone.*)$'
             '**/*.md' '**/*.html'
           # Fail workflow on broken links
           fail: true
