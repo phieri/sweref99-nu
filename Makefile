@@ -10,9 +10,13 @@ icons: \
 	_site/icon-192.png \
 	_site/icon-512.png \
 	_site/images/splash-iphone.png \
+	_site/images/splash-iphone-pro.png \
 	_site/images/splash-iphone-plus.png \
+	_site/images/splash-iphone-pro-max.png \
 	_site/images/splash-iphone-se.png \
-	_site/images/splash-iphone-landscape.png
+	_site/images/splash-iphone-landscape.png \
+	_site/images/splash-iphone-landscape-pro.png \
+	_site/images/splash-iphone-landscape-pro-max.png
 
 _site/favicon.ico: src/icon.svg
 	rsvg-convert -w 32 -h 32 src/icon.svg -o /tmp/icon-32.png
@@ -36,10 +40,22 @@ _site/images/splash-iphone.png: src/icon.svg
 	convert -size 390x844 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-24 -composite _site/images/splash-iphone.png
 	rm /tmp/splash-icon.png
 
+_site/images/splash-iphone-pro.png: src/icon.svg
+	mkdir -p _site/images
+	rsvg-convert -w 250 -h 250 src/icon.svg -o /tmp/splash-icon.png
+	convert -size 393x852 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-28 -composite _site/images/splash-iphone-pro.png
+	rm /tmp/splash-icon.png
+
 _site/images/splash-iphone-plus.png: src/icon.svg
 	mkdir -p _site/images
 	rsvg-convert -w 260 -h 260 src/icon.svg -o /tmp/splash-icon.png
 	convert -size 428x926 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-28 -composite _site/images/splash-iphone-plus.png
+	rm /tmp/splash-icon.png
+
+_site/images/splash-iphone-pro-max.png: src/icon.svg
+	mkdir -p _site/images
+	rsvg-convert -w 270 -h 270 src/icon.svg -o /tmp/splash-icon.png
+	convert -size 430x932 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-30 -composite _site/images/splash-iphone-pro-max.png
 	rm /tmp/splash-icon.png
 
 _site/images/splash-iphone-se.png: src/icon.svg
@@ -52,4 +68,16 @@ _site/images/splash-iphone-landscape.png: src/icon.svg
 	mkdir -p _site/images
 	rsvg-convert -w 220 -h 220 src/icon.svg -o /tmp/splash-icon.png
 	convert -size 844x390 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-12 -composite _site/images/splash-iphone-landscape.png
+	rm /tmp/splash-icon.png
+
+_site/images/splash-iphone-landscape-pro.png: src/icon.svg
+	mkdir -p _site/images
+	rsvg-convert -w 220 -h 220 src/icon.svg -o /tmp/splash-icon.png
+	convert -size 852x393 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-12 -composite _site/images/splash-iphone-landscape-pro.png
+	rm /tmp/splash-icon.png
+
+_site/images/splash-iphone-landscape-pro-max.png: src/icon.svg
+	mkdir -p _site/images
+	rsvg-convert -w 260 -h 260 src/icon.svg -o /tmp/splash-icon.png
+	convert -size 932x430 xc:$(SPLASH_BACKGROUND) /tmp/splash-icon.png -gravity center -geometry +0-15 -composite _site/images/splash-iphone-landscape-pro-max.png
 	rm /tmp/splash-icon.png

@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '31';
+const CACHE_VERSION = '32';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -19,9 +19,13 @@ const ASSETS_TO_CACHE = [
 	'/icon-512.png',
 	'/apple-touch-icon.png',
 	'/images/splash-iphone.png',
+	'/images/splash-iphone-pro.png',
 	'/images/splash-iphone-plus.png',
+	'/images/splash-iphone-pro-max.png',
 	'/images/splash-iphone-se.png',
-	'/images/splash-iphone-landscape.png'
+	'/images/splash-iphone-landscape.png',
+	'/images/splash-iphone-landscape-pro.png',
+	'/images/splash-iphone-landscape-pro-max.png'
 ];
 const PRECACHED_ASSET_PATHS = new Set(ASSETS_TO_CACHE);
 
