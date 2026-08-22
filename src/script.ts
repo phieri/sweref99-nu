@@ -424,15 +424,67 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 // DOM ELEMENTS AND UI REFERENCES
 // ============================================================================
 
-const speed = document.getElementById("speed");
-const posbtn = document.getElementById("pos-btn");
-const sharebtn = document.getElementById("share-btn");
-const stopbtn = document.getElementById("stop-btn");
-const notificationDialog = document.getElementById("notification-dialog") as HTMLDialogElement;
-const notificationContent = document.getElementById("notification-content") as HTMLElement;
-const notificationHeader = document.getElementById("notification-header") as HTMLElement | null;
-const notificationTitle = document.getElementById("notification-title") as HTMLElement | null;
-const notificationCountdown = document.getElementById("notification-countdown") as SVGCircleElement | null;
+function hasBrowserDom(): boolean {
+	return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+function getElementById<T extends Element = HTMLElement>(id: string): T | null {
+	if (!hasBrowserDom()) {
+		return null;
+	}
+	return document.getElementById(id) as T | null;
+}
+
+type AppElementMap = {
+	uncert: HTMLElement | null;
+	speed: HTMLElement | null;
+	timestamp: HTMLElement | null;
+	swerefn: HTMLElement | null;
+	swerefe: HTMLElement | null;
+	wgs84n: HTMLElement | null;
+	wgs84e: HTMLElement | null;
+	posbtn: HTMLElement | null;
+	sharebtn: HTMLElement | null;
+	stopbtn: HTMLElement | null;
+	notificationDialog: HTMLDialogElement | null;
+	notificationContent: HTMLElement | null;
+	notificationHeader: HTMLElement | null;
+	notificationTitle: HTMLElement | null;
+	notificationCountdown: SVGCircleElement | null;
+};
+
+function getAppElementMap(): AppElementMap {
+	return {
+		uncert: getElementById('uncert'),
+		speed: getElementById('speed'),
+		timestamp: getElementById('timestamp'),
+		swerefn: getElementById('sweref-n'),
+		swerefe: getElementById('sweref-e'),
+		wgs84n: getElementById('wgs84-n'),
+		wgs84e: getElementById('wgs84-e'),
+		posbtn: getElementById('pos-btn'),
+		sharebtn: getElementById('share-btn'),
+		stopbtn: getElementById('stop-btn'),
+		notificationDialog: getElementById<HTMLDialogElement>('notification-dialog'),
+		notificationContent: getElementById('notification-content'),
+		notificationHeader: getElementById('notification-header'),
+		notificationTitle: getElementById('notification-title'),
+		notificationCountdown: getElementById<SVGCircleElement>('notification-countdown')
+	};
+}
+
+const appElements = getAppElementMap();
+const {
+	speed,
+	posbtn,
+	sharebtn,
+	stopbtn,
+	notificationDialog,
+	notificationContent,
+	notificationHeader,
+	notificationTitle,
+	notificationCountdown
+} = appElements;
 // Only one notification timer should be active at a time.
 let notificationTimeout: number | null = null;
 
@@ -542,32 +594,13 @@ function handleNotificationBackdropClick(event: MouseEvent): void {
  * - Vue's template bindings (centraliserad UI-uppdatering)
  */
 class UIHelper {
-	private elements: {
-		uncert: HTMLElement | null;
-		speed: HTMLElement | null;
-		timestamp: HTMLElement | null;
-		swerefn: HTMLElement | null;
-		swerefe: HTMLElement | null;
-		wgs84n: HTMLElement | null;
-		wgs84e: HTMLElement | null;
-		posbtn: HTMLElement | null;
-		sharebtn: HTMLElement | null;
-		stopbtn: HTMLElement | null;
-	};
+	private elements: AppElementMap;
 	private currentSpeedUnit: SpeedUnit;
 
-	constructor() {
+	constructor(elements: Partial<AppElementMap> = {}) {
 		this.elements = {
-			uncert: document.getElementById("uncert"),
-			speed: document.getElementById("speed"),
-			timestamp: document.getElementById("timestamp"),
-			swerefn: document.getElementById("sweref-n"),
-			swerefe: document.getElementById("sweref-e"),
-			wgs84n: document.getElementById("wgs84-n"),
-			wgs84e: document.getElementById("wgs84-e"),
-			posbtn: document.getElementById("pos-btn"),
-			sharebtn: document.getElementById("share-btn"),
-			stopbtn: document.getElementById("stop-btn")
+			...appElements,
+			...elements
 		};
 		this.currentSpeedUnit = getSavedSpeedUnit();
 	}
@@ -759,7 +792,7 @@ class UIHelper {
 	}
 }
 
-const uiHelper = new UIHelper();
+const uiHelper = new UIHelper(appElements);
 
 // ============================================================================
 // GEOLOCATION STATE MANAGEMENT
@@ -1109,11 +1142,14 @@ function initializeEventListeners(): void {
 	}
 }
 
-// Initialize the application
-initializeEventListeners();
+function initializeApplication(): void {
+	if (!hasBrowserDom()) {
+		return;
+	}
 
-// Initialize details state persistence
-initializeDetailsStatePersistence();
+	initializeEventListeners();
+	initializeDetailsStatePersistence();
+	uiHelper.updateSpeedDisplayUnit();
+}
 
-// Update speed display to show saved unit preference
-uiHelper.updateSpeedDisplayUnit();
+initializeApplication();
