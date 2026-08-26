@@ -9,7 +9,7 @@ This repository contains Software Bill of Materials (SBOM) files for the sweref9
 
 ## Dependencies
 
-The current dependency set was reviewed against the workflow in `.github/workflows/ci.yml` and the root `package-lock.json` on 2026-08-15. No runtime or build-version bumps were required, so the SBOM remains aligned with the current pinned versions.
+The current dependency set was reviewed against the workflow in `.github/workflows/ci.yml` and the root `package-lock.json` on 2026-08-26. The test stack remains intentionally minimal and uses a small set of transitive overrides required for compatibility and security in the Jest/Babel toolchain; no extra runtime libraries are added beyond the app’s static HTML, TypeScript, and browser-only coordinate logic.
 
 The project currently uses the following direct external components:
 
