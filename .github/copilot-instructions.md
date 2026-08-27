@@ -1,157 +1,106 @@
 # Copilot Instructions for sweref99-nu
 
-## Repository Overview
-This is a Swedish Progressive Web App (PWA) that shows GNSS-derived coordinates in SWEREF 99 TM format. It's a lightweight web application for Swedish coordinate system conversion.
+## Repository overview
+This repository contains a lightweight Swedish PWA that captures GNSS coordinates and converts them to SWEREF 99 TM values for display on mobile devices. The app is browser-only: no backend service, no server-side transformation, and no requirement for a database.
 
-## Technology Stack
-- **Frontend**: TypeScript, HTML, CSS with Pico.css framework
-- **Build**: TypeScript compiler, Make for build orchestration
+The codebase is intentionally small and focused. Most changes belong in `src/script.ts`; generated site assets live under `_site/` and should be treated as build output, not source.
 
-## Key Files
-- `src/script.ts` - Main TypeScript application logic
-- `_site/index.html` - Main HTML page
-- `_site/sw.js` - ServiceWorker for offline caching (increment CACHE_VERSION on changes!)
-- `tsconfig.json` - TypeScript configuration
-- `Makefile` - Build configuration
-- `.github/workflows/ci.yml` - CI/CD pipeline
+## First-time agent workflow
+When a cloud agent sees this repo for the first time, use this sequence:
 
-## Development Commands
+1. Install dependencies in a fresh checkout:
+   ```bash
+   npm ci
+   ```
+2. Run the actual automated verification:
+   ```bash
+   npm test -- --runInBand
+   ```
+3. Compile the TypeScript app:
+   ```bash
+   make script.js
+   ```
+   or
+   ```bash
+   npx tsc
+   ```
+4. If the task requires regenerated icons or local static assets, run:
+   ```bash
+   make icons
+   ```
+   This requires `librsvg2-bin` and `imagemagick` on the host.
 
-### Quick Development (TypeScript only)
+This project is validated by the actual repo workflow in `.github/workflows/ci.yml`: install dependencies, run tests, compile TypeScript, generate icons, download `proj4.js` and `pico.min.css`, and deploy the built site.
+
+## Key files
+- `src/script.ts` — browser logic, coordinate validation, transformation, UI state, geolocation handling
+- `tests/*.test.ts` — Jest coverage for coordinate formatting, state management, and Sweden-boundary logic
+- `_site/index.html` — static app shell served by GitHub Pages
+- `_site/sw.js` — service worker; bump `CACHE_VERSION` on any user-facing change
+- `tsconfig.json` — TypeScript compiler config
+- `Makefile` — build and icon generation tasks
+- `.github/workflows/ci.yml` — authoritative CI build sequence
+- `package.json` — dev dependencies and Jest scripts
+
+## What to change and what not to change
+- Prefer editing source files in `src/` and tests in `tests/`.
+- Do not hand-edit generated files in `_site/` such as `script.js`, `script.js.map`, or downloaded runtime assets.
+- If the user-facing app changes, update `_site/sw.js` and bump `CACHE_VERSION` so cached clients load the new version.
+- Keep UI copy in Swedish unless the change is clearly technical and the surrounding file already uses English.
+
+## Build and validation contract
+Use the repo’s existing commands instead of inventing new ones:
+
 ```bash
-# Build TypeScript (fast ~1.5s)
+npm ci
+npm test -- --runInBand
 make script.js
-# or directly:
-tsc
 ```
 
-## Important Notes
-- **TypeScript build is fast and reliable** - use for quick development
-- **App works without JavaScript** but coordinate transformation will be missing and therefore not useful
-- **Swedish language** - UI and comments are in Swedish
-- **Target audience**: Swedish users needing their SWEREF 99 TM coordinates on mobile devices
+The current repo status is verified to pass:
+- 5 Jest test suites passed
+- 147 tests passed
+- TypeScript compilation succeeded
 
-## Development Workflow
-1. Make TypeScript changes in `src/script.ts`
-2. Test with `tsc` for quick validation
-3. HTML/CSS changes can be tested directly in `_site/`
+## Known issues and workarounds
+These are real repo-level pitfalls that are worth documenting for future agents:
 
-## Testing
-- Manual testing via web browser
-- Geolocation API requires HTTPS or localhost
-- Test with Swedish coordinates (lat: 55-69, lon: 10-24)
-- No automated test suite - testing is manual and browser-based
+- Fresh clone issue: `npm test` fails with `jest: not found` until dependencies are installed.
+  - Workaround: run `npm ci` before the first test or build.
+- Fresh clone issue: `make script.js` fails if `tsc` is unavailable.
+  - Workaround: `npm ci` installs the local TypeScript compiler, or run `npx tsc`.
+- Icon generation issue: `make icons` fails when `rsvg-convert` or `convert` are missing.
+  - Workaround: install `librsvg2-bin` and `imagemagick` via `apt-get`.
+- Runtime issue: the app depends on HTTPS or localhost for geolocation and service worker behavior in browsers.
+  - Workaround: run the app via a local server or use a secure origin; do not assume `file://` will work.
+- Deployment issue: `_site/proj4.js` and `_site/pico.min.css` are not committed to the repo and are downloaded during CI.
+  - Workaround: use the same pinned versions from `.github/workflows/ci.yml` when validating the full site locally.
+- Cache issue: stale installations continue to use old assets until the service worker cache version changes.
+  - Workaround: increment `CACHE_VERSION` in `_site/sw.js` whenever user-visible behavior or assets change.
 
-## Code Style and Formatting
-- **Indentation**: Tabs (as defined in `.editorconfig`)
-- **Line endings**: LF (Unix-style)
-- **Charset**: UTF-8
-- **Comments**: Swedish language for app logic, can be English for technical/build comments
-- **Final newline**: Required in all files
-- **YAML files**: Use spaces for indentation (2 spaces)
+## Common pitfalls for this app
+- The app checks that coordinates fall within Swedish bounds (`lat 55-69`, `lon 10-24`) before treating them as valid for SWEREF 99.
+- The app includes a continental drift correction between WGS84/ITRF and SWEREF 99/ETRS89; do not “simplify away” this logic unless the task specifically requires it.
+- The app’s main logic is client-side; no backend processing or server-side validation should be introduced without a clear requirement.
+- The UI and comments are primarily Swedish, so preserve Swedish wording in user-facing text and keep locale-sensitive messages consistent.
 
-## Dependencies Management
-- **Runtime dependencies** (loaded during CI/CD):
-  - `proj4.js` (GitHub release asset for v2.21.0) - Coordinate transformation library
-  - `pico.min.css` (v2.1.1) - CSS framework
-- **Build dependencies**:
-  - TypeScript (v7.0.2) - Managed by npm via the project devDependencies
-- Dependencies are downloaded during CI/CD pipeline, not committed to repo
-- See `SBOM-README.md` for complete Software Bill of Materials
+## Dependency and SBOM maintenance
+If dependency versions are changed, update the repository’s SBOM artifacts and related notes so they remain consistent with the actual build:
+- `SBOM.spdx`
+- `sbom.json`
+- `SBOM-README.md`
 
-## SBOM Maintenance
-**IMPORTANT**: Update the SBOM files and related dependency documentation whenever the dependency set or versions change.
+For this repo, dependency versions must be kept aligned with both:
+- `.github/workflows/ci.yml` for runtime assets like `proj4.js` and `pico.min.css`
+- `package-lock.json` / `package.json` for build and test dependencies
 
-### When to Update SBOM Files
-Update `SBOM.spdx`, `sbom.json`, and `SBOM-README.md` whenever you change:
-- Runtime dependencies or the versions fetched during CI/CD
-- Build or test dependencies in `package.json` / `package-lock.json`
-- Dependency-related documentation that describes the current project state
+## CI/CD pipeline summary
+The GitHub Actions pipeline is the source of truth for release behavior:
+1. Install Node and project dependencies with `npm ci`
+2. Run `npm test`
+3. Build TypeScript with `make script.js`
+4. Generate icons if needed
+5. Download the pinned `proj4.js` release asset and `pico.min.css`
+6. Publish the generated site to GitHub Pages
 
-### How to Keep SBOM Data Accurate
-1. Verify runtime dependency versions against `.github/workflows/ci.yml`
-2. Verify build and test dependency versions against `package-lock.json`
-3. Keep SPDX and CycloneDX entries aligned with the current dependency roles (runtime, build, test)
-4. Update `SBOM-README.md` if dependency versions or categories change
-
-## File Structure
-```
-├── .github/
-│   ├── copilot-instructions.md  # This file
-│   └── workflows/ci.yml          # CI/CD pipeline
-├── _site/                        # Built output (deployed to GitHub Pages)
-│   ├── index.html                # Main app page
-│   ├── om.html                   # Help/about page
-│   ├── sw.js                     # ServiceWorker (increment CACHE_VERSION!)
-│   ├── stil.css                  # Custom styles
-│   ├── script.js                 # Compiled TypeScript (generated)
-│   ├── script.js.map             # Source maps (generated)
-│   ├── proj4.js                  # Downloaded during CI (ignored in git)
-│   ├── pico.min.css              # Downloaded during CI (ignored in git)
-│   └── [icons]                   # PWA icons (generated from src/icon.svg)
-├── src/
-│   ├── script.ts                 # Main application logic
-│   └── icon.svg                  # Source icon for PWA
-├── Makefile                      # Build automation
-├── tsconfig.json                 # TypeScript configuration
-└── .editorconfig                 # Editor formatting rules
-```
-
-## Build Artifacts and Git Ignore
-- `_site/script.js` and `_site/script.js.map` - Generated by TypeScript, ignored in git
-- `_site/proj4.js` and `_site/pico.min.css` - Downloaded during CI, ignored in git
-- `.tsbuildinfo` - TypeScript incremental build cache, ignored in git
-- Icons in `_site/` are committed (generated with `make icons`)
-
-## Common Pitfalls and Gotchas
-- **ITRF/ETRS89 drift correction**: The app automatically corrects for continental drift between WGS84 (ITRF) and SWEREF 99 (ETRS89) based on current date
-- **Coordinate validation**: Always check if coordinates are within Sweden (lat: 55-69, lon: 10-24)
-- **Browser permissions**: Geolocation API requires user permission and HTTPS/localhost
-- **Swedish language**: All user-facing text and most comments are in Swedish
-- **No backend**: All coordinate transformation happens client-side using proj4.js
-- **PWA support**: App works offline after first visit (service worker via manifest)
-
-## ServiceWorker Cache Version Management
-**CRITICAL**: The ServiceWorker cache version MUST be incremented whenever any user-facing changes are made to the app. This is essential for users to see updates.
-
-### When to Increment Cache Version
-Increment the `CACHE_VERSION` in `_site/sw.js` whenever you make changes to:
-- **Any HTML files** (`index.html`, `om.html`)
-- **Any CSS files** (`stil.css`, `pico.min.css`)
-- **JavaScript/TypeScript** (`script.ts` → `script.js`)
-- **External dependencies** (proj4.js version updates)
-- **PWA resources** (icons, manifest)
-- **Any other files that are cached by the ServiceWorker**
-
-### How to Increment Cache Version
-1. Open `_site/sw.js`
-2. Find line with `const CACHE_VERSION = 'v2';` (or current version)
-3. Increment the version number: `'v2'` → `'v3'`, `'v3'` → `'v4'`, etc.
-4. **ALWAYS include this change in your PR** when making any user-facing modifications
-
-### Why This Matters
-- Users who have visited the app before have a cached version
-- Without incrementing the cache version, they will continue seeing the old version
-- The ServiceWorker will only fetch new resources when `CACHE_VERSION` changes
-- Old cache is automatically cleaned up when a new version is activated
-
-### Example
-If you're fixing a bug in `script.ts` or updating text in `index.html`:
-```javascript
-// Before
-const CACHE_VERSION = 'v2';
-
-// After
-const CACHE_VERSION = 'v3';
-```
-
-**Remember**: This is one of the most commonly forgotten steps. Always check if you need to update the cache version before finalizing your changes.
-
-## CI/CD Pipeline
-- Triggered on push/PR to main branch (except .md files)
-- Steps:
-  1. Install TypeScript globally
-  2. Build TypeScript with `make script.js`
-  3. Download the PROJ4JS dist.zip for the pinned GitHub release v2.21.0 and extract `proj4.js`, plus `pico.min.css` from the CDN
-  4. Deploy to GitHub Pages
-- No linting step (consider adding if code quality issues arise)
+There is no lint step in CI today; the meaningful validation is the existing test suite plus the TypeScript build.
