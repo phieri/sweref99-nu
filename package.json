@@ -13,9 +13,9 @@
     "@babel/preset-env": "^8.0.2",
     "@babel/preset-typescript": "^8.0.1",
     "@types/jest": "^30.0.0",
-    "babel-jest": "^30.4.1",
-    "jest": "^30.4.2",
-    "jest-environment-jsdom": "^30.4.1",
+    "babel-jest": "^30.5.0",
+    "jest": "^30.5.0",
+    "jest-environment-jsdom": "^30.5.0",
     "typescript": "^7.0.2"
   },
   "overrides": {
