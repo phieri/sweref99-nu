@@ -428,6 +428,10 @@ function hasBrowserDom(): boolean {
 	return typeof window !== 'undefined' && typeof document !== 'undefined';
 }
 
+function hasNavigator(): boolean {
+	return typeof navigator !== 'undefined';
+}
+
 function getElementById<T extends Element = HTMLElement>(id: string): T | null {
 	if (!hasBrowserDom()) {
 		return null;
@@ -509,7 +513,9 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
  */
 function showNotification(message: string, duration: number = NOTIFICATION_DURATION.DEFAULT, title?: string): void {
 	if (!notificationDialog || !notificationContent) {
-		window.alert(message);
+		if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+			window.alert(message);
+		}
 		return;
 	}
 
@@ -827,7 +833,7 @@ function startSpinnerTimeout(): void {
 }
 
 function startGeolocationWatch(onError: PositionErrorCallback): void {
-	if (watchID !== null) {
+	if (watchID !== null || !hasNavigator() || !('geolocation' in navigator)) {
 		return;
 	}
 
@@ -844,8 +850,13 @@ function startGeolocationWatch(onError: PositionErrorCallback): void {
  */
 function stopGeolocationWatch(): void {
 	if (watchID !== null) {
-		navigator.geolocation.clearWatch(watchID);
-		watchID = null;
+		try {
+			if (hasNavigator() && 'geolocation' in navigator) {
+				navigator.geolocation.clearWatch(watchID);
+			}
+		} finally {
+			watchID = null;
+		}
 	}
 	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
@@ -915,7 +926,7 @@ function posInit(event: Event): void {
 
 	// Handle restore events differently - test geolocation availability first
 	if (event.type === "restore") {
-		if (!("geolocation" in navigator)) {
+		if (!hasNavigator() || !("geolocation" in navigator)) {
 			handlePositionRestoreError();
 			return;
 		}
@@ -1118,10 +1129,14 @@ function initializeEventListeners(): void {
 		}
 	});
 
-	// ServiceWorker registration for offline functionality
-	if ('serviceWorker' in navigator) {
+	// ServiceWorker registration for offline functionality.
+	// Register only on secure origins (HTTPS or localhost); service workers are
+	// unavailable on insecure pages and should not be registered at the origin root.
+	// Use a relative URL so the app can be served from a repository subpath.
+	if (hasNavigator() && 'serviceWorker' in navigator && typeof window !== 'undefined' && window.isSecureContext) {
 		window.addEventListener('load', () => {
-			navigator.serviceWorker.register('/sw.js')
+			const swUrl = new URL('./sw.js', window.location.href);
+			navigator.serviceWorker.register(swUrl.href)
 				.then((registration) => {
 					console.log('ServiceWorker registrerad:', registration.scope);
 				})
@@ -1134,7 +1149,7 @@ function initializeEventListeners(): void {
 	notificationDialog?.addEventListener('click', handleNotificationBackdropClick);
 
 	// Check geolocation availability
-	const geolocationAvailable = 'geolocation' in navigator;
+	const geolocationAvailable = hasNavigator() && 'geolocation' in navigator;
 	if (!geolocationAvailable) {
 		showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 	} else {
