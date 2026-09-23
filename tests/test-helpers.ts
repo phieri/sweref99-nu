@@ -182,6 +182,7 @@ export function renderApplicationShell(options: {
 		<div id="uncert"></div>
 		<button id="speed" type="button">${speedText}</button>
 		<div id="timestamp">--:--:--</div>
+		<div id="avg-meta" hidden></div>
 		<div id="sweref-n"></div>
 		<div id="sweref-e"></div>
 		<div id="wgs84-n"></div>

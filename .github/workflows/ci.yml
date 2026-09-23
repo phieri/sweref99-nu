@@ -61,7 +61,7 @@ jobs:
           echo "=== Adding additional files ==="
           echo "${{ vars.adstxt }}" > _site/ads.txt
           curl --fail --show-error --location -o _site/pico.min.css https://raw.githubusercontent.com/picocss/pico/v2.1.1/css/pico.min.css
-          release_tag='v2.21.0'
+          release_tag='v2.22.0'
           release_asset_url="https://github.com/proj4js/proj4js/releases/download/${release_tag}/dist.zip"
           echo "Downloading PROJ4JS release $release_tag"
           curl --fail --show-error --location -o /tmp/proj4-dist.zip "$release_asset_url"
