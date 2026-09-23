@@ -1,294 +1,79 @@
-/**
- * Unit tests for coordinate formatting
- * 
- * This test suite covers the extra space formatting for E coordinate
- * to ensure proper alignment between N (7 digits) and E (6 digits),
- * including averaging mode with two decimal digits.
- */
+import {
+	createMockPosition,
+	flushMicrotasks,
+	getRequiredElement,
+	installGeolocationHarness,
+	installProj4Mock,
+	installShareSupport,
+	loadApplicationModule,
+	removeShareSupport,
+	renderApplicationShell
+} from './test-helpers';
 
-/**
- * Mock DOM elements for testing
- */
-class MockElement {
-	private attributes: Map<string, string> = new Map();
-	private _innerHTML: string = '';
-	private _textContent: string = '';
-
-	get innerHTML(): string {
-		return this._innerHTML;
-	}
-
-	set innerHTML(value: string) {
-		this._innerHTML = value;
-		// Convert HTML entities first
-		let text = value
-			.replace(/&deg;/g, '°')
-			.replace(/&nbsp;/g, ' ')
-			.replace(/&pm;/g, '±');
-
-		// Strip tags repeatedly until stable to avoid incomplete multi-character sanitization
-		let previous: string;
-		do {
-			previous = text;
-			text = text.replace(/<[^>]*>/g, '');
-		} while (text !== previous);
-
-		// Ensure no angle brackets remain to avoid HTML element injection in textContent
-		text = text.replace(/</g, '').replace(/>/g, '');
-		this._textContent = text;
-	}
-
-	get textContent(): string {
-		return this._textContent;
-	}
-
-	setAttribute(name: string, value: string): void {
-		this.attributes.set(name, value);
-	}
-
-	removeAttribute(name: string): void {
-		this.attributes.delete(name);
-	}
-
-	hasAttribute(name: string): boolean {
-		return this.attributes.has(name);
-	}
-
-	getAttribute(name: string): string | null {
-		return this.attributes.get(name) ?? null;
-	}
-}
-
-/**
- * Simplified UIHelper for testing coordinate formatting
- */
-class TestUIHelper {
-	private elements: {
-		swerefn: MockElement | null;
-		swerefe: MockElement | null;
-	};
-
-	constructor() {
-		this.elements = {
-			swerefn: new MockElement(),
-			swerefe: new MockElement()
-		};
-	}
-
-	/**
-	 * Updates coordinate displays for SWEREF 99
-	 */
-	updateCoordinates(northing: number, easting: number, fractionDigits: number = 0): void {
-		const { swerefn, swerefe } = this.elements;
-		const formatCoordinate = (value: number) => (
-			fractionDigits > 0
-				? value.toFixed(fractionDigits)
-				: Math.round(value).toString()
-		).replace(".", ",");
-
-		if (swerefn) swerefn.innerHTML = `N&nbsp;${formatCoordinate(northing)}`;
-		if (swerefe) swerefe.innerHTML = `E&nbsp;&nbsp;${formatCoordinate(easting)}`;
-	}
-
-	/**
-	 * Gets formatted text for sharing coordinates
-	 * Removes the extra space after "E" that's used for alignment in the UI
-	 */
-	getShareText(): string {
-		const { swerefn, swerefe } = this.elements;
-		const nText = swerefn?.textContent ?? '';
-		const eText = swerefe?.textContent ?? '';
-		// Remove the extra space after "E" that's used for alignment
-		const eTextNormalized = eText.replace(/^E\s{2}/, 'E ');
-		return `${nText} ${eTextNormalized} (SWEREF 99 TM)`;
-	}
-
-	getElement(name: 'swerefn' | 'swerefe'): MockElement | null {
-		return this.elements[name];
-	}
-}
-
-describe('Coordinate Formatting', () => {
-	describe('Display formatting with alignment', () => {
-		test('should add extra space after E for alignment', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// Stockholm coordinates (approximately)
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-			
-			// Check HTML contains the proper spacing
-			expect(swerefn?.innerHTML).toBe('N&nbsp;6580123');
-			expect(swerefe?.innerHTML).toBe('E&nbsp;&nbsp;674456');
-		});
-
-		test('should display with proper text content', () => {
-			const uiHelper = new TestUIHelper();
-			
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-			
-			// Check text content has spaces converted
-			expect(swerefn?.textContent).toBe('N 6580123');
-			expect(swerefe?.textContent).toBe('E  674456'); // Two spaces after E
-		});
-
-		test('should handle 7-digit northing values', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// Maximum northing for Sweden (northern Lapland)
-			uiHelper.updateCoordinates(7654321, 512345);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			expect(swerefn?.textContent).toBe('N 7654321');
-		});
-
-		test('should handle 6-digit easting values', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// Typical easting for Sweden
-			uiHelper.updateCoordinates(6580123, 512345);
-			
-			const swerefe = uiHelper.getElement('swerefe');
-			expect(swerefe?.textContent).toBe('E  512345'); // Two spaces after E
-		});
-
-		test('should handle minimum Swedish coordinates', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// Southern Sweden (approximately Malmö area)
-			uiHelper.updateCoordinates(6155000, 375000);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-			
-			expect(swerefn?.textContent).toBe('N 6155000');
-			expect(swerefe?.textContent).toBe('E  375000');
-		});
-
-		test('should show two decimal digits in averaging mode', () => {
-			const uiHelper = new TestUIHelper();
-
-			uiHelper.updateCoordinates(6580123.44, 674456.75, 2);
-
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-
-			expect(swerefn?.textContent).toBe('N 6580123,44');
-			expect(swerefe?.textContent).toBe('E  674456,75');
-		});
+describe('coordinate formatting integration', () => {
+	beforeEach(() => {
+		jest.useFakeTimers();
+		jest.setSystemTime(new Date('2026-07-01T12:00:00Z'));
 	});
 
-	describe('Share text formatting', () => {
-		test('should remove extra space from E coordinate in share text', () => {
-			const uiHelper = new TestUIHelper();
-			
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const shareText = uiHelper.getShareText();
-			
-			// Share text should have single space after E
-			expect(shareText).toBe('N 6580123 E 674456 (SWEREF 99 TM)');
-		});
-
-		test('should format share text with proper spacing', () => {
-			const uiHelper = new TestUIHelper();
-			
-			uiHelper.updateCoordinates(7654321, 512345);
-			
-			const shareText = uiHelper.getShareText();
-			
-			expect(shareText).toBe('N 7654321 E 512345 (SWEREF 99 TM)');
-		});
-
-		test('should handle multiple coordinates in share text', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// Test 1
-			uiHelper.updateCoordinates(6580123, 674456);
-			expect(uiHelper.getShareText()).toBe('N 6580123 E 674456 (SWEREF 99 TM)');
-			
-			// Test 2 - update with new coordinates
-			uiHelper.updateCoordinates(6155000, 375000);
-			expect(uiHelper.getShareText()).toBe('N 6155000 E 375000 (SWEREF 99 TM)');
-		});
-
-		test('should not affect N coordinate in share text', () => {
-			const uiHelper = new TestUIHelper();
-			
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const shareText = uiHelper.getShareText();
-			
-			// N coordinate should have single space
-			expect(shareText).toContain('N 6580123');
-			// E coordinate should have single space (not double)
-			expect(shareText).toContain('E 674456');
-			// Should not contain double space after E
-			expect(shareText).not.toContain('E  674456');
-		});
-
-		test('should keep averaging decimals in share text', () => {
-			const uiHelper = new TestUIHelper();
-
-			uiHelper.updateCoordinates(6580123.44, 674456.75, 1);
-
-			expect(uiHelper.getShareText()).toBe('N 6580123,4 E 674456,8 (SWEREF 99 TM)');
-		});
+	afterEach(() => {
+		jest.useRealTimers();
+		jest.restoreAllMocks();
+		window.localStorage.clear();
+		document.body.innerHTML = '';
+		removeShareSupport();
 	});
 
-	describe('Alignment verification', () => {
-		test('should align N and E coordinates visually', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// 7-digit N and 6-digit E
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-			
-			const nText = swerefn?.textContent ?? '';
-			const eText = swerefe?.textContent ?? '';
-			
-			// Count spaces after coordinate prefix
-			const nSpaces = (nText.match(/^N\s+/)?.[0].length ?? 0) - 1;
-			const eSpaces = (eText.match(/^E\s+/)?.[0].length ?? 0) - 1;
-			
-			// E should have one more space than N
-			expect(eSpaces).toBe(nSpaces + 1);
-		});
+	it('renders aligned SWEREF coordinates after a position update', async () => {
+		// Arrange
+		renderApplicationShell();
+		const geolocation = installGeolocationHarness();
+		installProj4Mock(() => [674455.4, 6580122.1]);
+		await loadApplicationModule();
 
-		test('should result in same character count for coordinate display', () => {
-			const uiHelper = new TestUIHelper();
-			
-			// 7-digit N and 6-digit E
-			uiHelper.updateCoordinates(6580123, 674456);
-			
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
-			
-			// Both should have same length when displayed
-			// N has 1 space, E has 2 spaces, so total length is same
-			// "N 6580123" = 9 chars
-			// "E  674456" = 9 chars
-			expect(swerefn?.textContent.length).toBe(9);
-			expect(swerefe?.textContent.length).toBe(9);
-		});
+		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
 
-		test('should keep alignment when averaging adds decimals', () => {
-			const uiHelper = new TestUIHelper();
+		// Act
+		posButton.click();
+		geolocation.emitPosition(createMockPosition({ latitude: 59.33, longitude: 18.07 }));
 
-			uiHelper.updateCoordinates(6580123.44, 674456.75, 1);
+		// Assert
+		const northing = getRequiredElement('sweref-n', HTMLDivElement).textContent;
+		const easting = getRequiredElement('sweref-e', HTMLDivElement).textContent;
+		expect(northing).toMatch(/^N\u00A0\d{7}$/u);
+		expect(easting).toMatch(/^E\u00A0\u00A0\d{6}$/u);
+		expect(northing?.length).toBe(easting?.length);
+	});
 
-			const swerefn = uiHelper.getElement('swerefn');
-			const swerefe = uiHelper.getElement('swerefe');
+	it('normalizes the extra easting spacing when sharing averaged coordinates', async () => {
+		// Arrange
+		renderApplicationShell();
+		const geolocation = installGeolocationHarness();
+		const { share } = installShareSupport();
+		installProj4Mock((_: string, __: string, [longitude, latitude]) => [
+			674455.2 + ((longitude - 18) * 10),
+			6580122.2 + ((latitude - 59) * 10)
+		]);
+		await loadApplicationModule();
 
-			expect(swerefn?.textContent.length).toBe(11);
-			expect(swerefe?.textContent.length).toBe(11);
+		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
+		const avgButton = getRequiredElement('avg-btn', HTMLButtonElement);
+		const shareButton = getRequiredElement('share-btn', HTMLButtonElement);
+
+		// Act
+		posButton.click();
+		geolocation.emitPosition(createMockPosition({ latitude: 59.33, longitude: 18.07 }));
+		avgButton.click();
+		geolocation.emitPosition(createMockPosition({ latitude: 59.34, longitude: 18.08 }));
+		shareButton.click();
+		await flushMicrotasks();
+
+		// Assert
+		expect(share).toHaveBeenCalledWith({
+			title: 'Position',
+			text: expect.stringMatching(
+				/^N\u00A0\d+,\d{2} E \d+,\d{2} \(SWEREF 99 TM\)$/u
+			)
 		});
 	});
 });

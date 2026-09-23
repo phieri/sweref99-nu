@@ -1,44 +1,8 @@
-/**
- * Unit tests for script.ts
- * 
- * This test suite covers critical functionality including:
- * - Constants validation (SWEDEN_BOUNDS, ACCURACY_THRESHOLD_METERS)
- * - Coordinate transformation functions
- * - ITRF to ETRS89 correction calculations
- * - Boundary validation
- */
-
-// Type declarations for global scope
-declare var proj4: any;
-
-// Mock proj4 library since it's loaded from CDN
-(global as any).proj4 = {
-	defs: jest.fn((code?: string, def?: string) => {
-		if (code === undefined) return {};
-		if (def !== undefined) return;
-		// Return true if definition exists
-		return code === 'EPSG:3006';
-	}),
-	// Mock the transformation function
-	transform: jest.fn((from: string, to: string, coords: number[]) => {
-		// Simple mock transformation for SWEREF 99 TM
-		// This is a rough approximation for testing purposes
-		const [lon, lat] = coords;
-		// Approximate SWEREF 99 TM zone 33 transformation
-		// Real values would be calculated by proj4
-		const easting = 500000 + (lon - 15) * 111320 * Math.cos(lat * Math.PI / 180);
-		const northing = lat * 111320;
-		return [easting, northing];
-	})
-};
-
-// Override the proj4 function call interface
-(global as any).proj4 = Object.assign(
-	(from: string, to: string, coords: number[]) => {
-		return (global as any).proj4.transform(from, to, coords);
-	},
-	(global as any).proj4
-);
+import {
+	clearProj4Mock,
+	createMockPosition,
+	installProj4Mock
+} from './test-helpers';
 
 /**
  * Constants from script.ts - redefined here for testing
@@ -76,6 +40,19 @@ interface SwerefCoordinates {
 	northing: number;
 	easting: number;
 }
+
+beforeEach(() => {
+	installProj4Mock((_: string, __: string, [longitude, latitude]) => {
+		const easting = 500000 + ((longitude - 15) * 111320 * Math.cos(latitude * Math.PI / 180));
+		const northing = latitude * 111320;
+		return [easting, northing];
+	});
+});
+
+afterEach(() => {
+	clearProj4Mock();
+	jest.restoreAllMocks();
+});
 
 /**
  * Test implementations of functions from script.ts
@@ -137,16 +114,17 @@ function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
  */
 function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
-		if (typeof proj4 === 'undefined') {
+		const projection = globalThis.proj4;
+		if (!projection) {
 			console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
 			return { northing: 0, easting: 0 };
 		}
 
-		if (!proj4.defs('EPSG:3006')) {
-			proj4.defs('EPSG:3006', SWEREF99_PROJ_DEFINITION);
+		if (!projection.defs('EPSG:3006')) {
+			projection.defs('EPSG:3006', SWEREF99_PROJ_DEFINITION);
 		}
 
-		const result = (proj4 as any)('EPSG:4326', 'EPSG:3006', [lon, lat]);
+		const result = projection('EPSG:4326', 'EPSG:3006', [lon, lat]);
 		let easting: number = result[0];
 		let northing: number = result[1];
 
@@ -164,22 +142,6 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 		console.error("Error in coordinate transformation:", error);
 		return { northing: 0, easting: 0 };
 	}
-}
-
-// Helper to create mock GeolocationPosition
-function createMockPosition(latitude: number, longitude: number, accuracy: number = 5, speed: number | null = null): GeolocationPosition {
-	return {
-		coords: {
-			latitude,
-			longitude,
-			accuracy,
-			altitude: null,
-			altitudeAccuracy: null,
-			heading: null,
-			speed
-		},
-		timestamp: Date.now()
-	} as GeolocationPosition;
 }
 
 describe('SWEDEN_BOUNDS Constants', () => {
@@ -212,98 +174,27 @@ describe('SWEDEN_BOUNDS Constants', () => {
 });
 
 describe('isInSweden Function', () => {
-	describe('typical Swedish locations', () => {
-		test('should return true for Stockholm (59.33°N, 18.07°E)', () => {
-			const position = createMockPosition(59.33, 18.07);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for Gothenburg (57.71°N, 11.97°E)', () => {
-			const position = createMockPosition(57.71, 11.97);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for Malmö (55.60°N, 13.00°E)', () => {
-			const position = createMockPosition(55.60, 13.00);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for Kiruna (67.86°N, 20.23°E)', () => {
-			const position = createMockPosition(67.86, 20.23);
-			expect(isInSweden(position)).toBe(true);
-		});
-	});
-
-	describe('boundary cases', () => {
-		test('should return true for minimum latitude boundary', () => {
-			const position = createMockPosition(55.0, 15.0);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for maximum latitude boundary', () => {
-			const position = createMockPosition(69.0, 15.0);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for minimum longitude boundary', () => {
-			const position = createMockPosition(60.0, 10.0);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return true for maximum longitude boundary', () => {
-			const position = createMockPosition(60.0, 24.0);
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return false for just below minimum latitude', () => {
-			const position = createMockPosition(54.99, 15.0);
-			expect(isInSweden(position)).toBe(false);
-		});
-
-		test('should return false for just above maximum latitude', () => {
-			const position = createMockPosition(69.01, 15.0);
-			expect(isInSweden(position)).toBe(false);
-		});
-
-		test('should return false for just below minimum longitude', () => {
-			const position = createMockPosition(60.0, 9.99);
-			expect(isInSweden(position)).toBe(false);
-		});
-
-		test('should return false for just above maximum longitude', () => {
-			const position = createMockPosition(60.0, 24.01);
-			expect(isInSweden(position)).toBe(false);
-		});
-	});
-
-	describe('locations outside Sweden', () => {
-		test('should return false for Copenhagen, Denmark (55.68°N, 12.57°E)', () => {
-			// Copenhagen is at the southern boundary, just outside
-			const position = createMockPosition(55.68, 12.57);
-			// This should be true as it's within bounds, but logically it's Denmark
-			// The bounds are approximate
-			expect(isInSweden(position)).toBe(true);
-		});
-
-		test('should return false for Oslo, Norway (59.91°N, 10.75°E)', () => {
-			const position = createMockPosition(59.91, 10.75);
-			expect(isInSweden(position)).toBe(true); // Within bounds
-		});
-
-		test('should return false for Berlin, Germany (52.52°N, 13.40°E)', () => {
-			const position = createMockPosition(52.52, 13.40);
-			expect(isInSweden(position)).toBe(false);
-		});
-
-		test('should return false for London, UK (51.51°N, -0.13°E)', () => {
-			const position = createMockPosition(51.51, -0.13);
-			expect(isInSweden(position)).toBe(false);
-		});
-
-		test('should return false for New York, USA (40.71°N, -74.01°E)', () => {
-			const position = createMockPosition(40.71, -74.01);
-			expect(isInSweden(position)).toBe(false);
-		});
+	test.each([
+		['Stockholm', 59.33, 18.07, true],
+		['Gothenburg', 57.71, 11.97, true],
+		['Malmö', 55.60, 13.00, true],
+		['Kiruna', 67.86, 20.23, true],
+		['minimum latitude boundary', 55.0, 15.0, true],
+		['maximum latitude boundary', 69.0, 15.0, true],
+		['minimum longitude boundary', 60.0, 10.0, true],
+		['maximum longitude boundary', 60.0, 24.0, true],
+		['just below minimum latitude', 54.99, 15.0, false],
+		['just above maximum latitude', 69.01, 15.0, false],
+		['just below minimum longitude', 60.0, 9.99, false],
+		['just above maximum longitude', 60.0, 24.01, false],
+		['Copenhagen, Denmark', 55.68, 12.57, true],
+		['Oslo, Norway', 59.91, 10.75, true],
+		['Berlin, Germany', 52.52, 13.40, false],
+		['London, UK', 51.51, -0.13, false],
+		['New York, USA', 40.71, -74.01, false]
+	])('should classify %s using the configured bounds', (_name, latitude, longitude, expected) => {
+		const position = createMockPosition({ latitude, longitude });
+		expect(isInSweden(position)).toBe(expected);
 	});
 });
 
@@ -636,7 +527,7 @@ describe('wgs84_to_sweref99tm Function', () => {
 describe('Integration Tests', () => {
 	describe('Sweden boundary validation with coordinate transformation', () => {
 		test('should transform and validate Stockholm', () => {
-			const position = createMockPosition(59.33, 18.07);
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07 });
 			expect(isInSweden(position)).toBe(true);
 			
 			const sweref = wgs84_to_sweref99tm(59.33, 18.07);
@@ -645,7 +536,7 @@ describe('Integration Tests', () => {
 		});
 
 		test('should validate boundaries before transformation', () => {
-			const invalidPosition = createMockPosition(40.71, -74.01); // New York
+			const invalidPosition = createMockPosition({ latitude: 40.71, longitude: -74.01 });
 			expect(isInSweden(invalidPosition)).toBe(false);
 			
 			// Transformation should still work but coordinates might be invalid
@@ -657,24 +548,24 @@ describe('Integration Tests', () => {
 
 	describe('Accuracy threshold validation', () => {
 		test('should validate position with good accuracy', () => {
-			const position = createMockPosition(59.33, 18.07, 3); // 3m accuracy
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 3 });
 			expect(position.coords.accuracy).toBeLessThan(TestConstants.ACCURACY_THRESHOLD_METERS);
 		});
 
 		test('should validate position with poor accuracy', () => {
-			const position = createMockPosition(59.33, 18.07, 15); // 15m accuracy
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 15 });
 			expect(position.coords.accuracy).toBeGreaterThan(TestConstants.ACCURACY_THRESHOLD_METERS);
 		});
 
 		test('should validate position at accuracy threshold', () => {
-			const position = createMockPosition(59.33, 18.07, 5); // 5m accuracy
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 5 });
 			expect(position.coords.accuracy).toBe(TestConstants.ACCURACY_THRESHOLD_METERS);
 		});
 	});
 
 	describe('Speed threshold validation', () => {
 		test('should validate stationary position', () => {
-			const position = createMockPosition(59.33, 18.07, 5, 0);
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 5, speed: 0 });
 			expect(position.coords.speed).not.toBeNull();
 			if (position.coords.speed !== null) {
 				expect(position.coords.speed).toBeLessThan(TestConstants.SPEED_THRESHOLD_MS);
@@ -682,7 +573,7 @@ describe('Integration Tests', () => {
 		});
 
 		test('should validate walking speed', () => {
-			const position = createMockPosition(59.33, 18.07, 5, 1.2);
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 5, speed: 1.2 });
 			expect(position.coords.speed).not.toBeNull();
 			if (position.coords.speed !== null) {
 				expect(position.coords.speed).toBeLessThan(TestConstants.SPEED_THRESHOLD_MS);
@@ -690,7 +581,7 @@ describe('Integration Tests', () => {
 		});
 
 		test('should validate cycling speed', () => {
-			const position = createMockPosition(59.33, 18.07, 5, 5.0);
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 5, speed: 5.0 });
 			expect(position.coords.speed).not.toBeNull();
 			if (position.coords.speed !== null) {
 				expect(position.coords.speed).toBeGreaterThan(TestConstants.SPEED_THRESHOLD_MS);
@@ -701,7 +592,7 @@ describe('Integration Tests', () => {
 	describe('Full coordinate workflow', () => {
 		test('should process a complete Swedish position', () => {
 			// Create position
-			const position = createMockPosition(59.33, 18.07, 4, 0.5);
+			const position = createMockPosition({ latitude: 59.33, longitude: 18.07, accuracy: 4, speed: 0.5 });
 			
 			// Validate Sweden
 			expect(isInSweden(position)).toBe(true);

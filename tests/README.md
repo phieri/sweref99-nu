@@ -41,13 +41,14 @@ The coverage report will be generated in the `coverage/` directory.
 ## Test Structure
 
 ### Test Files
-- `script.test.ts`: Core coordinate logic, bounds, thresholds, and integration coverage
-- `button-state.test.ts`: Button enable/disable state transitions
+- `script.test.ts`: Core coordinate logic, bounds, thresholds, and projection coverage
+- `button-state.test.ts`: DOM-driven positioning and sharing button behaviour
 - `averaging-session.test.ts`: Running average session behaviour
 - `wake-lock.test.ts`: Screen wake lock request/release behaviour
-- `details-state.test.ts`: Details element persistence with localStorage
-- `coordinate-formatting.test.ts`: Coordinate display and share text formatting
-- `speed-units.test.ts`: Speed unit conversion and cycling behaviour
+- `details-state.test.ts`: DOM-driven `<details>` state persistence via localStorage
+- `coordinate-formatting.test.ts`: DOM-driven coordinate display and share text formatting
+- `speed-units.test.ts`: DOM-driven speed unit restoration and cycling
+- `test-helpers.ts`: Shared typed mocks, DOM fixtures, and browser harnesses behaviour
 
 ### Core Coordinate Test Categories (`script.test.ts`)
 
@@ -123,33 +124,18 @@ The tests use a mocked version of the `proj4` library since it's loaded from CDN
 - Coordinate system definition registration
 - Sufficient accuracy for testing logic correctness
 
-### Test Isolation and Code Duplication
+### Test Isolation and Shared Fixtures
 
-**Current Approach:**
-The test suite contains copies of constants and functions from `src/script.ts` rather than importing them directly. This creates some duplication but is necessary because:
+The suite now mixes:
 
-1. **Top-level code**: `script.ts` executes DOM-dependent code at the module level (event listeners, DOM queries)
-2. **Browser-only design**: The file is designed as a single-file browser application, not a modular library
-3. **Minimal modifications**: Following the principle of minimal changes to existing working code
+1. **Exported unit tests** for public classes such as `CoordinateAveragingSession` and `ScreenWakeLockManager`
+2. **DOM integration tests** that load `src/script.ts` inside a controlled jsdom fixture and assert user-visible behaviour
+3. **Focused logic tests** in `script.test.ts` for duplicated non-exported helpers that still cannot be imported directly without changing production structure
 
-**Advantages:**
-- Tests can run in isolation without DOM dependencies
-- No changes needed to the production code structure
-- Tests validate the expected behavior independent of implementation details
-
-**Trade-offs:**
-- Constants and function implementations must be kept in sync manually
-- Higher maintenance burden when source code changes
-- Cannot verify test code matches source code exactly
-
-**Future Improvements:**
-If the codebase evolves to support modular architecture:
-1. Refactor `script.ts` to export testable functions
-2. Separate DOM initialization from business logic
-3. Use ES modules to import actual functions in tests
-4. This would eliminate duplication and improve maintainability
-
-For now, the duplication is documented and acceptable given the constraints.
+Shared browser mocks and DOM setup live in `test-helpers.ts` so that:
+- navigator, geolocation, share, and proj4 mocks stay type-safe and consistent
+- DOM-heavy tests exercise the production event listeners instead of copy-pasted UI helper logic
+- setup stays isolated through fresh module loading and per-test cleanup
 
 ## CI/CD Integration
 
