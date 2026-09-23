@@ -14,8 +14,8 @@ The current dependency set was reviewed against the workflow in `.github/workflo
 The project currently uses the following direct external components:
 
 ### Runtime Dependencies
-- **PROJ4JS** (GitHub release v2.21.0) - MIT License - Lightweight JavaScript coordinate transformation library
-  - The CI workflow downloads the PROJ4JS `dist.zip` asset for the pinned release tag `v2.21.0`. Update this SBOM entry when the workflow is intentionally moved to a newer release tag.
+- **PROJ4JS** (GitHub release v2.22.0) - MIT License - Lightweight JavaScript coordinate transformation library
+  - The CI workflow downloads the PROJ4JS `dist.zip` asset for the pinned release tag `v2.22.0`. Update this SBOM entry when the workflow is intentionally moved to a newer release tag.
 - **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies

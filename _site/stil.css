@@ -116,6 +116,10 @@ article>footer {
 	font-size: var(--posmeta-font-size);
 }
 
+#avg-meta {
+	margin-top: 0.5rem;
+}
+
 #speed {
 	cursor: pointer;
 	user-select: none;

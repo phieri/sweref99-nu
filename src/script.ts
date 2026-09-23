@@ -16,6 +16,12 @@ interface PositionSnapshot {
 	sweref: SwerefCoordinates;
 	lat: number;
 	lon: number;
+	timestamp: number;
+}
+
+interface AveragingMetadata {
+	sampleCount: number;
+	durationMs: number;
 }
 
 interface WakeLockSentinelLike extends EventTarget {
@@ -248,6 +254,27 @@ function formatWgs84Coordinate(prefix: 'N' | 'E', value: number): string {
 	return `${prefix}${NON_BREAKING_SPACE}${value.toString().replace(DECIMAL_SEPARATOR_PATTERN, ",")}°`;
 }
 
+function formatDuration(durationMs: number): string {
+	const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+	if (totalSeconds < 60) {
+		return `${totalSeconds}${NON_BREAKING_SPACE}s`;
+	}
+
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	if (minutes < 60) {
+		return `${minutes}${NON_BREAKING_SPACE}min ${seconds}${NON_BREAKING_SPACE}s`;
+	}
+
+	const hours = Math.floor(minutes / 60);
+	const remainingMinutes = minutes % 60;
+	return `${hours}${NON_BREAKING_SPACE}h ${remainingMinutes}${NON_BREAKING_SPACE}min`;
+}
+
+function formatAveragingMetadata(metadata: AveragingMetadata): string {
+	return `Medel: ${metadata.sampleCount}${NON_BREAKING_SPACE}prov · ${formatDuration(metadata.durationMs)}`;
+}
+
 function isShareSupported(): boolean {
 	return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 }
@@ -316,27 +343,41 @@ export class CoordinateAveragingSession {
 	private sampleCount = 0;
 	private northingSum = 0;
 	private eastingSum = 0;
+	private firstSampleTimestamp: number | null = null;
+	private latestSampleTimestamp: number | null = null;
 
 	isActive(): boolean {
 		return this.active;
 	}
 
-	start(initialSample: SwerefCoordinates): SwerefCoordinates {
+	start(initialSample: SwerefCoordinates, initialTimestamp: number): SwerefCoordinates {
 		this.active = true;
 		this.sampleCount = 0;
 		this.northingSum = 0;
 		this.eastingSum = 0;
-		return this.addSample(initialSample) ?? initialSample;
+		this.firstSampleTimestamp = null;
+		this.latestSampleTimestamp = null;
+		return this.addSample(initialSample, initialTimestamp) ?? initialSample;
 	}
 
-	addSample(sample: SwerefCoordinates): SwerefCoordinates | null {
-		if (!this.active || !Number.isFinite(sample.northing) || !Number.isFinite(sample.easting)) {
+	addSample(sample: SwerefCoordinates, timestamp: number): SwerefCoordinates | null {
+		if (
+			!this.active ||
+			!Number.isFinite(sample.northing) ||
+			!Number.isFinite(sample.easting) ||
+			!Number.isFinite(timestamp)
+		) {
 			return null;
+		}
+
+		if (this.sampleCount === 0) {
+			this.firstSampleTimestamp = timestamp;
 		}
 
 		this.sampleCount += 1;
 		this.northingSum += sample.northing;
 		this.eastingSum += sample.easting;
+		this.latestSampleTimestamp = timestamp;
 		return this.getAverage();
 	}
 
@@ -351,11 +392,28 @@ export class CoordinateAveragingSession {
 		};
 	}
 
+	getMetadata(): AveragingMetadata | null {
+		if (
+			this.sampleCount === 0 ||
+			this.firstSampleTimestamp === null ||
+			this.latestSampleTimestamp === null
+		) {
+			return null;
+		}
+
+		return {
+			sampleCount: this.sampleCount,
+			durationMs: Math.max(0, this.latestSampleTimestamp - this.firstSampleTimestamp)
+		};
+	}
+
 	stop(): void {
 		this.active = false;
 		this.sampleCount = 0;
 		this.northingSum = 0;
 		this.eastingSum = 0;
+		this.firstSampleTimestamp = null;
+		this.latestSampleTimestamp = null;
 	}
 }
 
@@ -604,6 +662,7 @@ type AppElementMap = {
 	avgbtn: HTMLElement | null;
 	sharebtn: HTMLElement | null;
 	stopbtn: HTMLElement | null;
+	avgmeta: HTMLElement | null;
 	notificationDialog: HTMLDialogElement | null;
 	notificationContent: HTMLElement | null;
 	notificationHeader: HTMLElement | null;
@@ -624,6 +683,7 @@ function getAppElementMap(): AppElementMap {
 		avgbtn: getElementById('avg-btn'),
 		sharebtn: getElementById('share-btn'),
 		stopbtn: getElementById('stop-btn'),
+		avgmeta: getElementById('avg-meta'),
 		notificationDialog: getElementById<HTMLDialogElement>('notification-dialog'),
 		notificationContent: getElementById('notification-content'),
 		notificationHeader: getElementById('notification-header'),
@@ -850,6 +910,20 @@ class UIHelper {
 		setElementText(wgs84e, formatWgs84Coordinate('E', lon));
 	}
 
+	updateAveragingMetadata(metadata: AveragingMetadata | null): void {
+		const { avgmeta } = this.elements;
+		if (!avgmeta) return;
+
+		if (metadata === null) {
+			setElementText(avgmeta, '');
+			avgmeta.setAttribute('hidden', 'hidden');
+			return;
+		}
+
+		setElementText(avgmeta, formatAveragingMetadata(metadata));
+		avgmeta.removeAttribute('hidden');
+	}
+
 	/**
 	 * Sets loading state (shows/hides spinner)
 	 */
@@ -902,6 +976,7 @@ class UIHelper {
 		this.setLoadingState(false);
 		this.setButtonState('stopped', false);
 		this.resetSpeedDisplay();
+		this.updateAveragingMetadata(null);
 		const { timestamp } = this.elements;
 		setElementText(timestamp, "--:--:--");
 	}
@@ -988,8 +1063,9 @@ function startAveragingSession(): void {
 		return;
 	}
 
-	const average = averagingSession.start(latestPosition.sweref);
+	const average = averagingSession.start(latestPosition.sweref, latestPosition.timestamp);
 	uiHelper.updateCoordinates(average, latestPosition.lat, latestPosition.lon, AVERAGING_FRACTION_DIGITS);
+	uiHelper.updateAveragingMetadata(averagingSession.getMetadata());
 	uiHelper.setButtonState('active', true, true);
 	void screenWakeLock.request();
 	showNotification(
@@ -1001,6 +1077,7 @@ function startAveragingSession(): void {
 
 function deactivateAveragingSession(preserveDisplayedCoordinates: boolean = false): void {
 	const wasActive = averagingSession.isActive();
+	const preservedMetadata = preserveDisplayedCoordinates ? averagingSession.getMetadata() : null;
 	averagingSession.stop();
 	void screenWakeLock.release();
 
@@ -1015,6 +1092,8 @@ function deactivateAveragingSession(preserveDisplayedCoordinates: boolean = fals
 	if (wasActive && !preserveDisplayedCoordinates && hasValidSwerefPosition(latestPosition)) {
 		uiHelper.updateCoordinates(latestPosition.sweref, latestPosition.lat, latestPosition.lon);
 	}
+
+	uiHelper.updateAveragingMetadata(preservedMetadata);
 }
 
 /**
@@ -1099,13 +1178,16 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	latestPosition = {
 		sweref,
 		lat: position.coords.latitude,
-		lon: position.coords.longitude
+		lon: position.coords.longitude,
+		timestamp: position.timestamp
 	};
-	const averagedSweref = averagingSession.addSample(sweref);
+	const averagedSweref = averagingSession.addSample(sweref, position.timestamp);
 	if (averagedSweref) {
 		uiHelper.updateCoordinates(averagedSweref, position.coords.latitude, position.coords.longitude, AVERAGING_FRACTION_DIGITS);
+		uiHelper.updateAveragingMetadata(averagingSession.getMetadata());
 	} else {
 		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
+		uiHelper.updateAveragingMetadata(null);
 	}
 	hasReceivedPosition = true;
 	uiHelper.setButtonState('active', true, averagingSession.isActive());
