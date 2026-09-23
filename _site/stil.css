@@ -55,11 +55,42 @@ h1, h2, h3, h4, h5, h6 {
 
 header h1 {
 	font-weight: 700;
+	margin-top: 0.25rem;
 	margin-bottom: 0.5rem;
 }
 
 header.container {
-	margin-bottom: 1rem;
+	margin-bottom: 0.5rem;
+}
+
+main.container {
+	display: grid;
+	gap: 0.5rem;
+}
+
+main.container > details,
+main.container > .controls {
+	margin-bottom: 0;
+}
+
+summary {
+	margin-bottom: 0.25rem;
+}
+
+.controls {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	min-inline-size: 0;
+}
+
+.controls .grid {
+	margin-bottom: 0.5rem;
+	gap: 0.5rem;
+}
+
+.controls .grid:last-child {
+	margin-bottom: 0;
 }
 
 article {
