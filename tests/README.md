@@ -13,6 +13,7 @@ The test suite validates critical functionality including:
 - **Boundary validation**: Checks if coordinates are within Swedish territory
 - **Integration scenarios**: Complete workflows combining multiple functions
 - **Button state handling**: Share/start/stop button behaviour
+- **Averaging sessions**: Running mean accumulation for stationary measurements
 - **Details state persistence**: Saving and restoring expanded help sections
 - **Coordinate formatting**: UI alignment and share text formatting
 - **Speed units**: m/s, km/h, and mph conversion and cycling
@@ -41,6 +42,7 @@ The coverage report will be generated in the `coverage/` directory.
 ### Test Files
 - `script.test.ts`: Core coordinate logic, bounds, thresholds, and integration coverage
 - `button-state.test.ts`: Button enable/disable state transitions
+- `averaging-session.test.ts`: Running average session behaviour
 - `details-state.test.ts`: Details element persistence with localStorage
 - `coordinate-formatting.test.ts`: Coordinate display and share text formatting
 - `speed-units.test.ts`: Speed unit conversion and cycling behaviour
