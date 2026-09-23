@@ -1187,7 +1187,9 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 		uiHelper.updateAveragingMetadata(averagingSession.getMetadata());
 	} else {
 		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
-		uiHelper.updateAveragingMetadata(null);
+		if (!averagingSession.isActive()) {
+			uiHelper.updateAveragingMetadata(null);
+		}
 	}
 	hasReceivedPosition = true;
 	uiHelper.setButtonState('active', true, averagingSession.isActive());
