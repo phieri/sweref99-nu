@@ -1,3 +1,5 @@
+import { ScreenWakeLockManager } from '../src/script';
+
 interface WakeLockSentinelLike extends EventTarget {
 	released?: boolean;
 	release(): Promise<void>;
@@ -13,45 +15,6 @@ class MockWakeLockSentinel extends EventTarget implements WakeLockSentinelLike {
 	async release(): Promise<void> {
 		this.released = true;
 		this.dispatchEvent(new Event('release'));
-	}
-}
-
-class ScreenWakeLockManager {
-	private sentinel: WakeLockSentinelLike | null = null;
-	private readonly wakeLock: WakeLockLike | undefined;
-	private readonly isHidden: () => boolean;
-
-	constructor(wakeLock: WakeLockLike | undefined, isHidden: () => boolean) {
-		this.wakeLock = wakeLock;
-		this.isHidden = isHidden;
-	}
-
-	async request(): Promise<void> {
-		if (this.isHidden() || !this.wakeLock) {
-			return;
-		}
-
-		if (this.sentinel && this.sentinel.released !== true) {
-			return;
-		}
-
-		const sentinel = await this.wakeLock.request('screen');
-		sentinel.addEventListener('release', () => {
-			if (this.sentinel === sentinel) {
-				this.sentinel = null;
-			}
-		});
-		this.sentinel = sentinel;
-	}
-
-	async release(): Promise<void> {
-		if (!this.sentinel) {
-			return;
-		}
-
-		const sentinel = this.sentinel;
-		this.sentinel = null;
-		await sentinel.release();
 	}
 }
 
@@ -99,5 +62,23 @@ describe('ScreenWakeLockManager', () => {
 		await manager.request();
 
 		expect(request).toHaveBeenCalledTimes(2);
+	});
+
+	test('should not keep the screen awake when release races an in-flight request', async () => {
+		let resolveRequest!: (s: WakeLockSentinelLike) => void;
+		const inflightSentinel = new MockWakeLockSentinel();
+		const request = jest.fn(
+			() => new Promise<WakeLockSentinelLike>(resolve => { resolveRequest = resolve; })
+		);
+		const manager = new ScreenWakeLockManager({ request }, () => false);
+
+		const requestPromise = manager.request();
+		// release() is called before request() resolves — this is the race
+		await manager.release();
+		resolveRequest(inflightSentinel);
+		await requestPromise;
+
+		// The sentinel acquired after release() was called must itself be released
+		expect(inflightSentinel.released).toBe(true);
 	});
 });

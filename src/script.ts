@@ -311,7 +311,7 @@ function saveSpeedUnit(unit: SpeedUnit): void {
  * The session is intentionally resettable so the user can stop averaging and return to
  * live coordinates without restarting the app.
  */
-class CoordinateAveragingSession {
+export class CoordinateAveragingSession {
 	private active = false;
 	private sampleCount = 0;
 	private northingSum = 0;
@@ -359,16 +359,23 @@ class CoordinateAveragingSession {
 	}
 }
 
-class ScreenWakeLockManager {
+export class ScreenWakeLockManager {
 	private sentinel: WakeLockSentinelLike | null = null;
+	private inFlight = false;
+	private cancelPending = false;
+	private readonly wakeLock: WakeLockLike | undefined;
+	private readonly isHidden: () => boolean;
+
+	constructor(
+		wakeLock?: WakeLockLike,
+		isHidden?: () => boolean
+	) {
+		this.wakeLock = wakeLock ?? (hasBrowserDom() ? (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock : undefined);
+		this.isHidden = isHidden ?? (() => hasBrowserDom() && document.hidden);
+	}
 
 	async request(): Promise<void> {
-		if (!hasBrowserDom() || document.hidden) {
-			return;
-		}
-
-		const wakeLock = (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock;
-		if (!wakeLock) {
+		if (this.isHidden() || !this.wakeLock) {
 			return;
 		}
 
@@ -376,20 +383,41 @@ class ScreenWakeLockManager {
 			return;
 		}
 
+		if (this.inFlight) {
+			return;
+		}
+
+		this.inFlight = true;
 		try {
-			const sentinel = await wakeLock.request('screen');
-			sentinel.addEventListener('release', () => {
-				if (this.sentinel === sentinel) {
-					this.sentinel = null;
+			const sentinel = await this.wakeLock.request('screen');
+			if (this.cancelPending) {
+				this.cancelPending = false;
+				try {
+					await sentinel.release();
+				} catch {
+					// Ignore errors when releasing a cancelled in-flight sentinel
 				}
-			});
-			this.sentinel = sentinel;
+			} else {
+				sentinel.addEventListener('release', () => {
+					if (this.sentinel === sentinel) {
+						this.sentinel = null;
+					}
+				});
+				this.sentinel = sentinel;
+			}
 		} catch (error) {
 			console.warn('Kunde inte hålla skärmen tänd:', error);
+		} finally {
+			this.inFlight = false;
 		}
 	}
 
 	async release(): Promise<void> {
+		if (this.inFlight) {
+			this.cancelPending = true;
+			return;
+		}
+
 		if (!this.sentinel) {
 			return;
 		}
