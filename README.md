@@ -20,7 +20,7 @@ PWA for showing current position in SWEREF 99 TM. Works offline after first visi
 - Run the test suite with `npm test`
 - Build the browser bundle with `make script.js`
 - The browser bundle is compiled from `src/script.ts` into `_site/script.js` for local testing and deployment
-- The averaging button in the published UI starts a running mean over incoming SWEREF 99 samples, displays northing/easting with one decimal while active, and requests a screen wake lock when supported
+- The averaging button in the published UI starts a running mean over incoming SWEREF 99 samples, displays northing/easting with two decimals while active, and requests a screen wake lock when supported
 - The project intentionally keeps the build/test stack minimal (TypeScript + Babel + Jest) and pins the small set of transitive overrides needed to keep the test runner secure and compatible with the supported Node runtime.
 
 ## References
