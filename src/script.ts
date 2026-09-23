@@ -172,7 +172,7 @@ const SPEED_UNIT_ORDER: SpeedUnit[] = ['m/s', 'km/h', 'mph'];
  * LocalStorage key for speed unit preference
  */
 const SPEED_UNIT_STORAGE_KEY = 'sweref99-speed-unit';
-const AVERAGING_FRACTION_DIGITS = 1;
+const AVERAGING_FRACTION_DIGITS = 2;
 const NON_BREAKING_SPACE = '\u00A0';
 const DECIMAL_SEPARATOR_PATTERN = /\./g;
 const SPEED_UNIT_PATTERN = /(m\/s|km\/h|mph)$/u;
