@@ -12,6 +12,21 @@ interface SwerefCoordinates {
 	easting: number;
 }
 
+interface PositionSnapshot {
+	sweref: SwerefCoordinates;
+	lat: number;
+	lon: number;
+}
+
+interface WakeLockSentinelLike extends EventTarget {
+	released?: boolean;
+	release(): Promise<void>;
+}
+
+interface WakeLockLike {
+	request(type: 'screen'): Promise<WakeLockSentinelLike>;
+}
+
 /**
  * Represents the correction needed for ITRF to ETRS89 continental drift
  */
@@ -122,6 +137,12 @@ const UI_TEXT = {
 	NOT_AVAILABLE: 'Ej\u00A0tillgängligt',
 	WARNING_NOT_IN_SWEDEN: "Varning: SWEREF 99 är bara användbart i Sverige.",
 	WARNING_NOT_IN_SWEDEN_TITLE: "Position utanför Sverige",
+	AVERAGING_BUTTON_START: 'Starta medel',
+	AVERAGING_BUTTON_STOP: 'Stoppa medel',
+	AVERAGING_SESSION_UNAVAILABLE: 'Starta positioneringen och invänta en giltig SWEREF 99-position innan du startar medelvärdet.',
+	AVERAGING_SESSION_UNAVAILABLE_TITLE: 'Medelvärde ej tillgängligt',
+	AVERAGING_SESSION_STARTED: 'Medelvärdet har startat. Låt enheten ligga stilla så länge du vill samla fler mätpunkter.',
+	AVERAGING_SESSION_STARTED_TITLE: 'Medelvärde aktivt',
 	HELP_URL: "https://sweref99.nu/om.html"
 } as const;
 
@@ -151,6 +172,7 @@ const SPEED_UNIT_ORDER: SpeedUnit[] = ['m/s', 'km/h', 'mph'];
  * LocalStorage key for speed unit preference
  */
 const SPEED_UNIT_STORAGE_KEY = 'sweref99-speed-unit';
+const AVERAGING_FRACTION_DIGITS = 1;
 const NON_BREAKING_SPACE = '\u00A0';
 const DECIMAL_SEPARATOR_PATTERN = /\./g;
 const SPEED_UNIT_PATTERN = /(m\/s|km\/h|mph)$/u;
@@ -213,8 +235,13 @@ function formatValueWithUnit(value: number | string, unit: SpeedUnit): string {
 	return `${value}${NON_BREAKING_SPACE}${unit}`;
 }
 
-function formatProjectedCoordinate(prefix: 'N' | 'E', value: number, spacing: 1 | 2): string {
-	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${Math.round(value)}`;
+function formatProjectedCoordinate(prefix: 'N' | 'E', value: number, spacing: 1 | 2, fractionDigits: number = 0): string {
+	const formattedValue = (
+		fractionDigits > 0
+			? value.toFixed(fractionDigits)
+			: Math.round(value).toString()
+	).replace(DECIMAL_SEPARATOR_PATTERN, ",");
+	return `${prefix}${NON_BREAKING_SPACE.repeat(spacing)}${formattedValue}`;
 }
 
 function formatWgs84Coordinate(prefix: 'N' | 'E', value: number): string {
@@ -277,6 +304,132 @@ function getSavedSpeedUnit(): SpeedUnit {
  */
 function saveSpeedUnit(unit: SpeedUnit): void {
 	setStoredItem(SPEED_UNIT_STORAGE_KEY, unit);
+}
+
+/**
+ * CoordinateAveragingSession accumulates SWEREF 99 samples and exposes a running average.
+ * The session is intentionally resettable so the user can stop averaging and return to
+ * live coordinates without restarting the app.
+ */
+export class CoordinateAveragingSession {
+	private active = false;
+	private sampleCount = 0;
+	private northingSum = 0;
+	private eastingSum = 0;
+
+	isActive(): boolean {
+		return this.active;
+	}
+
+	start(initialSample: SwerefCoordinates): SwerefCoordinates {
+		this.active = true;
+		this.sampleCount = 0;
+		this.northingSum = 0;
+		this.eastingSum = 0;
+		return this.addSample(initialSample) ?? initialSample;
+	}
+
+	addSample(sample: SwerefCoordinates): SwerefCoordinates | null {
+		if (!this.active || !Number.isFinite(sample.northing) || !Number.isFinite(sample.easting)) {
+			return null;
+		}
+
+		this.sampleCount += 1;
+		this.northingSum += sample.northing;
+		this.eastingSum += sample.easting;
+		return this.getAverage();
+	}
+
+	getAverage(): SwerefCoordinates | null {
+		if (this.sampleCount === 0) {
+			return null;
+		}
+
+		return {
+			northing: this.northingSum / this.sampleCount,
+			easting: this.eastingSum / this.sampleCount
+		};
+	}
+
+	stop(): void {
+		this.active = false;
+		this.sampleCount = 0;
+		this.northingSum = 0;
+		this.eastingSum = 0;
+	}
+}
+
+export class ScreenWakeLockManager {
+	private sentinel: WakeLockSentinelLike | null = null;
+	private inFlight = false;
+	private cancelPending = false;
+	private readonly wakeLock: WakeLockLike | undefined;
+	private readonly isHidden: () => boolean;
+
+	constructor(
+		wakeLock?: WakeLockLike,
+		isHidden?: () => boolean
+	) {
+		this.wakeLock = wakeLock ?? (hasBrowserDom() ? (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock : undefined);
+		this.isHidden = isHidden ?? (() => hasBrowserDom() && document.hidden);
+	}
+
+	async request(): Promise<void> {
+		if (this.isHidden() || !this.wakeLock) {
+			return;
+		}
+
+		if (this.sentinel && this.sentinel.released !== true) {
+			return;
+		}
+
+		if (this.inFlight) {
+			return;
+		}
+
+		this.inFlight = true;
+		try {
+			const sentinel = await this.wakeLock.request('screen');
+			if (this.cancelPending) {
+				this.cancelPending = false;
+				try {
+					await sentinel.release();
+				} catch {
+					// Ignore errors when releasing a cancelled in-flight sentinel
+				}
+			} else {
+				sentinel.addEventListener('release', () => {
+					if (this.sentinel === sentinel) {
+						this.sentinel = null;
+					}
+				});
+				this.sentinel = sentinel;
+			}
+		} catch (error) {
+			console.warn('Kunde inte hålla skärmen tänd:', error);
+		} finally {
+			this.inFlight = false;
+		}
+	}
+
+	async release(): Promise<void> {
+		if (this.inFlight) {
+			this.cancelPending = true;
+			return;
+		}
+
+		if (!this.sentinel) {
+			return;
+		}
+
+		const sentinel = this.sentinel;
+		this.sentinel = null;
+		try {
+			await sentinel.release();
+		} catch (error) {
+			console.warn('Kunde inte släppa wake lock:', error);
+		}
+	}
 }
 
 /**
@@ -448,6 +601,7 @@ type AppElementMap = {
 	wgs84n: HTMLElement | null;
 	wgs84e: HTMLElement | null;
 	posbtn: HTMLElement | null;
+	avgbtn: HTMLElement | null;
 	sharebtn: HTMLElement | null;
 	stopbtn: HTMLElement | null;
 	notificationDialog: HTMLDialogElement | null;
@@ -467,6 +621,7 @@ function getAppElementMap(): AppElementMap {
 		wgs84n: getElementById('wgs84-n'),
 		wgs84e: getElementById('wgs84-e'),
 		posbtn: getElementById('pos-btn'),
+		avgbtn: getElementById('avg-btn'),
 		sharebtn: getElementById('share-btn'),
 		stopbtn: getElementById('stop-btn'),
 		notificationDialog: getElementById<HTMLDialogElement>('notification-dialog'),
@@ -481,6 +636,7 @@ const appElements = getAppElementMap();
 const {
 	speed,
 	posbtn,
+	avgbtn,
 	sharebtn,
 	stopbtn,
 	notificationDialog,
@@ -678,7 +834,7 @@ class UIHelper {
 	/**
 	 * Updates coordinate displays for both SWEREF 99 and WGS84
 	 */
-	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number): void {
+	updateCoordinates(sweref: SwerefCoordinates, lat: number, lon: number, projectedFractionDigits: number = 0): void {
 		const { swerefn, swerefe, wgs84n, wgs84e } = this.elements;
 
 		if (!Number.isFinite(sweref.northing) || !Number.isFinite(sweref.easting)) {
@@ -686,8 +842,8 @@ class UIHelper {
 			setElementText(swerefn, UI_TEXT.NOT_AVAILABLE);
 			setElementText(swerefe, UI_TEXT.NOT_AVAILABLE);
 		} else {
-			setElementText(swerefn, formatProjectedCoordinate('N', sweref.northing, 1));
-			setElementText(swerefe, formatProjectedCoordinate('E', sweref.easting, 2));
+			setElementText(swerefn, formatProjectedCoordinate('N', sweref.northing, 1, projectedFractionDigits));
+			setElementText(swerefe, formatProjectedCoordinate('E', sweref.easting, 2, projectedFractionDigits));
 		}
 
 		setElementText(wgs84n, formatWgs84Coordinate('N', lat));
@@ -711,13 +867,15 @@ class UIHelper {
 	/**
 	 * Sets button states for active/stopped positioning
 	 */
-	setButtonState(state: 'active' | 'stopped', hasPosition?: boolean): void {
-		const { posbtn, stopbtn, sharebtn } = this.elements;
+	setButtonState(state: 'active' | 'stopped', hasPosition: boolean = false, isAveragingActive: boolean = false): void {
+		const { posbtn, stopbtn, sharebtn, avgbtn } = this.elements;
 		const canShare = isShareSupported();
 
 		if (state === 'active') {
 			posbtn?.setAttribute("disabled", "disabled");
 			stopbtn?.removeAttribute("disabled");
+			avgbtn?.removeAttribute("disabled");
+			setElementText(avgbtn, isAveragingActive ? UI_TEXT.AVERAGING_BUTTON_STOP : UI_TEXT.AVERAGING_BUTTON_START);
 			if (canShare) {
 				sharebtn?.removeAttribute("disabled");
 			} else {
@@ -726,6 +884,8 @@ class UIHelper {
 		} else {
 			stopbtn?.setAttribute("disabled", "disabled");
 			posbtn?.removeAttribute("disabled");
+			avgbtn?.setAttribute("disabled", "disabled");
+			setElementText(avgbtn, UI_TEXT.AVERAGING_BUTTON_START);
 			// Keep share button enabled if we have received a position
 			if (canShare && hasPosition) {
 				sharebtn?.removeAttribute("disabled");
@@ -808,6 +968,54 @@ let watchID: number | null = null;
 let spinnerTimeout: number | null = null;
 let hasReceivedPosition: boolean = false;
 let currentSpeed: number | null = null;
+let latestPosition: PositionSnapshot | null = null;
+const averagingSession = new CoordinateAveragingSession();
+const screenWakeLock = new ScreenWakeLockManager();
+
+function hasValidSwerefPosition(position: PositionSnapshot | null): position is PositionSnapshot {
+	return position !== null &&
+		Number.isFinite(position.sweref.northing) &&
+		Number.isFinite(position.sweref.easting);
+}
+
+function startAveragingSession(): void {
+	if (!hasValidSwerefPosition(latestPosition)) {
+		showNotification(
+			UI_TEXT.AVERAGING_SESSION_UNAVAILABLE,
+			NOTIFICATION_DURATION.DEFAULT,
+			UI_TEXT.AVERAGING_SESSION_UNAVAILABLE_TITLE
+		);
+		return;
+	}
+
+	const average = averagingSession.start(latestPosition.sweref);
+	uiHelper.updateCoordinates(average, latestPosition.lat, latestPosition.lon, AVERAGING_FRACTION_DIGITS);
+	uiHelper.setButtonState('active', true, true);
+	void screenWakeLock.request();
+	showNotification(
+		UI_TEXT.AVERAGING_SESSION_STARTED,
+		NOTIFICATION_DURATION.DEFAULT,
+		UI_TEXT.AVERAGING_SESSION_STARTED_TITLE
+	);
+}
+
+function deactivateAveragingSession(preserveDisplayedCoordinates: boolean = false): void {
+	const wasActive = averagingSession.isActive();
+	averagingSession.stop();
+	void screenWakeLock.release();
+
+	if (wasActive) {
+		if (watchID !== null) {
+			uiHelper.setButtonState('active', hasReceivedPosition, false);
+		} else {
+			uiHelper.setButtonState('stopped', hasReceivedPosition, false);
+		}
+	}
+
+	if (wasActive && !preserveDisplayedCoordinates && hasValidSwerefPosition(latestPosition)) {
+		uiHelper.updateCoordinates(latestPosition.sweref, latestPosition.lat, latestPosition.lon);
+	}
+}
 
 /**
  * Clears the spinner timeout if it exists
@@ -888,9 +1096,19 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	uiHelper.updateTimestamp(position.timestamp);
 
 	const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
-	uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
+	latestPosition = {
+		sweref,
+		lat: position.coords.latitude,
+		lon: position.coords.longitude
+	};
+	const averagedSweref = averagingSession.addSample(sweref);
+	if (averagedSweref) {
+		uiHelper.updateCoordinates(averagedSweref, position.coords.latitude, position.coords.longitude, AVERAGING_FRACTION_DIGITS);
+	} else {
+		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
+	}
 	hasReceivedPosition = true;
-	uiHelper.setButtonState('active');
+	uiHelper.setButtonState('active', true, averagingSession.isActive());
 }
 
 /**
@@ -901,6 +1119,7 @@ function handlePositionError(): void {
 	clearSpinnerTimeout();
 	uiHelper.setLoadingState(false);
 	hasReceivedPosition = false;
+	deactivateAveragingSession(true);
 	uiHelper.setButtonState('stopped', false);
 	showNotification(UI_TEXT.ERROR_NO_POSITION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_NO_POSITION_TITLE);
 }
@@ -911,6 +1130,7 @@ function handlePositionError(): void {
  */
 function handlePositionRestoreError(): void {
 	console.log("Positioning restore failed, resetting to stopped state");
+	deactivateAveragingSession(true);
 	stopGeolocationWatch();
 	uiHelper.resetUI();
 }
@@ -953,15 +1173,25 @@ function posInit(event: Event): void {
  * Handle page visibility changes and back navigation to restore positioning state
  */
 function handleVisibilityChange(): void {
+	if (document.hidden) {
+		void screenWakeLock.release();
+		return;
+	}
+
 	// Only restore if page becomes visible and UI indicates positioning should be active
-	if (!document.hidden && uiHelper.isUIInconsistent()) {
+	if (uiHelper.isUIInconsistent()) {
 		// UI state is inconsistent - reset to stopped state
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
+		deactivateAveragingSession(true);
 		stopGeolocationWatch();
 		uiHelper.resetUI();
-	} else if (!document.hidden && uiHelper.isPositioningUIActive()) {
+	} else {
+		if (averagingSession.isActive()) {
+			void screenWakeLock.request();
+		}
+
 		// UI indicates positioning should be active, check if watchID is valid
-		if (watchID === null) {
+		if (uiHelper.isPositioningUIActive() && watchID === null) {
 			console.log("Positioning was active but watch was lost, restarting...");
 			posInit(new Event("restore"));
 		}
@@ -1082,9 +1312,20 @@ function initializeEventListeners(): void {
 	
 	// Stop button
 	stopbtn?.addEventListener("click", () => {
+		const preserveDisplayedAverage = averagingSession.isActive();
+		deactivateAveragingSession(preserveDisplayedAverage);
 		stopGeolocationWatch();
 		uiHelper.setButtonState('stopped', hasReceivedPosition);
 		uiHelper.resetSpeedDisplay();
+	});
+
+	avgbtn?.addEventListener("click", () => {
+		if (averagingSession.isActive()) {
+			deactivateAveragingSession();
+			return;
+		}
+
+		startAveragingSession();
 	});
 
 	// Speed unit cycling

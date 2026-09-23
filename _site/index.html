@@ -44,7 +44,7 @@
 		<link rel="stylesheet" href="/stil.css">
 
 		<script src="proj4.js" defer></script>
-		<script src="script.js" defer></script>
+		<script type="module" src="script.js"></script>
 	</head>
 	<body>
 		<dialog id="notification-dialog">
@@ -81,6 +81,9 @@
 			<div class="grid">
 				<button id="pos-btn" disabled>Starta</button>
 				<button id="stop-btn" disabled>Stoppa</button>
+			</div>
+			<div class="grid">
+				<button class="secondary" id="avg-btn" disabled>Starta medel</button>
 				<button class="secondary" id="share-btn" disabled>Dela</button>
 			</div>
 		</main>
