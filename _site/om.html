@@ -34,6 +34,7 @@
 			<p>Webbapp som visar din nuvarande position i SWEREF&nbsp;99 TM-koordinater.</p>
 			<p>Ingen platsinformation lämnar webbläsaren.</p>
 			<p>Appen fungerar offline efter första besöket genom lokal caching.</p>
+			<p>Du kan starta en medelvärdessession när enheten ligger stilla för att få ett stabilare SWEREF&nbsp;99-värde över tid.</p>
 			<p>Utveckling på <a href="https://github.com/phieri/sweref99-nu" hreflang="en-US" rel="noopener noreferrer">GitHub</a>.</p>
 			<p>Driften sponsras av <a href="https://www.wabbit.se/" rel="noopener noreferrer">Wabbit AB</a>.</p>
 			<h2>Vad är SWEREF 99 TM?</h2>
@@ -45,6 +46,9 @@
 				<li>geografisk analys och GIS-tillämpningar</li>
 				<li>räddningstjänst.</li>
 			</ul>
+			<h2>Medelvärdesbildning</h2>
+			<p>När du har fått en position kan du trycka på <strong>Starta medel</strong>. Lägg då enheten stilla och låt sessionen fortsätta så länge du vill samla fler mätpunkter.</p>
+			<p>Under medelvärdessessionen visas nord- och östvärdena med en decimal så att små förbättringar i medelvärdet blir synliga. Tryck på <strong>Stoppa medel</strong> för att gå tillbaka till den löpande positionsvisningen, eller <strong>Stoppa</strong> för att avsluta positioneringen och behålla det senaste medelvärdet på skärmen.</p>
 			<h2>Teknisk information</h2>
 			<p>Webbappen kompenserar för den tidsberoende skillnaden mellan WGS 84 och SWEREF 99. WGS 84 (som används av GNSS) är ett globalt referenssystem som uppdateras kontinuerligt, medan SWEREF 99 är baserat på ETRS89 som fixerades vid epoch 1989.0. På grund av kontinentaldrift rör sig den europeiska plattan cirka 2,5&nbsp;cm per år nordost relativt det globala referenssystemet.</p>
 			<p>Appen beräknar automatiskt denna korrigering baserat på aktuellt datum. Sedan ETRS89 fixerades 1989 har den totala förskjutningen vuxit till omkring 90&nbsp;cm (ca 83&nbsp;cm norrut och 39&nbsp;cm österut för år 2025).</p>

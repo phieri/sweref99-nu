@@ -2,7 +2,8 @@
  * Unit tests for coordinate formatting
  * 
  * This test suite covers the extra space formatting for E coordinate
- * to ensure proper alignment between N (7 digits) and E (6 digits)
+ * to ensure proper alignment between N (7 digits) and E (6 digits),
+ * including averaging mode with one decimal digit.
  */
 
 /**
@@ -77,11 +78,16 @@ class TestUIHelper {
 	/**
 	 * Updates coordinate displays for SWEREF 99
 	 */
-	updateCoordinates(northing: number, easting: number): void {
+	updateCoordinates(northing: number, easting: number, fractionDigits: number = 0): void {
 		const { swerefn, swerefe } = this.elements;
+		const formatCoordinate = (value: number) => (
+			fractionDigits > 0
+				? value.toFixed(fractionDigits)
+				: Math.round(value).toString()
+		).replace(".", ",");
 
-		if (swerefn) swerefn.innerHTML = `N&nbsp;${Math.round(northing).toString().replace(".", ",")}`;
-		if (swerefe) swerefe.innerHTML = `E&nbsp;&nbsp;${Math.round(easting).toString().replace(".", ",")}`;
+		if (swerefn) swerefn.innerHTML = `N&nbsp;${formatCoordinate(northing)}`;
+		if (swerefe) swerefe.innerHTML = `E&nbsp;&nbsp;${formatCoordinate(easting)}`;
 	}
 
 	/**
@@ -163,6 +169,18 @@ describe('Coordinate Formatting', () => {
 			expect(swerefn?.textContent).toBe('N 6155000');
 			expect(swerefe?.textContent).toBe('E  375000');
 		});
+
+		test('should show one decimal digit in averaging mode', () => {
+			const uiHelper = new TestUIHelper();
+
+			uiHelper.updateCoordinates(6580123.44, 674456.75, 1);
+
+			const swerefn = uiHelper.getElement('swerefn');
+			const swerefe = uiHelper.getElement('swerefe');
+
+			expect(swerefn?.textContent).toBe('N 6580123,4');
+			expect(swerefe?.textContent).toBe('E  674456,8');
+		});
 	});
 
 	describe('Share text formatting', () => {
@@ -213,6 +231,14 @@ describe('Coordinate Formatting', () => {
 			// Should not contain double space after E
 			expect(shareText).not.toContain('E  674456');
 		});
+
+		test('should keep averaging decimals in share text', () => {
+			const uiHelper = new TestUIHelper();
+
+			uiHelper.updateCoordinates(6580123.44, 674456.75, 1);
+
+			expect(uiHelper.getShareText()).toBe('N 6580123,4 E 674456,8 (SWEREF 99 TM)');
+		});
 	});
 
 	describe('Alignment verification', () => {
@@ -251,6 +277,18 @@ describe('Coordinate Formatting', () => {
 			// "E  674456" = 9 chars
 			expect(swerefn?.textContent.length).toBe(9);
 			expect(swerefe?.textContent.length).toBe(9);
+		});
+
+		test('should keep alignment when averaging adds decimals', () => {
+			const uiHelper = new TestUIHelper();
+
+			uiHelper.updateCoordinates(6580123.44, 674456.75, 1);
+
+			const swerefn = uiHelper.getElement('swerefn');
+			const swerefe = uiHelper.getElement('swerefe');
+
+			expect(swerefn?.textContent.length).toBe(11);
+			expect(swerefe?.textContent.length).toBe(11);
 		});
 	});
 });

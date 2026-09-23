@@ -10,6 +10,7 @@
  */
 class MockElement {
 	private attributes: Map<string, string> = new Map();
+	textContent = '';
 	
 	setAttribute(name: string, value: string): void {
 		this.attributes.set(name, value);
@@ -34,6 +35,7 @@ class MockElement {
 class UIHelper {
 	private elements: {
 		posbtn: MockElement | null;
+		avgbtn: MockElement | null;
 		sharebtn: MockElement | null;
 		stopbtn: MockElement | null;
 	};
@@ -41,6 +43,7 @@ class UIHelper {
 	constructor() {
 		this.elements = {
 			posbtn: new MockElement(),
+			avgbtn: new MockElement(),
 			sharebtn: new MockElement(),
 			stopbtn: new MockElement()
 		};
@@ -49,16 +52,20 @@ class UIHelper {
 	/**
 	 * Sets button states for active/stopped positioning
 	 */
-	setButtonState(state: 'active' | 'stopped', hasPosition?: boolean): void {
-		const { posbtn, stopbtn, sharebtn } = this.elements;
+	setButtonState(state: 'active' | 'stopped', hasPosition: boolean = false, isAveragingActive: boolean = false): void {
+		const { posbtn, stopbtn, sharebtn, avgbtn } = this.elements;
 
 		if (state === 'active') {
 			posbtn?.setAttribute("disabled", "disabled");
 			stopbtn?.removeAttribute("disabled");
+			avgbtn?.removeAttribute("disabled");
+			if (avgbtn) avgbtn.textContent = isAveragingActive ? 'Stoppa medel' : 'Starta medel';
 			sharebtn?.removeAttribute("disabled");
 		} else {
 			stopbtn?.setAttribute("disabled", "disabled");
 			posbtn?.removeAttribute("disabled");
+			avgbtn?.setAttribute("disabled", "disabled");
+			if (avgbtn) avgbtn.textContent = 'Starta medel';
 			// Keep share button enabled if we have received a position
 			if (hasPosition) {
 				sharebtn?.removeAttribute("disabled");
@@ -71,7 +78,7 @@ class UIHelper {
 	/**
 	 * Get button element for testing
 	 */
-	getButton(name: 'posbtn' | 'sharebtn' | 'stopbtn'): MockElement | null {
+	getButton(name: 'posbtn' | 'avgbtn' | 'sharebtn' | 'stopbtn'): MockElement | null {
 		return this.elements[name];
 	}
 }
@@ -88,12 +95,24 @@ describe('Button State Management', () => {
 			uiHelper.setButtonState('active');
 
 			const posbtn = uiHelper.getButton('posbtn');
+			const avgbtn = uiHelper.getButton('avgbtn');
 			const stopbtn = uiHelper.getButton('stopbtn');
 			const sharebtn = uiHelper.getButton('sharebtn');
 
 			expect(posbtn?.hasAttribute('disabled')).toBe(true);
+			expect(avgbtn?.hasAttribute('disabled')).toBe(false);
+			expect(avgbtn?.textContent).toBe('Starta medel');
 			expect(stopbtn?.hasAttribute('disabled')).toBe(false);
 			expect(sharebtn?.hasAttribute('disabled')).toBe(false);
+		});
+
+		test('should show stop label while averaging is active', () => {
+			uiHelper.setButtonState('active', true, true);
+
+			const avgbtn = uiHelper.getButton('avgbtn');
+
+			expect(avgbtn?.hasAttribute('disabled')).toBe(false);
+			expect(avgbtn?.textContent).toBe('Stoppa medel');
 		});
 	});
 
@@ -106,10 +125,13 @@ describe('Button State Management', () => {
 			uiHelper.setButtonState('stopped', true);
 
 			const posbtn = uiHelper.getButton('posbtn');
+			const avgbtn = uiHelper.getButton('avgbtn');
 			const stopbtn = uiHelper.getButton('stopbtn');
 			const sharebtn = uiHelper.getButton('sharebtn');
 
 			expect(posbtn?.hasAttribute('disabled')).toBe(false);
+			expect(avgbtn?.hasAttribute('disabled')).toBe(true);
+			expect(avgbtn?.textContent).toBe('Starta medel');
 			expect(stopbtn?.hasAttribute('disabled')).toBe(true);
 			expect(sharebtn?.hasAttribute('disabled')).toBe(false); // Should remain enabled
 		});
@@ -122,10 +144,12 @@ describe('Button State Management', () => {
 			uiHelper.setButtonState('stopped', false);
 
 			const posbtn = uiHelper.getButton('posbtn');
+			const avgbtn = uiHelper.getButton('avgbtn');
 			const stopbtn = uiHelper.getButton('stopbtn');
 			const sharebtn = uiHelper.getButton('sharebtn');
 
 			expect(posbtn?.hasAttribute('disabled')).toBe(false);
+			expect(avgbtn?.hasAttribute('disabled')).toBe(true);
 			expect(stopbtn?.hasAttribute('disabled')).toBe(true);
 			expect(sharebtn?.hasAttribute('disabled')).toBe(true); // Should be disabled
 		});
