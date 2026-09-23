@@ -18,6 +18,15 @@ interface PositionSnapshot {
 	lon: number;
 }
 
+interface WakeLockSentinelLike extends EventTarget {
+	released?: boolean;
+	release(): Promise<void>;
+}
+
+interface WakeLockLike {
+	request(type: 'screen'): Promise<WakeLockSentinelLike>;
+}
+
 /**
  * Represents the correction needed for ITRF to ETRS89 continental drift
  */
@@ -347,6 +356,51 @@ class CoordinateAveragingSession {
 		this.sampleCount = 0;
 		this.northingSum = 0;
 		this.eastingSum = 0;
+	}
+}
+
+class ScreenWakeLockManager {
+	private sentinel: WakeLockSentinelLike | null = null;
+
+	async request(): Promise<void> {
+		if (!hasBrowserDom() || document.hidden) {
+			return;
+		}
+
+		const wakeLock = (navigator as Navigator & { wakeLock?: WakeLockLike }).wakeLock;
+		if (!wakeLock) {
+			return;
+		}
+
+		if (this.sentinel && this.sentinel.released !== true) {
+			return;
+		}
+
+		try {
+			const sentinel = await wakeLock.request('screen');
+			sentinel.addEventListener('release', () => {
+				if (this.sentinel === sentinel) {
+					this.sentinel = null;
+				}
+			});
+			this.sentinel = sentinel;
+		} catch (error) {
+			console.warn('Kunde inte hålla skärmen tänd:', error);
+		}
+	}
+
+	async release(): Promise<void> {
+		if (!this.sentinel) {
+			return;
+		}
+
+		const sentinel = this.sentinel;
+		this.sentinel = null;
+		try {
+			await sentinel.release();
+		} catch (error) {
+			console.warn('Kunde inte släppa wake lock:', error);
+		}
 	}
 }
 
@@ -888,6 +942,7 @@ let hasReceivedPosition: boolean = false;
 let currentSpeed: number | null = null;
 let latestPosition: PositionSnapshot | null = null;
 const averagingSession = new CoordinateAveragingSession();
+const screenWakeLock = new ScreenWakeLockManager();
 
 function hasValidSwerefPosition(position: PositionSnapshot | null): position is PositionSnapshot {
 	return position !== null &&
@@ -908,6 +963,7 @@ function startAveragingSession(): void {
 	const average = averagingSession.start(latestPosition.sweref);
 	uiHelper.updateCoordinates(average, latestPosition.lat, latestPosition.lon, AVERAGING_FRACTION_DIGITS);
 	uiHelper.setButtonState('active', true, true);
+	void screenWakeLock.request();
 	showNotification(
 		UI_TEXT.AVERAGING_SESSION_STARTED,
 		NOTIFICATION_DURATION.DEFAULT,
@@ -918,6 +974,7 @@ function startAveragingSession(): void {
 function deactivateAveragingSession(preserveDisplayedCoordinates: boolean = false): void {
 	const wasActive = averagingSession.isActive();
 	averagingSession.stop();
+	void screenWakeLock.release();
 
 	if (wasActive) {
 		if (watchID !== null) {
@@ -1088,16 +1145,25 @@ function posInit(event: Event): void {
  * Handle page visibility changes and back navigation to restore positioning state
  */
 function handleVisibilityChange(): void {
+	if (document.hidden) {
+		void screenWakeLock.release();
+		return;
+	}
+
 	// Only restore if page becomes visible and UI indicates positioning should be active
-	if (!document.hidden && uiHelper.isUIInconsistent()) {
+	if (uiHelper.isUIInconsistent()) {
 		// UI state is inconsistent - reset to stopped state
 		console.log("Detected inconsistent positioning state after navigation, resetting...");
 		deactivateAveragingSession(true);
 		stopGeolocationWatch();
 		uiHelper.resetUI();
-	} else if (!document.hidden && uiHelper.isPositioningUIActive()) {
+	} else {
+		if (averagingSession.isActive()) {
+			void screenWakeLock.request();
+		}
+
 		// UI indicates positioning should be active, check if watchID is valid
-		if (watchID === null) {
+		if (uiHelper.isPositioningUIActive() && watchID === null) {
 			console.log("Positioning was active but watch was lost, restarting...");
 			posInit(new Event("restore"));
 		}
