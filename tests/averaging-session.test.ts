@@ -32,6 +32,17 @@ describe('CoordinateAveragingSession', () => {
 		expect(session.getMetadata()).toEqual({ sampleCount: 1, durationMs: 0 });
 	});
 
+	test('should ignore samples with invalid timestamps', () => {
+		const session = new CoordinateAveragingSession();
+
+		session.start({ northing: 6580123.0, easting: 674456.0 }, 1000);
+		const average = session.addSample({ northing: 6580125.0, easting: 674458.0 }, Number.NaN);
+
+		expect(average).toBeNull();
+		expect(session.getAverage()).toEqual({ northing: 6580123.0, easting: 674456.0 });
+		expect(session.getMetadata()).toEqual({ sampleCount: 1, durationMs: 0 });
+	});
+
 	test('should reset accumulated state when stopped', () => {
 		const session = new CoordinateAveragingSession();
 

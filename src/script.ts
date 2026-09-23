@@ -1044,6 +1044,7 @@ let spinnerTimeout: number | null = null;
 let hasReceivedPosition: boolean = false;
 let currentSpeed: number | null = null;
 let latestPosition: PositionSnapshot | null = null;
+let preservedAveragingMetadata: AveragingMetadata | null = null;
 const averagingSession = new CoordinateAveragingSession();
 const screenWakeLock = new ScreenWakeLockManager();
 
@@ -1064,6 +1065,7 @@ function startAveragingSession(): void {
 	}
 
 	const average = averagingSession.start(latestPosition.sweref, latestPosition.timestamp);
+	preservedAveragingMetadata = null;
 	uiHelper.updateCoordinates(average, latestPosition.lat, latestPosition.lon, AVERAGING_FRACTION_DIGITS);
 	uiHelper.updateAveragingMetadata(averagingSession.getMetadata());
 	uiHelper.setButtonState('active', true, true);
@@ -1093,7 +1095,8 @@ function deactivateAveragingSession(preserveDisplayedCoordinates: boolean = fals
 		uiHelper.updateCoordinates(latestPosition.sweref, latestPosition.lat, latestPosition.lon);
 	}
 
-	uiHelper.updateAveragingMetadata(preservedMetadata);
+	preservedAveragingMetadata = preservedMetadata;
+	uiHelper.updateAveragingMetadata(preservedAveragingMetadata);
 }
 
 /**
@@ -1183,13 +1186,12 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	};
 	const averagedSweref = averagingSession.addSample(sweref, position.timestamp);
 	if (averagedSweref) {
+		preservedAveragingMetadata = null;
 		uiHelper.updateCoordinates(averagedSweref, position.coords.latitude, position.coords.longitude, AVERAGING_FRACTION_DIGITS);
 		uiHelper.updateAveragingMetadata(averagingSession.getMetadata());
 	} else {
 		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
-		if (!averagingSession.isActive()) {
-			uiHelper.updateAveragingMetadata(null);
-		}
+		uiHelper.updateAveragingMetadata(averagingSession.isActive() ? averagingSession.getMetadata() : preservedAveragingMetadata);
 	}
 	hasReceivedPosition = true;
 	uiHelper.setButtonState('active', true, averagingSession.isActive());
@@ -1391,6 +1393,8 @@ function initializeEventListeners(): void {
 	document.addEventListener("dblclick", posInit, false);
 	posbtn?.addEventListener("click", () => {
 		hasReceivedPosition = false;
+		preservedAveragingMetadata = null;
+		uiHelper.updateAveragingMetadata(null);
 		posInit(new Event("click"));
 	}, false);
 	
