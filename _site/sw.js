@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '38';
+const CACHE_VERSION = '39';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 
 // Alla resurser som behövs för att appen ska fungera offline
@@ -37,6 +37,22 @@ function createTextResponse(message, status) {
 			'Content-Type': 'text/plain; charset=utf-8'
 		})
 	});
+}
+
+function announceToClients(message) {
+	if (!self.clients) {
+		return;
+	}
+
+	self.clients.matchAll({ includeUncontrolled: true, type: 'window' })
+		.then((clients) => {
+			clients.forEach((client) => {
+				client.postMessage({ type: 'pwa-status', message });
+			});
+		})
+		.catch((error) => {
+			console.warn('ServiceWorker: Kunde inte meddela klienter:', error);
+		});
 }
 
 function shouldHandleRequest(request) {
@@ -103,6 +119,7 @@ self.addEventListener('install', (event) => {
 				return cache.addAll(ASSETS_TO_CACHE);
 			})
 			.then(() => {
+				announceToClients('Appen är redo för offline-användning.');
 				// Aktivera den nya service workern direkt
 				return self.skipWaiting();
 			})
@@ -128,6 +145,7 @@ self.addEventListener('activate', (event) => {
 				);
 			})
 			.then(() => {
+				announceToClients('Ny version av appen är tillgänglig.');
 				// Ta över alla öppna sidor direkt
 				return self.clients.claim();
 			})
