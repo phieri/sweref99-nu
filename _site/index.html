@@ -47,7 +47,10 @@
 		<script type="module" src="script.js"></script>
 	</head>
 	<body>
-		<dialog id="notification-dialog">
+		<a class="skip-link" href="#main-content">Hoppa till innehåll</a>
+		<div id="app-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+		<div id="network-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+		<dialog id="notification-dialog" role="alertdialog" aria-modal="true" aria-labelledby="notification-title" aria-describedby="notification-content">
 			<article>
 				<header id="notification-header" hidden>
 					<h3 id="notification-title"></h3>
@@ -59,7 +62,7 @@
 			</article>
 		</dialog>
 		<header class="container"><h1>Se din enhets position i SWE&shy;REF&nbsp;99 TM</h1></header>
-		<main class="container">
+		<main id="main-content" class="container" tabindex="-1">
 			<details id="details-metadata" open>
 			<summary>Metadata</summary>
 				<div role="group">

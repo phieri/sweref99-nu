@@ -149,6 +149,10 @@ const UI_TEXT = {
 	AVERAGING_SESSION_UNAVAILABLE_TITLE: 'Medelvärde ej tillgängligt',
 	AVERAGING_SESSION_STARTED: 'Medelvärdet har startat. Låt enheten ligga stilla så länge du vill samla fler mätpunkter.',
 	AVERAGING_SESSION_STARTED_TITLE: 'Medelvärde aktivt',
+	OFFLINE_STATUS: 'Appen är offline.',
+	ONLINE_STATUS: 'Appen är online igen.',
+	PWA_READY: 'Appen är redo för offline användning.',
+	PWA_UPDATE: 'Ny version av appen är tillgänglig.',
 	HELP_URL: "https://sweref99.nu/om.html"
 } as const;
 
@@ -727,6 +731,21 @@ const timeFormatter: Intl.DateTimeFormat = new Intl.DateTimeFormat('sv-SE', {
  * @param duration - Duration in milliseconds (default: 5000)
  * @param title - Optional title for the notification
  */
+function announceStatus(message: string, regionId: string = 'app-status'): void {
+	if (!hasBrowserDom()) {
+		return;
+	}
+
+	const region = document.getElementById(regionId);
+	if (!region) {
+		return;
+	}
+
+	region.textContent = '';
+	void region.offsetHeight;
+	region.textContent = message;
+}
+
 function showNotification(message: string, duration: number = NOTIFICATION_DURATION.DEFAULT, title?: string): void {
 	if (!notificationDialog || !notificationContent) {
 		if (typeof window !== 'undefined' && typeof window.alert === 'function') {
@@ -757,6 +776,7 @@ function showNotification(message: string, duration: number = NOTIFICATION_DURAT
 		notificationCountdown.style.animation = `countdown-shrink ${duration / 1000}s linear forwards`;
 	}
 	notificationDialog.showModal();
+	notificationDialog.focus();
 	
 	// Dölj automatiskt efter angiven tid
 	if (notificationTimeout !== null) {
@@ -1468,6 +1488,21 @@ function initializeEventListeners(): void {
 			navigator.serviceWorker.register(swUrl.href)
 				.then((registration) => {
 					console.log('ServiceWorker registrerad:', registration.scope);
+					announceStatus(UI_TEXT.PWA_READY);
+					if (registration.waiting) {
+						announceStatus(UI_TEXT.PWA_UPDATE);
+					}
+					registration.addEventListener('updatefound', () => {
+						const newWorker = registration.installing;
+						if (!newWorker) {
+							return;
+						}
+						newWorker.addEventListener('statechange', () => {
+							if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+								announceStatus(UI_TEXT.PWA_UPDATE);
+							}
+						});
+					});
 				})
 				.catch((error) => {
 					console.log('ServiceWorker-registrering misslyckades:', error);
@@ -1475,7 +1510,35 @@ function initializeEventListeners(): void {
 		});
 	}
 
+	if (typeof window !== 'undefined') {
+		const handleOnlineStatus = () => {
+			announceStatus(UI_TEXT.ONLINE_STATUS, 'network-status');
+		};
+		const handleOfflineStatus = () => {
+			announceStatus(UI_TEXT.OFFLINE_STATUS, 'network-status');
+		};
+		window.addEventListener('online', handleOnlineStatus);
+		window.addEventListener('offline', handleOfflineStatus);
+		if (!navigator.onLine) {
+			handleOfflineStatus();
+		}
+	}
+
 	notificationDialog?.addEventListener('click', handleNotificationBackdropClick);
+	if (notificationDialog) {
+		notificationDialog.addEventListener('close', () => {
+			notificationDialog.removeAttribute('aria-hidden');
+		});
+	}
+
+	if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+		navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+			const message = event.data?.message;
+			if (typeof message === 'string') {
+				announceStatus(message);
+			}
+		});
+	}
 
 	// Check geolocation availability
 	const geolocationAvailable = hasNavigator() && 'geolocation' in navigator;
