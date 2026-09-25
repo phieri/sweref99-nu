@@ -121,15 +121,26 @@ summary {
 	padding: 0;
 	border: 0;
 	min-inline-size: 0;
-}
-
-.controls .grid {
-	margin-bottom: 0.5rem;
+	display: grid;
 	gap: 0.5rem;
 }
 
-.controls .grid:last-child {
-	margin-bottom: 0;
+.controls-row {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.controls-row > button {
+	--pico-form-element-spacing-horizontal: 1rem;
+	width: 100%;
+	margin: 0;
+	border-radius: var(--pico-border-radius);
+}
+
+@media (min-width: 768px) {
+	.controls-row {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 }
 
 article {
