@@ -173,6 +173,7 @@ self.addEventListener('fetch', (event) => {
 				if (networkResponse.ok) {
 					return networkResponse;
 				}
+				console.warn('ServiceWorker: Navigation svarade med felstatus, använder fallback:', networkResponse.status);
 			} catch (error) {
 				console.warn('ServiceWorker: Navigation nätverk misslyckades, använder cache:', error);
 			}

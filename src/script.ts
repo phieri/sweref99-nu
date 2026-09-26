@@ -1483,9 +1483,16 @@ function initializeEventListeners(): void {
 	// unavailable on insecure pages and should not be registered at the origin root.
 	// Use a relative URL so the app can be served from a repository subpath.
 	if (hasNavigator() && 'serviceWorker' in navigator && typeof window !== 'undefined' && window.isSecureContext) {
-		navigator.serviceWorker.addEventListener('controllerchange', () => {
-			window.location.reload();
-		});
+		let serviceWorkerReloadListenerRegistered = false;
+		const registerReloadOnControllerChange = (): void => {
+			if (serviceWorkerReloadListenerRegistered) {
+				return;
+			}
+			serviceWorkerReloadListenerRegistered = true;
+			navigator.serviceWorker.addEventListener('controllerchange', () => {
+				window.location.reload();
+			});
+		};
 
 		window.addEventListener('load', () => {
 			const swUrl = new URL('./sw.js', window.location.href);
@@ -1498,6 +1505,7 @@ function initializeEventListeners(): void {
 				registration.waiting.postMessage('SKIP_WAITING');
 			};
 
+			registerReloadOnControllerChange();
 			navigator.serviceWorker.register(swUrl.href)
 				.then((registration) => {
 					console.log('ServiceWorker registrerad:', registration.scope);
