@@ -1,8 +1,9 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '40';
+const CACHE_VERSION = '42';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
+const SKIP_WAITING_MESSAGE = 'SKIP_WAITING';
 
 // Alla resurser som behövs för att appen ska fungera offline
 const ASSETS_TO_CACHE = [
@@ -69,6 +70,10 @@ function shouldCacheResponse(request) {
 	return url.origin === self.location.origin && PRECACHED_ASSET_PATHS.has(url.pathname);
 }
 
+function isNavigationRequest(request) {
+	return request.mode === 'navigate';
+}
+
 async function getOfflineFallback(request) {
 	if (request.headers.get('accept')?.includes('text/html')) {
 		const fallbackResponse = await caches.match('/index.html');
@@ -110,6 +115,12 @@ async function handleRequest(request) {
 	}
 }
 
+self.addEventListener('message', (event) => {
+	if (event.data === SKIP_WAITING_MESSAGE) {
+		self.skipWaiting();
+	}
+});
+
 // Install event - cacha alla resurser
 self.addEventListener('install', (event) => {
 	event.waitUntil(
@@ -120,7 +131,6 @@ self.addEventListener('install', (event) => {
 			})
 			.then(() => {
 				announceToClients('Appen är redo för offline-användning.');
-				// Aktivera den nya service workern direkt
 				return self.skipWaiting();
 			})
 			.catch((error) => {
@@ -146,7 +156,6 @@ self.addEventListener('activate', (event) => {
 			})
 			.then(() => {
 				announceToClients('Ny version av appen är tillgänglig.');
-				// Ta över alla öppna sidor direkt
 				return self.clients.claim();
 			})
 			.catch((error) => {
@@ -158,6 +167,28 @@ self.addEventListener('activate', (event) => {
 // Fetch event - svara från cache först, fallback till nätverk
 self.addEventListener('fetch', (event) => {
 	if (!shouldHandleRequest(event.request)) {
+		return;
+	}
+
+	if (isNavigationRequest(event.request)) {
+		event.respondWith((async () => {
+			try {
+				const networkResponse = await fetch(event.request);
+				if (networkResponse.ok) {
+					return networkResponse;
+				}
+				console.warn('ServiceWorker: Navigation svarade med felstatus, använder fallback:', networkResponse.status);
+			} catch (error) {
+				console.warn('ServiceWorker: Navigation nätverk misslyckades, använder cache:', error);
+			}
+
+			const cachedResponse = await caches.match(event.request, { ignoreSearch: true });
+			if (cachedResponse) {
+				return cachedResponse;
+			}
+
+			return getOfflineFallback(event.request);
+		})());
 		return;
 	}
 
