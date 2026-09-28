@@ -80,7 +80,9 @@ describe('service worker update flow', () => {
 		});
 		const serviceWorker = installServiceWorkerHarness();
 
-		await loadApplicationModule();
+		const applicationModule = await loadApplicationModule();
+		const reload = jest.fn();
+		applicationModule.setServiceWorkerReloadHandlerForTesting(reload);
 		window.dispatchEvent(new Event('load'));
 		await flushMicrotasks();
 
@@ -92,5 +94,10 @@ describe('service worker update flow', () => {
 		expect(serviceWorker.register).toHaveBeenCalledWith(new URL('./sw.js', window.location.href).href);
 		expect(serviceWorker.addEventListenerSpy).toHaveBeenCalledWith('controllerchange', expect.any(Function));
 		expect(waitingWorker.postMessage).toHaveBeenCalledWith('SKIP_WAITING');
+		expect(reload).not.toHaveBeenCalled();
+
+		serviceWorker.dispatchControllerChange();
+
+		expect(reload).toHaveBeenCalledTimes(1);
 	});
 });

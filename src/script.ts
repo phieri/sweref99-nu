@@ -647,6 +647,16 @@ function hasNavigator(): boolean {
 	return typeof navigator !== 'undefined';
 }
 
+const reloadPage = (): void => {
+	window.location.reload();
+};
+
+let serviceWorkerReloadHandler: () => void = reloadPage;
+
+export function setServiceWorkerReloadHandlerForTesting(callback?: () => void): void {
+	serviceWorkerReloadHandler = callback ?? reloadPage;
+}
+
 function getElementById<T extends Element = HTMLElement>(id: string): T | null {
 	if (!hasBrowserDom()) {
 		return null;
@@ -1490,7 +1500,7 @@ function initializeEventListeners(): void {
 			}
 			serviceWorkerReloadListenerRegistered = true;
 			navigator.serviceWorker.addEventListener('controllerchange', () => {
-				window.location.reload();
+				serviceWorkerReloadHandler();
 			});
 		};
 
