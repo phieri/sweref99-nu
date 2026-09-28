@@ -1,7 +1,7 @@
 // Service Worker för SWEREF 99 TM PWA
 // Hanterar offline-caching av alla nödvändiga resurser
 
-const CACHE_VERSION = '41';
+const CACHE_VERSION = '42';
 const CACHE_NAME = `sweref99-${CACHE_VERSION}`;
 const SKIP_WAITING_MESSAGE = 'SKIP_WAITING';
 
@@ -68,6 +68,10 @@ function shouldHandleRequest(request) {
 function shouldCacheResponse(request) {
 	const url = new URL(request.url);
 	return url.origin === self.location.origin && PRECACHED_ASSET_PATHS.has(url.pathname);
+}
+
+function isNavigationRequest(request) {
+	return request.mode === 'navigate';
 }
 
 async function getOfflineFallback(request) {
