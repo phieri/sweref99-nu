@@ -1,7 +1,8 @@
+import { calculateItrf2Etrs89Correction, wgs84_to_sweref99tm } from '../src/script';
 import {
 	clearProj4Mock,
 	createMockPosition,
-	installProj4Mock
+	installProj4
 } from './test-helpers';
 
 /**
@@ -31,22 +32,8 @@ namespace TestConstants {
 	} as const;
 }
 
-interface Itrf2Etrs89Correction {
-	dn: number;
-	de: number;
-}
-
-interface SwerefCoordinates {
-	northing: number;
-	easting: number;
-}
-
 beforeEach(() => {
-	installProj4Mock((_: string, __: string, [longitude, latitude]) => {
-		const easting = 500000 + ((longitude - 15) * 111320 * Math.cos(latitude * Math.PI / 180));
-		const northing = latitude * 111320;
-		return [easting, northing];
-	});
+	installProj4();
 });
 
 afterEach(() => {
@@ -58,10 +45,8 @@ afterEach(() => {
  * Test implementations of functions from script.ts
  * These are copies of the source functions for testing purposes
  * 
- * NOTE: These functions are duplicated from src/script.ts rather than imported.
- * This is necessary because script.ts contains top-level DOM code that cannot
- * be imported in a test environment. When modifying script.ts, ensure these
- * implementations are kept in sync. See tests/README.md for more details.
+ * Non-exported boundary helpers are duplicated here; coordinate conversion
+ * and drift correction are tested through their production exports.
  */
 
 /**
@@ -82,66 +67,6 @@ function isInSweden(pos: GeolocationPosition): boolean {
 		longitude >= TestConstants.SWEDEN_BOUNDS.MIN_LONGITUDE &&
 		longitude <= TestConstants.SWEDEN_BOUNDS.MAX_LONGITUDE
 	);
-}
-
-/**
- * Calculate ITRF to ETRS89 correction
- */
-function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
-	const now = new Date();
-	const yearStart = new Date(now.getFullYear(), 0, 1);
-	const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
-	const yearFraction: number = (now.getTime() - yearStart.getTime()) / (yearEnd.getTime() - yearStart.getTime());
-	const currentEpoch: number = now.getFullYear() + yearFraction;
-	
-	const yearsSinceEtrs89: number = currentEpoch - TestConstants.ETRS89_EPOCH;
-	
-	const azimuthRad: number = (TestConstants.PLATE_VELOCITY.AZIMUTH_DEGREES * Math.PI) / 180;
-	const northVelocity: number = TestConstants.PLATE_VELOCITY.METERS_PER_YEAR * Math.cos(azimuthRad);
-	const eastVelocity: number = TestConstants.PLATE_VELOCITY.METERS_PER_YEAR * Math.sin(azimuthRad);
-	
-	const totalNorthShift: number = northVelocity * yearsSinceEtrs89;
-	const totalEastShift: number = eastVelocity * yearsSinceEtrs89;
-	
-	return {
-		dn: totalNorthShift,
-		de: totalEastShift
-	};
-}
-
-/**
- * Transforms WGS84 coordinates to SWEREF 99 TM
- */
-function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
-	try {
-		const projection = globalThis.proj4;
-		if (!projection) {
-			console.warn("SWEREF 99 transformation not available - proj4 library not loaded");
-			return { northing: 0, easting: 0 };
-		}
-
-		if (!projection.defs('EPSG:3006')) {
-			projection.defs('EPSG:3006', SWEREF99_PROJ_DEFINITION);
-		}
-
-		const result = projection('EPSG:4326', 'EPSG:3006', [lon, lat]);
-		let easting: number = result[0];
-		let northing: number = result[1];
-
-		const correction = calculateItrf2Etrs89Correction();
-		northing += correction.dn;
-		easting += correction.de;
-
-		if (isNaN(northing) || isNaN(easting)) {
-			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
-			return { northing: 0, easting: 0 };
-		}
-
-		return { northing, easting };
-	} catch (error) {
-		console.error("Error in coordinate transformation:", error);
-		return { northing: 0, easting: 0 };
-	}
 }
 
 describe('SWEDEN_BOUNDS Constants', () => {
@@ -412,6 +337,14 @@ describe('wgs84_to_sweref99tm Function', () => {
 			// Stockholm should have valid SWEREF 99 TM coordinates
 			expect(result.northing).not.toBe(0);
 			expect(result.easting).not.toBe(0);
+		});
+
+		test('should match known Stockholm SWEREF 99 TM coordinates within drift correction', () => {
+			const result = wgs84_to_sweref99tm(59.33, 18.07);
+			expect(result.easting).toBeGreaterThan(674647);
+			expect(result.easting).toBeLessThan(674650);
+			expect(result.northing).toBeGreaterThan(6580824);
+			expect(result.northing).toBeLessThan(6580827);
 		});
 
 		test('should return numeric coordinates, not NaN', () => {

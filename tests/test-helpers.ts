@@ -1,3 +1,5 @@
+import realProj4 from 'proj4';
+
 type Proj4Defs = (code?: string, definition?: string) => Record<string, never> | boolean | void;
 type Proj4Transform = (
 	from: string,
@@ -35,13 +37,14 @@ export interface GeolocationHarness {
 	clearWatch: jest.MockedFunction<ClearWatchMock>;
 	getCurrentPosition: jest.MockedFunction<GetCurrentPositionMock>;
 	emitPosition(position: GeolocationPosition): void;
+	emitError(error: GeolocationPositionError): void;
 }
 
 declare global {
-	var proj4: Proj4Mock | undefined;
+	var proj4: typeof realProj4 | Proj4Mock | undefined;
 }
 
-export function createProj4Mock(transformImpl?: Proj4Transform): Proj4Mock {
+export function createProj4Mock(transformImpl: Proj4Transform): Proj4Mock {
 	const defs: jest.MockedFunction<Proj4Defs> = jest.fn((code?: string, definition?: string) => {
 		if (code === undefined) {
 			return {};
@@ -54,13 +57,7 @@ export function createProj4Mock(transformImpl?: Proj4Transform): Proj4Mock {
 		return code === 'EPSG:3006';
 	});
 
-	const transform: jest.MockedFunction<Proj4Transform> = jest.fn(
-		transformImpl ??
-		((_: string, __: string, [longitude, latitude]: readonly [number, number]) => [
-			500000 + ((longitude - 15) * 1000),
-			6500000 + ((latitude - 59) * 1000)
-		])
-	);
+	const transform: jest.MockedFunction<Proj4Transform> = jest.fn(transformImpl);
 
 	return Object.assign(
 		(from: string, to: string, coords: readonly [number, number]) => transform(from, to, coords),
@@ -68,10 +65,15 @@ export function createProj4Mock(transformImpl?: Proj4Transform): Proj4Mock {
 	);
 }
 
-export function installProj4Mock(transformImpl?: Proj4Transform): Proj4Mock {
+export function installProj4Mock(transformImpl: Proj4Transform): Proj4Mock {
 	const proj4 = createProj4Mock(transformImpl);
 	globalThis.proj4 = proj4;
 	return proj4;
+}
+
+export function installProj4(): typeof realProj4 {
+	globalThis.proj4 = realProj4;
+	return realProj4;
 }
 
 export function clearProj4Mock(): void {
@@ -106,9 +108,11 @@ export function createMockPosition({
 
 export function installGeolocationHarness(): GeolocationHarness {
 	let watchSuccess: PositionCallback | null = null;
+	let watchError: PositionErrorCallback | null = null;
 
-	const watchPosition: jest.MockedFunction<WatchPositionMock> = jest.fn((success) => {
+	const watchPosition: jest.MockedFunction<WatchPositionMock> = jest.fn((success, error) => {
 		watchSuccess = success;
+		watchError = error ?? null;
 		return 1;
 	});
 	const clearWatch: jest.MockedFunction<ClearWatchMock> = jest.fn();
@@ -135,6 +139,12 @@ export function installGeolocationHarness(): GeolocationHarness {
 			}
 
 			watchSuccess(position);
+		},
+		emitError(error: GeolocationPositionError): void {
+			if (!watchError) {
+				throw new Error('watchPosition() has not registered an error callback.');
+			}
+			watchError(error);
 		}
 	};
 }

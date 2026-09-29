@@ -42,7 +42,7 @@
       "bom-ref": "proj4js-2.22.0",
       "name": "PROJ4JS",
       "version": "2.22.0",
-      "description": "JavaScript library to transform coordinates from one coordinate system to another",
+      "description": "JavaScript coordinate transformation library used at runtime and by the test suite",
       "scope": "required",
       "licenses": [
         {
@@ -64,6 +64,10 @@
         {
           "type": "distribution",
           "url": "https://github.com/proj4js/proj4js/releases/download/v2.22.0/dist.zip"
+        },
+        {
+          "type": "distribution",
+          "url": "https://www.npmjs.com/package/proj4/v/2.22.0"
         }
       ]
     },

@@ -1,7 +1,7 @@
 import {
 	clearProj4Mock,
 	flushMicrotasks,
-	installProj4Mock,
+	installProj4,
 	loadApplicationModule,
 	renderApplicationShell
 } from './test-helpers';
@@ -73,7 +73,7 @@ describe('service worker update flow', () => {
 
 	it('requests skipWaiting for an installed update and reloads only after controllerchange', async () => {
 		renderApplicationShell();
-		installProj4Mock();
+		installProj4();
 		Object.defineProperty(window, 'isSecureContext', {
 			configurable: true,
 			value: true

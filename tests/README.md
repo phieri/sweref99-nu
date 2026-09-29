@@ -118,11 +118,8 @@ The test suite achieves comprehensive coverage of:
 
 ## Implementation Notes
 
-### Mock Dependencies
-The tests use a mocked version of the `proj4` library since it's loaded from CDN in production. The mock provides:
-- Basic coordinate transformation approximation
-- Coordinate system definition registration
-- Sufficient accuracy for testing logic correctness
+### Projection dependency
+Coordinate and browser integration tests use the real `proj4` npm package, pinned to the same version as the browser release asset in CI. Only the projection failure test substitutes a failing mock.
 
 ### Test Isolation and Shared Fixtures
 
@@ -130,10 +127,10 @@ The suite now mixes:
 
 1. **Exported unit tests** for public classes such as `CoordinateAveragingSession` and `ScreenWakeLockManager`
 2. **DOM integration tests** that load `src/script.ts` inside a controlled jsdom fixture and assert user-visible behaviour
-3. **Focused logic tests** in `script.test.ts` for duplicated non-exported helpers that still cannot be imported directly without changing production structure
+3. **Focused logic tests** in `script.test.ts` for remaining non-exported helpers; projection and drift tests call the production functions directly
 
 Shared browser mocks and DOM setup live in `test-helpers.ts` so that:
-- navigator, geolocation, share, and proj4 mocks stay type-safe and consistent
+- navigator, geolocation, and share mocks stay type-safe and consistent; proj4js is installed as a real dependency
 - DOM-heavy tests exercise the production event listeners instead of copy-pasted UI helper logic
 - setup stays isolated through fresh module loading and per-test cleanup
 
@@ -167,4 +164,3 @@ Potential enhancements to the test suite:
 - Performance benchmarks for coordinate transformations
 - Property-based testing for coordinate edge cases
 - Visual regression testing for UI components
-- Integration with real proj4 library for accuracy validation

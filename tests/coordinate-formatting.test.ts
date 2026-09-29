@@ -3,7 +3,7 @@ import {
 	flushMicrotasks,
 	getRequiredElement,
 	installGeolocationHarness,
-	installProj4Mock,
+	installProj4,
 	installShareSupport,
 	loadApplicationModule,
 	removeShareSupport,
@@ -28,7 +28,7 @@ describe('coordinate formatting integration', () => {
 		// Arrange
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
-		installProj4Mock(() => [674455.4, 6580122.1]);
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
@@ -50,10 +50,7 @@ describe('coordinate formatting integration', () => {
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
 		const { share } = installShareSupport();
-		installProj4Mock((_: string, __: string, [longitude, latitude]) => [
-			674455.2 + ((longitude - 18) * 10),
-			6580122.2 + ((latitude - 59) * 10)
-		]);
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
