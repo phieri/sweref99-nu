@@ -98,6 +98,33 @@ jobs:
           shutil.copyfile(extracted_path, "_site/proj4.js")
           print(f"Downloaded PROJ4JS release asset ({os.environ['release_tag']})")
           PY
+          echo "=== Adding build information ==="
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import os
+          import re
+
+          sha = os.environ["GITHUB_SHA"]
+          if not re.fullmatch(r"[0-9a-f]{40}", sha):
+              raise SystemExit("Invalid build commit SHA")
+
+          built_at = datetime.now(timezone.utc)
+          timestamp = built_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+          display_time = built_at.strftime("%Y-%m-%d %H:%M UTC")
+          placeholder = "<!-- BUILD_INFO -->visas efter publicering."
+          page = Path("_site/om.html")
+          content = page.read_text(encoding="utf-8")
+          if content.count(placeholder) != 1:
+              raise SystemExit("Expected one build information placeholder in om.html")
+
+          build_info = (
+              f'byggd <time datetime="{timestamp}">{display_time}</time> '
+              f'från <a href="https://github.com/phieri/sweref99-nu/commit/{sha}" '
+              f'rel="noopener noreferrer">{sha[:7]}</a>.'
+          )
+          page.write_text(content.replace(placeholder, build_info), encoding="utf-8")
+          PY
           echo "=== Final _site contents ==="
           ls -la _site/
       - uses: actions/upload-pages-artifact@v5
