@@ -2,6 +2,7 @@ import {
 	createMockPosition,
 	getRequiredElement,
 	installGeolocationHarness,
+	installProj4,
 	installProj4Mock,
 	installShareSupport,
 	loadApplicationModule,
@@ -22,7 +23,7 @@ describe('button state integration', () => {
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
 		installShareSupport();
-		installProj4Mock();
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
@@ -47,7 +48,7 @@ describe('button state integration', () => {
 		// Arrange
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
-		installProj4Mock();
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
@@ -68,10 +69,7 @@ describe('button state integration', () => {
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
 		installShareSupport();
-		installProj4Mock((_: string, __: string, [longitude, latitude]) => [
-			670000 + ((longitude - 18) * 10),
-			6580000 + ((latitude - 59) * 10)
-		]);
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
@@ -95,10 +93,7 @@ describe('button state integration', () => {
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
 		installShareSupport();
-		installProj4Mock((_: string, __: string, [longitude, latitude]) => [
-			670000 + ((longitude - 18) * 10),
-			6580000 + ((latitude - 59) * 10)
-		]);
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
@@ -157,7 +152,7 @@ describe('button state integration', () => {
 		renderApplicationShell();
 		const geolocation = installGeolocationHarness();
 		installShareSupport();
-		installProj4Mock();
+		installProj4();
 		await loadApplicationModule();
 
 		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);

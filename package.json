@@ -16,6 +16,7 @@
     "babel-jest": "^30.5.0",
     "jest": "^30.5.0",
     "jest-environment-jsdom": "^30.5.0",
+    "proj4": "2.22.0",
     "typescript": "^7.0.2"
   },
   "overrides": {

@@ -505,7 +505,7 @@ export class ScreenWakeLockManager {
  * 
  * @returns Correction values for northing and easting in meters
  */
-function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
+export function calculateItrf2Etrs89Correction(): Itrf2Etrs89Correction {
 	// Beräkna aktuellt år (decimalår)
 	const now = new Date();
 	const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -578,7 +578,7 @@ function ensureSwerefProjection(): boolean {
  * @see https://epsg.io/3006 - Official EPSG registry entry
  * @see https://www.lantmateriet.se - Lantmäteriet (Swedish mapping authority)
  */
-function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
+export function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 	try {
 		if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
 			const displayLatitude = formatCoordinateValue(lat);

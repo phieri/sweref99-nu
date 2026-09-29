@@ -15,7 +15,7 @@ The project currently uses the following direct external components:
 
 ### Runtime Dependencies
 - **PROJ4JS** (GitHub release v2.22.0) - MIT License - Lightweight JavaScript coordinate transformation library
-  - The CI workflow downloads the PROJ4JS `dist.zip` asset for the pinned release tag `v2.22.0`. Update this SBOM entry when the workflow is intentionally moved to a newer release tag.
+  - The CI workflow downloads the PROJ4JS `dist.zip` asset for the pinned release tag `v2.22.0`; Jest installs the same version from npm as a development dependency to exercise real coordinate transformations. Keep both versions aligned.
 - **Pico.css** (v2.1.1) - MIT License - Minimal CSS framework
 
 ### Build Dependencies

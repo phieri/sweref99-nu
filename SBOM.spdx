@@ -138,6 +138,7 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/babel-jest@30.4.1
 
 # Relationships
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ4JS
+Relationship: SPDXRef-Package-PROJ4JS TEST_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PicoCSS
 Relationship: SPDXRef-Package-TypeScript BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
 Relationship: SPDXRef-Package-babel-core BUILD_DEPENDENCY_OF SPDXRef-Package-sweref99-nu
