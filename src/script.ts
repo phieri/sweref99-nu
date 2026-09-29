@@ -149,6 +149,8 @@ const UI_TEXT = {
 	AVERAGING_SESSION_UNAVAILABLE_TITLE: 'Medelvärde ej tillgängligt',
 	AVERAGING_SESSION_STARTED: 'Medelvärdet har startat. Låt enheten ligga stilla så länge du vill samla fler mätpunkter.',
 	AVERAGING_SESSION_STARTED_TITLE: 'Medelvärde aktivt',
+	ERROR_TRANSFORMATION: 'SWEREF 99-koordinater kunde inte beräknas. Kontrollera att appens resurser har lästs in och försök igen.',
+	ERROR_TRANSFORMATION_TITLE: 'Transformationsfel',
 	OFFLINE_STATUS: 'Appen är offline.',
 	ONLINE_STATUS: 'Appen är online igen.',
 	PWA_READY: 'Appen är redo för offline användning.',
@@ -625,13 +627,13 @@ function wgs84_to_sweref99tm(lat: number, lon: number): SwerefCoordinates {
 		// Validate the result
 		if (!Number.isFinite(northing) || !Number.isFinite(easting)) {
 			console.warn(`Invalid coordinate transformation result for lat=${lat}, lon=${lon}:`, { northing, easting });
-			return { northing: 0, easting: 0 };
+			return { northing: Number.NaN, easting: Number.NaN };
 		}
 
 		return { northing, easting };
 	} catch (error) {
 		console.error("Error in coordinate transformation:", error);
-		return { northing: 0, easting: 0 };
+		return { northing: Number.NaN, easting: Number.NaN };
 	}
 }
 
@@ -936,8 +938,8 @@ class UIHelper {
 			setElementText(swerefe, formatProjectedCoordinate('E', sweref.easting, 2, projectedFractionDigits));
 		}
 
-		setElementText(wgs84n, formatWgs84Coordinate('N', lat));
-		setElementText(wgs84e, formatWgs84Coordinate('E', lon));
+		setElementText(wgs84n, isValidLatitude(lat) ? formatWgs84Coordinate('N', lat) : UI_TEXT.NOT_AVAILABLE);
+		setElementText(wgs84e, isValidLongitude(lon) ? formatWgs84Coordinate('E', lon) : UI_TEXT.NOT_AVAILABLE);
 	}
 
 	updateAveragingMetadata(metadata: AveragingMetadata | null): void {
@@ -978,9 +980,13 @@ class UIHelper {
 		if (state === 'active') {
 			posbtn?.setAttribute("disabled", "disabled");
 			stopbtn?.removeAttribute("disabled");
-			avgbtn?.removeAttribute("disabled");
+			if (isAveragingActive || hasPosition) {
+				avgbtn?.removeAttribute("disabled");
+			} else {
+				avgbtn?.setAttribute("disabled", "disabled");
+			}
 			setElementText(avgbtn, isAveragingActive ? UI_TEXT.AVERAGING_BUTTON_STOP : UI_TEXT.AVERAGING_BUTTON_START);
-			if (canShare) {
+			if (canShare && hasPosition) {
 				sharebtn?.removeAttribute("disabled");
 			} else {
 				sharebtn?.setAttribute("disabled", "disabled");
@@ -1070,8 +1076,10 @@ const uiHelper = new UIHelper(appElements);
 // ============================================================================
 
 let watchID: number | null = null;
+let watchGeneration = 0;
 let spinnerTimeout: number | null = null;
 let hasReceivedPosition: boolean = false;
+let reportedTransformationFailure = false;
 let currentSpeed: number | null = null;
 let latestPosition: PositionSnapshot | null = null;
 let preservedAveragingMetadata: AveragingMetadata | null = null;
@@ -1157,11 +1165,22 @@ function startGeolocationWatch(onError: PositionErrorCallback): void {
 		return;
 	}
 
+	const generation = ++watchGeneration;
+	reportedTransformationFailure = false;
 	watchID = navigator.geolocation.watchPosition(
-		handlePositionSuccess,
-		onError,
+		(position) => {
+			if (generation === watchGeneration) {
+				handlePositionSuccess(position);
+			}
+		},
+		(error) => {
+			if (generation === watchGeneration) {
+				onError(error);
+			}
+		},
 		GEOLOCATION_OPTIONS
 	);
+	uiHelper.setButtonState('active');
 	startSpinnerTimeout();
 }
 
@@ -1169,6 +1188,7 @@ function startGeolocationWatch(onError: PositionErrorCallback): void {
  * Clears geolocation watch and resets state
  */
 function stopGeolocationWatch(): void {
+	++watchGeneration;
 	if (watchID !== null) {
 		try {
 			if (hasNavigator() && 'geolocation' in navigator) {
@@ -1208,6 +1228,13 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 	uiHelper.updateTimestamp(position.timestamp);
 
 	const sweref = wgs84_to_sweref99tm(position.coords.latitude, position.coords.longitude);
+	const isValidSweref = Number.isFinite(sweref.northing) && Number.isFinite(sweref.easting);
+	if (!isValidSweref && !reportedTransformationFailure) {
+		showNotification(UI_TEXT.ERROR_TRANSFORMATION, NOTIFICATION_DURATION.ERROR, UI_TEXT.ERROR_TRANSFORMATION_TITLE);
+		reportedTransformationFailure = true;
+	} else if (isValidSweref) {
+		reportedTransformationFailure = false;
+	}
 	latestPosition = {
 		sweref,
 		lat: position.coords.latitude,
@@ -1223,8 +1250,8 @@ function handlePositionSuccess(position: GeolocationPosition): void {
 		uiHelper.updateCoordinates(sweref, position.coords.latitude, position.coords.longitude);
 		uiHelper.updateAveragingMetadata(averagingSession.isActive() ? averagingSession.getMetadata() : preservedAveragingMetadata);
 	}
-	hasReceivedPosition = true;
-	uiHelper.setButtonState('active', true, averagingSession.isActive());
+	hasReceivedPosition = isValidSweref;
+	uiHelper.setButtonState('active', hasReceivedPosition, averagingSession.isActive());
 }
 
 /**
@@ -1232,8 +1259,7 @@ function handlePositionSuccess(position: GeolocationPosition): void {
  * Called when geolocation fails (user denied permission or technical error)
  */
 function handlePositionError(): void {
-	clearSpinnerTimeout();
-	uiHelper.setLoadingState(false);
+	stopGeolocationWatch();
 	hasReceivedPosition = false;
 	deactivateAveragingSession(true);
 	uiHelper.setButtonState('stopped', false);
@@ -1423,6 +1449,7 @@ function initializeEventListeners(): void {
 	document.addEventListener("dblclick", posInit, false);
 	posbtn?.addEventListener("click", () => {
 		hasReceivedPosition = false;
+		latestPosition = null;
 		preservedAveragingMetadata = null;
 		uiHelper.updateAveragingMetadata(null);
 		posInit(new Event("click"));

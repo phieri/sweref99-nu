@@ -35,6 +35,7 @@ export interface GeolocationHarness {
 	clearWatch: jest.MockedFunction<ClearWatchMock>;
 	getCurrentPosition: jest.MockedFunction<GetCurrentPositionMock>;
 	emitPosition(position: GeolocationPosition): void;
+	emitError(error: GeolocationPositionError): void;
 }
 
 declare global {
@@ -106,9 +107,11 @@ export function createMockPosition({
 
 export function installGeolocationHarness(): GeolocationHarness {
 	let watchSuccess: PositionCallback | null = null;
+	let watchError: PositionErrorCallback | null = null;
 
-	const watchPosition: jest.MockedFunction<WatchPositionMock> = jest.fn((success) => {
+	const watchPosition: jest.MockedFunction<WatchPositionMock> = jest.fn((success, error) => {
 		watchSuccess = success;
+		watchError = error ?? null;
 		return 1;
 	});
 	const clearWatch: jest.MockedFunction<ClearWatchMock> = jest.fn();
@@ -135,6 +138,12 @@ export function installGeolocationHarness(): GeolocationHarness {
 			}
 
 			watchSuccess(position);
+		},
+		emitError(error: GeolocationPositionError): void {
+			if (!watchError) {
+				throw new Error('watchPosition() has not registered an error callback.');
+			}
+			watchError(error);
 		}
 	};
 }
