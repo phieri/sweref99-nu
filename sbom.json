@@ -4,7 +4,7 @@
   "serialNumber": "urn:uuid:8c9c56cd-2316-4126-a435-509ccd4699ed",
   "version": 3,
   "metadata": {
-    "timestamp": "2026-04-17T22:07:57Z",
+    "timestamp": "2026-09-30T20:09:43Z",
     "tools": [
       {
         "name": "manual",
@@ -209,9 +209,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "jest-30.4.2",
+      "bom-ref": "jest-30.5.0",
       "name": "jest",
-      "version": "30.4.2",
+      "version": "30.5.0",
       "description": "JavaScript testing framework",
       "scope": "optional",
       "licenses": [
@@ -230,9 +230,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "jest-environment-jsdom-30.4.1",
+      "bom-ref": "jest-environment-jsdom-30.5.0",
       "name": "jest-environment-jsdom",
-      "version": "30.4.1",
+      "version": "30.5.0",
       "description": "Browser-like jsdom environment for Jest",
       "scope": "optional",
       "licenses": [
@@ -251,9 +251,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "babel-jest-30.4.1",
+      "bom-ref": "babel-jest-30.5.0",
       "name": "babel-jest",
-      "version": "30.4.1",
+      "version": "30.5.0",
       "description": "Jest transformer for Babel",
       "scope": "optional",
       "licenses": [
@@ -282,9 +282,9 @@
         "babel-preset-env-8.0.2",
         "babel-preset-typescript-8.0.1",
         "types-jest-30.0.0",
-        "jest-30.4.2",
-        "jest-environment-jsdom-30.4.1",
-        "babel-jest-30.4.1"
+        "jest-30.5.0",
+        "jest-environment-jsdom-30.5.0",
+        "babel-jest-30.5.0"
       ]
     }
   ]
