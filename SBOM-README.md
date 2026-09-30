@@ -9,7 +9,7 @@ This repository contains Software Bill of Materials (SBOM) files for the sweref9
 
 ## Dependencies
 
-The current dependency set was reviewed against the workflow in `.github/workflows/ci.yml` and the root `package-lock.json` on 2026-08-26. The test stack remains intentionally minimal and uses a small set of transitive overrides required for compatibility and security in the Jest/Babel toolchain; no extra runtime libraries are added beyond the app’s static HTML, TypeScript, and browser-only coordinate logic.
+The current dependency set was reviewed against the workflow in `.github/workflows/ci.yml` and the root `package-lock.json` on 2026-09-30. The test stack remains intentionally minimal and uses a small set of transitive overrides required for compatibility and security in the Jest/Babel toolchain; no extra runtime libraries are added beyond the app’s static HTML, TypeScript, and browser-only coordinate logic.
 
 The project currently uses the following direct external components:
 
@@ -25,10 +25,10 @@ The project currently uses the following direct external components:
 - **@babel/preset-typescript** (v8.0.1) - MIT License - Babel preset for TypeScript syntax
 
 ### Test Dependencies
-- **Jest** (v30.4.2) - MIT License - Test runner and assertion framework
+- **Jest** (v30.5.0) - MIT License - Test runner and assertion framework
 - **@types/jest** (v30.0.0) - MIT License - TypeScript type definitions for Jest
-- **jest-environment-jsdom** (v30.4.1) - MIT License - Browser-like test environment for Jest
-- **babel-jest** (v30.4.1) - MIT License - Jest transformer for Babel
+- **jest-environment-jsdom** (v30.5.0) - MIT License - Browser-like test environment for Jest
+- **babel-jest** (v30.5.0) - MIT License - Jest transformer for Babel
 
 ## License Information
 

@@ -103,38 +103,38 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40types/jest@30.0.0
 # Jest
 PackageName: jest
 SPDXID: SPDXRef-Package-jest
-PackageVersion: 30.4.2
+PackageVersion: 30.5.0
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/jest
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest@30.4.2
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest@30.5.0
 
 # jest-environment-jsdom
 PackageName: jest-environment-jsdom
 SPDXID: SPDXRef-Package-jest-environment-jsdom
-PackageVersion: 30.4.1
+PackageVersion: 30.5.0
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/jest-environment-jsdom
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest-environment-jsdom@30.4.1
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/jest-environment-jsdom@30.5.0
 
 # babel-jest
 PackageName: babel-jest
 SPDXID: SPDXRef-Package-babel-jest
-PackageVersion: 30.4.1
+PackageVersion: 30.5.0
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/babel-jest
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/babel-jest@30.4.1
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/babel-jest@30.5.0
 
 # Relationships
 Relationship: SPDXRef-Package-sweref99-nu DEPENDS_ON SPDXRef-Package-PROJ4JS
