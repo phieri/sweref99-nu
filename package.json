@@ -9,13 +9,13 @@
     "test:coverage": "jest --coverage"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.1",
-    "@babel/preset-env": "^8.0.2",
+    "@babel/core": "^8.0.6",
+    "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
     "@types/jest": "^30.0.0",
-    "babel-jest": "^30.5.0",
-    "jest": "^30.5.0",
-    "jest-environment-jsdom": "^30.5.0",
+    "babel-jest": "^30.5.2",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
     "proj4": "2.22.0",
     "typescript": "^7.0.2"
   },
