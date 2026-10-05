@@ -218,9 +218,15 @@ textarea:focus-visible {
 	opacity: 0.8;
 }
 
-#avg-btn:focus-visible {
+#avg-btn:focus {
 	outline: none;
 	box-shadow: none;
+}
+
+#avg-btn:focus-visible {
+	outline: 3px solid var(--pico-contrast);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 3px var(--focus-ring-offset);
 }
 
 .coords {
