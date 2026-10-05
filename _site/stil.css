@@ -218,6 +218,11 @@ textarea:focus-visible {
 	opacity: 0.8;
 }
 
+#avg-btn:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
 .coords {
 	font-size: var(--coords-font-size);
 }
