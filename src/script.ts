@@ -1464,13 +1464,16 @@ function initializeEventListeners(): void {
 		uiHelper.resetSpeedDisplay();
 	});
 
-	avgbtn?.addEventListener("click", () => {
+	avgbtn?.addEventListener("click", (event) => {
 		if (averagingSession.isActive()) {
 			deactivateAveragingSession();
-			return;
+		} else {
+			startAveragingSession();
 		}
 
-		startAveragingSession();
+		if (event.detail > 0) {
+			avgbtn.blur();
+		}
 	});
 
 	// Speed unit cycling

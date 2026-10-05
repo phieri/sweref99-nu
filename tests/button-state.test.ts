@@ -88,6 +88,27 @@ describe('button state integration', () => {
 		expect(avgButton.disabled).toBe(false);
 	});
 
+	it('removes pointer focus from the averaging button but keeps keyboard focus', async () => {
+		renderApplicationShell();
+		const geolocation = installGeolocationHarness();
+		installShareSupport();
+		installProj4();
+		await loadApplicationModule();
+
+		const posButton = getRequiredElement('pos-btn', HTMLButtonElement);
+		const avgButton = getRequiredElement('avg-btn', HTMLButtonElement);
+		posButton.click();
+		geolocation.emitPosition(createMockPosition({ latitude: 59.33, longitude: 18.07 }));
+
+		avgButton.focus();
+		avgButton.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+		expect(document.activeElement).not.toBe(avgButton);
+
+		avgButton.focus();
+		avgButton.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
+		expect(document.activeElement).toBe(avgButton);
+	});
+
 	it('shows averaging metadata and keeps it when stopping positioning', async () => {
 		// Arrange
 		renderApplicationShell();
