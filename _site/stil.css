@@ -214,6 +214,10 @@ textarea:focus-visible {
 	box-shadow: 0 0 0 3px var(--focus-ring-offset);
 }
 
+#avg-btn:focus-visible {
+	outline-color: #b45309;
+}
+
 #speed:hover {
 	opacity: 0.8;
 }
