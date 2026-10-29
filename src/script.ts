@@ -196,11 +196,6 @@ const SWEREF99_TM_PROJ_DEFINITION = '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Checks if a position is within Swedish territory
- * @param pos - GeolocationPosition to check
- * @returns true if position is within Sweden's approximate bounds
- */
 function isValidLatitude(latitude: number): boolean {
 	return Number.isFinite(latitude) && latitude >= -90 && latitude <= 90;
 }
@@ -213,6 +208,11 @@ function formatCoordinateValue(value: number): number | string {
 	return Number.isFinite(value) ? value : 'ogiltigt';
 }
 
+/**
+ * Checks if a position is within Swedish territory
+ * @param pos - GeolocationPosition to check
+ * @returns true if position is within Sweden's approximate bounds
+ */
 function isInSweden(pos: GeolocationPosition): boolean {
 	const { latitude, longitude } = pos.coords;
 	if (!isValidLatitude(latitude) || !isValidLongitude(longitude)) {
