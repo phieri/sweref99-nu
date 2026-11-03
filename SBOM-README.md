@@ -20,7 +20,7 @@ The project currently uses the following direct external components:
 
 ### Build Dependencies
 - **TypeScript** (v7.0.2) - Apache License 2.0 - TypeScript compiler
-- **@babel/core** (v8.0.1) - MIT License - Babel compiler core
+- **@babel/core** (v8.1.0) - MIT License - Babel compiler core
 - **@babel/preset-env** (v8.0.2) - MIT License - Babel preset for environment-specific transpilation
 - **@babel/preset-typescript** (v8.0.1) - MIT License - Babel preset for TypeScript syntax
 

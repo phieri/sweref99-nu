@@ -55,14 +55,14 @@ ExternalRef: PACKAGE-MANAGER purl pkg:npm/typescript@7.0.2
 # @babel/core
 PackageName: @babel/core
 SPDXID: SPDXRef-Package-babel-core
-PackageVersion: 8.0.1
+PackageVersion: 8.1.0
 PackageSupplier: NOASSERTION
 PackageDownloadLocation: https://www.npmjs.com/package/@babel/core
 FilesAnalyzed: false
 PackageLicenseConcluded: MIT
 PackageLicenseDeclared: MIT
 PackageCopyrightText: NOASSERTION
-ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40babel/core@8.0.1
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/%40babel/core@8.1.0
 
 # @babel/preset-env
 PackageName: @babel/preset-env

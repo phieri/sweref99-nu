@@ -125,9 +125,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "babel-core-8.0.1",
+      "bom-ref": "babel-core-8.1.0",
       "name": "@babel/core",
-      "version": "8.0.1",
+      "version": "8.1.0",
       "description": "Babel compiler core",
       "scope": "optional",
       "licenses": [
@@ -278,7 +278,7 @@
         "proj4js-2.22.0",
         "picocss-2.1.1",
         "typescript-7.0.2",
-        "babel-core-8.0.1",
+        "babel-core-8.1.0",
         "babel-preset-env-8.0.2",
         "babel-preset-typescript-8.0.1",
         "types-jest-30.0.0",
