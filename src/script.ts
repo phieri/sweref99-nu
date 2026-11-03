@@ -323,6 +323,139 @@ function setStoredItem(key: string, value: string): void {
 	}
 }
 
+const INSTALL_VISITS_KEY = 'sweref99-install-visits';
+const INSTALL_DISMISSALS_KEY = 'sweref99-install-dismissals';
+const INSTALL_LAST_DISMISSED_KEY = 'sweref99-install-last-dismissed';
+const INSTALL_MIN_VISITS = 2;
+const INSTALL_SHOW_DELAY_MS = 10000;
+const INSTALL_MAX_DISMISSALS = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Snooze grows with each dismissal: 14 days, then 60 days
+const INSTALL_SNOOZE_DAYS = [14, 60];
+
+interface BeforeInstallPromptEvent extends Event {
+	prompt(): Promise<void>;
+	userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+function isStandaloneDisplay(): boolean {
+	if (typeof window === 'undefined') {
+		return false;
+	}
+	const iosStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+	return iosStandalone || (typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches);
+}
+
+function isIosSafari(): boolean {
+	const ua = navigator.userAgent;
+	const isIos = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+	return isIos && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+}
+
+/**
+ * Show a non-modal, dismissible hint to install the app. It appears only for
+ * returning users (not on the first visit), after a delay, never when already
+ * installed, and is snoozed progressively after dismissals.
+ */
+function initializeInstallPrompt(): void {
+	const banner = document.getElementById('install-banner');
+	const message = document.getElementById('install-banner-message');
+	const installBtn = document.getElementById('install-btn');
+	const dismissBtn = document.getElementById('install-dismiss-btn');
+	if (!banner || !message || !installBtn || !dismissBtn || isStandaloneDisplay()) {
+		return;
+	}
+
+	const visits = (parseInt(getStoredItem(INSTALL_VISITS_KEY) ?? '0', 10) || 0) + 1;
+	setStoredItem(INSTALL_VISITS_KEY, String(visits));
+
+	let deferredPrompt: BeforeInstallPromptEvent | null = null;
+	let timerId: ReturnType<typeof setTimeout> | null = null;
+
+	const isSnoozed = (): boolean => {
+		const dismissals = parseInt(getStoredItem(INSTALL_DISMISSALS_KEY) ?? '0', 10) || 0;
+		if (dismissals >= INSTALL_MAX_DISMISSALS) {
+			return true;
+		}
+		const last = parseInt(getStoredItem(INSTALL_LAST_DISMISSED_KEY) ?? '0', 10) || 0;
+		if (dismissals === 0 || last === 0) {
+			return false;
+		}
+		const days = INSTALL_SNOOZE_DAYS[Math.min(dismissals, INSTALL_SNOOZE_DAYS.length) - 1];
+		return Date.now() - last < days * DAY_MS;
+	};
+
+	const hide = (): void => {
+		if (timerId !== null) {
+			clearTimeout(timerId);
+			timerId = null;
+		}
+		banner.hidden = true;
+	};
+
+	const canInstallHere = (): boolean => deferredPrompt !== null || isIosSafari();
+
+	const scheduleShow = (): void => {
+		if (timerId !== null || !banner.hidden || visits < INSTALL_MIN_VISITS || isSnoozed() || !canInstallHere()) {
+			return;
+		}
+		timerId = setTimeout(() => {
+			timerId = null;
+			if (isSnoozed() || !canInstallHere() || isStandaloneDisplay()) {
+				return;
+			}
+			if (deferredPrompt) {
+				installBtn.hidden = false;
+			} else {
+				installBtn.hidden = true;
+				message.textContent = 'Tryck på Dela-ikonen i Safari och välj Lägg till på hemskärmen.';
+			}
+			banner.hidden = false;
+		}, INSTALL_SHOW_DELAY_MS);
+	};
+
+	dismissBtn.addEventListener('click', () => {
+		const dismissals = (parseInt(getStoredItem(INSTALL_DISMISSALS_KEY) ?? '0', 10) || 0) + 1;
+		setStoredItem(INSTALL_DISMISSALS_KEY, String(dismissals));
+		setStoredItem(INSTALL_LAST_DISMISSED_KEY, String(Date.now()));
+		hide();
+	});
+
+	installBtn.addEventListener('click', async () => {
+		const promptEvent = deferredPrompt;
+		if (!promptEvent) {
+			return;
+		}
+		deferredPrompt = null;
+		hide();
+		try {
+			await promptEvent.prompt();
+			const choice = await promptEvent.userChoice;
+			if (choice.outcome === 'dismissed') {
+				const dismissals = (parseInt(getStoredItem(INSTALL_DISMISSALS_KEY) ?? '0', 10) || 0) + 1;
+				setStoredItem(INSTALL_DISMISSALS_KEY, String(dismissals));
+				setStoredItem(INSTALL_LAST_DISMISSED_KEY, String(Date.now()));
+			}
+		} catch (error) {
+			console.warn('Installationsprompten misslyckades:', error);
+		}
+	});
+
+	window.addEventListener('beforeinstallprompt', (event: Event) => {
+		event.preventDefault();
+		deferredPrompt = event as BeforeInstallPromptEvent;
+		scheduleShow();
+	});
+
+	window.addEventListener('appinstalled', () => {
+		deferredPrompt = null;
+		setStoredItem(INSTALL_DISMISSALS_KEY, String(INSTALL_MAX_DISMISSALS));
+		hide();
+	});
+
+	scheduleShow();
+}
+
 function getSavedSpeedUnit(): SpeedUnit {
 	const saved = getStoredItem(SPEED_UNIT_STORAGE_KEY);
 	if (saved && SPEED_UNIT_ORDER.includes(saved as SpeedUnit)) {
@@ -1616,6 +1749,7 @@ function initializeApplication(): void {
 
 	initializeEventListeners();
 	initializeDetailsStatePersistence();
+	initializeInstallPrompt();
 	uiHelper.updateSpeedDisplayUnit();
 }
 

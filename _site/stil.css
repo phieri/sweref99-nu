@@ -284,3 +284,49 @@ textarea:focus-visible {
 		transform: rotate(360deg);
 	}
 }
+
+.install-banner {
+	position: fixed;
+	left: 0.75rem;
+	right: 0.75rem;
+	bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+	z-index: 900;
+	max-width: var(--container-max-width);
+	margin: 0 auto;
+	padding: 0.75rem 1rem;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1rem;
+	background: var(--pico-card-background-color, #fff);
+	border: 1px solid var(--pico-muted-border-color, #ccc);
+	border-radius: var(--pico-border-radius);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	font-size: 0.85rem;
+}
+
+.install-banner[hidden] {
+	display: none;
+}
+
+.install-banner-text {
+	flex: 1 1 14rem;
+	display: flex;
+	flex-direction: column;
+}
+
+.install-banner-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.install-banner-actions button {
+	width: auto;
+	margin: 0;
+	padding: 0.4rem 0.9rem;
+	font-size: 0.85rem;
+}
+
+main.container {
+	padding-bottom: 0.1px;
+}
