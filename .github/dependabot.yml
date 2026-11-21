@@ -12,6 +12,10 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    groups:
+      actions-group:
+        patterns:
+          - '*'
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
